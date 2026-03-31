@@ -91,3 +91,24 @@ class FieldEvaluation:
 
         if self.score < 0.0 or self.score > 1.0:
             raise ValueError("score must be in the range [0.0, 1.0]")
+
+
+@dataclass
+class RunResult:
+    """Wraps a single example execution with input, output, evaluations, and token usage.
+
+    This dataclass represents the complete result of executing a target function
+    on a single input, including the raw input/output, evaluation results for
+    each output field, and token usage metrics.
+
+    Args:
+        input: The input passed to the target function.
+        output: The raw output returned by the target function.
+        token_usage: Token consumption metrics for this execution.
+        evaluations: Per-field evaluation results. Defaults to empty list.
+    """
+
+    input: Any
+    output: Any
+    token_usage: TokenUsage
+    evaluations: list[FieldEvaluation] = field(default_factory=list)
