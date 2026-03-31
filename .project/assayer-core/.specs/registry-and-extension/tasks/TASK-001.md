@@ -47,4 +47,4 @@ Created the basic package structure for evaluators and registries:
 
 ## Commit
 
-Hash:
+Hash: a849ec3
