@@ -57,4 +57,4 @@ Implemented `MetricRegistry` class with the following key design decisions:
 
 ## Commit
 
-Hash:
+Hash: aee9e42
