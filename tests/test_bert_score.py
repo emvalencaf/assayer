@@ -1,8 +1,24 @@
 """Tests for BERTScore metric implementation (TASK-002)."""
 
+import sys
+import types
 import pytest
 from unittest.mock import patch, MagicMock
 from assayer.metrics.chat import bert_score
+
+
+def _make_bert_score_mock(f1_scores):
+    """Return a (mock_module, mock_score_fn) pair that injects f1_scores."""
+    mock_module = types.ModuleType("bert_score")
+    mock_score = MagicMock(
+        return_value=(
+            MagicMock(),
+            MagicMock(),
+            MagicMock(tolist=lambda: f1_scores),
+        )
+    )
+    mock_module.score = mock_score
+    return mock_module, mock_score
 
 
 class TestBertScore:
@@ -13,26 +29,16 @@ class TestBertScore:
         predictions = ["The cat sat on the mat", "Hello world"]
         references = ["A cat was sitting on a mat", "Hi there world"]
 
-        # Mock the bert_score library to return known values
-        mock_f1_scores = [0.85, 0.92]  # Example F1 scores for each pair
+        mock_f1_scores = [0.85, 0.92]
         expected_mean = sum(mock_f1_scores) / len(mock_f1_scores)  # 0.885
 
-        with patch('bert_score.score') as mock_score:
-            # bert_score.score returns (P, R, F1) tensors
-            mock_score.return_value = (
-                MagicMock(),  # Precision tensor (not used)
-                MagicMock(),  # Recall tensor (not used)
-                MagicMock(tolist=lambda: mock_f1_scores)  # F1 tensor with tolist() method
-            )
-
+        mock_module, mock_score = _make_bert_score_mock(mock_f1_scores)
+        with patch.dict(sys.modules, {"bert_score": mock_module}):
             result = bert_score(predictions, references)
 
-            # Verify the library was called with correct parameters
             mock_score.assert_called_once_with(
                 predictions, references, lang="en", rescale_with_baseline=True
             )
-
-            # Verify result is within tolerance of expected mean
             assert abs(result - expected_mean) <= 0.01
 
     def test_bert_score_returns_zero_for_empty_predictions(self):
@@ -59,21 +65,14 @@ class TestBertScore:
 
     def test_bert_score_handles_short_strings_without_raising(self):
         """Test that bert_score handles strings with fewer than 3 tokens without raising."""
-        # Single token strings
         predictions = ["cat", "hi"]
         references = ["dog", "bye"]
 
-        mock_f1_scores = [0.65, 0.45]  # Example scores for short strings
+        mock_f1_scores = [0.65, 0.45]
         expected_mean = sum(mock_f1_scores) / len(mock_f1_scores)
 
-        with patch('bert_score.score') as mock_score:
-            mock_score.return_value = (
-                MagicMock(),
-                MagicMock(),
-                MagicMock(tolist=lambda: mock_f1_scores)
-            )
-
-            # Should not raise any exception
+        mock_module, _ = _make_bert_score_mock(mock_f1_scores)
+        with patch.dict(sys.modules, {"bert_score": mock_module}):
             result = bert_score(predictions, references)
 
             assert isinstance(result, float)
@@ -87,13 +86,8 @@ class TestBertScore:
         mock_f1_scores = [0.75, 0.55]
         expected_mean = sum(mock_f1_scores) / len(mock_f1_scores)
 
-        with patch('bert_score.score') as mock_score:
-            mock_score.return_value = (
-                MagicMock(),
-                MagicMock(),
-                MagicMock(tolist=lambda: mock_f1_scores)
-            )
-
+        mock_module, _ = _make_bert_score_mock(mock_f1_scores)
+        with patch.dict(sys.modules, {"bert_score": mock_module}):
             result = bert_score(predictions, references)
 
             assert isinstance(result, float)
@@ -104,9 +98,9 @@ class TestBertScore:
         predictions = ["test"]
         references = ["reference"]
 
-        with patch('bert_score.score') as mock_score:
-            mock_score.side_effect = Exception("Library error")
-
+        mock_module = types.ModuleType("bert_score")
+        mock_module.score = MagicMock(side_effect=Exception("Library error"))
+        with patch.dict(sys.modules, {"bert_score": mock_module}):
             result = bert_score(predictions, references)
 
             assert result == 0.0
@@ -116,17 +110,11 @@ class TestBertScore:
         predictions = ["first prediction", "second prediction", "third prediction"]
         references = ["first reference", "second reference"]  # One fewer reference
 
-        # bert-score library should handle this by only processing pairs up to min length
-        mock_f1_scores = [0.8, 0.9]  # Only 2 scores for 2 pairs
+        mock_f1_scores = [0.8, 0.9]
         expected_mean = sum(mock_f1_scores) / len(mock_f1_scores)
 
-        with patch('bert_score.score') as mock_score:
-            mock_score.return_value = (
-                MagicMock(),
-                MagicMock(),
-                MagicMock(tolist=lambda: mock_f1_scores)
-            )
-
+        mock_module, _ = _make_bert_score_mock(mock_f1_scores)
+        with patch.dict(sys.modules, {"bert_score": mock_module}):
             result = bert_score(predictions, references)
 
             assert isinstance(result, float)
@@ -171,25 +159,20 @@ class TestBertScore:
         predictions = ["The quick brown fox jumps over the lazy dog"]
         references = ["A fast brown fox leaps over the sleeping dog"]
 
-        # Mock realistic bert-score behavior where F1 tensor has tolist() method
         mock_f1_tensor = MagicMock()
-        mock_f1_tensor.tolist.return_value = [0.873456789]  # Realistic BERTScore F1
+        mock_f1_tensor.tolist.return_value = [0.873456789]
 
-        with patch('bert_score.score') as mock_score:
-            mock_score.return_value = (
-                MagicMock(),  # Precision
-                MagicMock(),  # Recall
-                mock_f1_tensor  # F1 scores
-            )
+        mock_module = types.ModuleType("bert_score")
+        mock_score = MagicMock(return_value=(MagicMock(), MagicMock(), mock_f1_tensor))
+        mock_module.score = mock_score
 
+        with patch.dict(sys.modules, {"bert_score": mock_module}):
             result = bert_score(predictions, references)
 
-            # Verify correct library call
             mock_score.assert_called_once_with(
                 predictions, references, lang="en", rescale_with_baseline=True
             )
 
-            # Result should be the single F1 score (mean of one value is the value itself)
             expected = 0.873456789
             assert abs(result - expected) <= 0.01
             assert isinstance(result, float)
