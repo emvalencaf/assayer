@@ -1,13 +1,23 @@
 """Chat quality metrics for evaluating conversational model outputs.
 
-This module provides reference-quality implementations of BLEU and ROUGE-L metrics
-for measuring generation quality against ground-truth responses.
+This module provides reference-quality implementations of BLEU, ROUGE-L, BERTScore,
+and semantic similarity metrics for measuring generation quality against ground-truth responses.
 """
 
-from typing import List
+from typing import List, Callable
 import nltk.translate.bleu_score
 from nltk.translate.bleu_score import SmoothingFunction
 from rouge_score import rouge_scorer
+import numpy as np
+
+# Type alias for metric functions
+MetricFn = Callable[[list[str], list[str]], float]
+
+# Import sentence_transformers for testing purposes, handle gracefully if not available
+try:
+    from sentence_transformers import SentenceTransformer
+except ImportError:
+    SentenceTransformer = None
 
 
 def bleu(predictions: list[str], references: list[str]) -> float:
@@ -156,3 +166,96 @@ def bert_score(predictions: list[str], references: list[str]) -> float:
     except Exception:
         # Return 0.0 for any error conditions (including library errors)
         return 0.0
+
+
+def make_semantic_similarity(
+    model_name: str = "sentence-transformers/all-MiniLM-L6-v2"
+) -> MetricFn:
+    """Create a semantic similarity metric function using sentence transformers.
+
+    Factory function that returns a metric function for computing cosine similarity
+    between predictions and references using a sentence transformer model.
+
+    Args:
+        model_name: The sentence transformer model name to use for encoding.
+                   Defaults to "sentence-transformers/all-MiniLM-L6-v2".
+
+    Returns:
+        A metric function that takes (predictions, references) and returns
+        the mean cosine similarity as a float in [0, 1].
+
+    Raises:
+        None. The returned metric function handles all errors gracefully by returning 0.0.
+    """
+    def semantic_similarity_metric(predictions: list[str], references: list[str]) -> float:
+        """Compute mean cosine similarity between predictions and references.
+
+        Encodes all predictions and references using the configured sentence transformer
+        model, computes per-pair cosine similarity, and returns the mean similarity.
+
+        Args:
+            predictions: List of predicted text strings.
+            references: List of reference text strings.
+
+        Returns:
+            Mean cosine similarity as a float in [0, 1]. Returns 0.0 for empty inputs
+            or any error conditions.
+
+        Raises:
+            None. Returns 0.0 for any error conditions.
+        """
+        # Handle empty inputs
+        if not predictions or not references or len(predictions) == 0 or len(references) == 0:
+            return 0.0
+
+        try:
+            # Use module-level import for testing compatibility, import dynamically if needed
+            if SentenceTransformer is None:
+                from sentence_transformers import SentenceTransformer as ST
+                encoder = ST(model_name)
+            else:
+                encoder = SentenceTransformer(model_name)
+
+            # Encode predictions and references
+            pred_embeddings = encoder.encode(predictions)
+            ref_embeddings = encoder.encode(references)
+
+            # Ensure we have numpy arrays
+            pred_embeddings = np.array(pred_embeddings)
+            ref_embeddings = np.array(ref_embeddings)
+
+            # Compute per-pair cosine similarities
+            similarities = []
+            min_length = min(len(pred_embeddings), len(ref_embeddings))
+
+            for i in range(min_length):
+                pred_vec = pred_embeddings[i]
+                ref_vec = ref_embeddings[i]
+
+                # Compute cosine similarity manually to ensure it's in [0, 1]
+                # cosine_similarity = dot(a, b) / (norm(a) * norm(b))
+                dot_product = np.dot(pred_vec, ref_vec)
+                pred_norm = np.linalg.norm(pred_vec)
+                ref_norm = np.linalg.norm(ref_vec)
+
+                # Handle zero vectors
+                if pred_norm == 0 or ref_norm == 0:
+                    similarity = 0.0
+                else:
+                    similarity = dot_product / (pred_norm * ref_norm)
+
+                # Ensure similarity is in [0, 1] by clamping negative values to 0
+                similarity = max(0.0, similarity)
+                similarities.append(similarity)
+
+            # Return mean similarity
+            if similarities:
+                return float(np.mean(similarities))
+            else:
+                return 0.0
+
+        except Exception:
+            # Return 0.0 for any error conditions (model loading, encoding, etc.)
+            return 0.0
+
+    return semantic_similarity_metric
