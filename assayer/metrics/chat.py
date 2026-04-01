@@ -113,3 +113,46 @@ def rouge_l(predictions: list[str], references: list[str]) -> float:
     except Exception:
         # Return 0.0 for any error conditions
         return 0.0
+
+
+def bert_score(predictions: list[str], references: list[str]) -> float:
+    """Compute mean BERTScore F1 using bert-score library.
+
+    Uses the bert-score library with lang="en" and rescale_with_baseline=True
+    to compute F1 scores between prediction and reference pairs, then returns
+    the mean F1 score across all pairs.
+
+    Args:
+        predictions: List of predicted text strings.
+        references: List of reference text strings.
+
+    Returns:
+        Mean BERTScore F1 score as a float in [0, 1]. Returns 0.0 for empty inputs.
+
+    Raises:
+        None. Returns 0.0 for any error conditions.
+    """
+    # Handle empty inputs
+    if not predictions or not references or len(predictions) == 0 or len(references) == 0:
+        return 0.0
+
+    try:
+        # Dynamic import to allow tests to mock
+        import bert_score
+
+        # Call bert_score.score with required parameters
+        # Returns (precision, recall, f1) tensors
+        _, _, f1_scores = bert_score.score(
+            predictions, references, lang="en", rescale_with_baseline=True
+        )
+
+        # Convert F1 tensor to list and compute mean
+        f1_list = f1_scores.tolist()
+        if f1_list:
+            return float(sum(f1_list) / len(f1_list))
+        else:
+            return 0.0
+
+    except Exception:
+        # Return 0.0 for any error conditions (including library errors)
+        return 0.0

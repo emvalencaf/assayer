@@ -65,4 +65,4 @@ Implemented `assayer/metrics/chat.py` with BLEU and ROUGE-L metric functions:
 - `rouge-score>=0.1.2` for ROUGE-L metric calculation
 
 ## Commit
-Hash:
+Hash: c65a116
