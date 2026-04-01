@@ -6,15 +6,15 @@
 
 | ID       | Title                                              | Status  | Depends On              |
 |----------|----------------------------------------------------|---------|-------------------------|
-| TASK-001 | Implement BLEU and ROUGE-L metrics                 | pending |                         |
-| TASK-002 | Implement BERTScore metric                         | pending | TASK-001                |
-| TASK-003 | Implement semantic_similarity metric factory       | pending | TASK-001                |
-| TASK-004 | Register all chat metrics in MetricRegistry        | pending | TASK-001, TASK-002, TASK-003 |
+| TASK-001 | Implement BLEU and ROUGE-L metrics                 | done    |                         |
+| TASK-002 | Implement BERTScore metric                         | done    | TASK-001                |
+| TASK-003 | Implement semantic_similarity metric factory       | done    | TASK-001                |
+| TASK-004 | Register all chat metrics in MetricRegistry        | done    | TASK-001, TASK-002, TASK-003 |
 
 ## Summary
 
 - Total: 4
-- Pending: 4
+- Pending: 0
 - Tests written: 0
-- Done: 0
+- Done: 4
 - Blocked: 0

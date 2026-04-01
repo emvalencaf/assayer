@@ -1,7 +1,7 @@
 ---
 prd: assayer-core
 id: chat-metrics
-status: pending
+status: done
 depends-on: [registry-and-extension]
 created: 2026-03-30
 ---
@@ -73,13 +73,13 @@ def register_chat_metrics(registry: MetricRegistry) -> None:
 Users who want a custom embedding model call `make_semantic_similarity(model_name=...)` and register the result manually.
 
 ## Acceptance Criteria
-- [ ] AC-CM-001: `bleu(predictions, references)` returns a float within ±0.01 of `nltk.translate.bleu_score.corpus_bleu` for the same tokenized inputs.
-- [ ] AC-CM-002: `rouge_l(predictions, references)` returns a float within ±0.01 of the `rouge-score` library's mean ROUGE-L F1 for the same inputs.
-- [ ] AC-CM-003: `bert_score(predictions, references)` returns a float within ±0.01 of the `bert-score` library's mean F1 for the same inputs.
-- [ ] AC-CM-004: `make_semantic_similarity()` with the default model returns cosine similarity in [0, 1] for any non-empty string inputs.
-- [ ] AC-CM-005: `make_semantic_similarity(model_name="custom-model")` uses the specified model, not the default.
-- [ ] AC-CM-006: `register_chat_metrics(registry)` registers exactly the names `"bleu"`, `"rouge_l"`, `"bert_score"`, `"semantic_similarity"` in the provided registry.
-- [ ] AC-CM-007: All four metrics handle empty prediction/reference lists by returning 0.0 without raising.
+- [x] AC-CM-001: `bleu(predictions, references)` returns a float within ±0.01 of `nltk.translate.bleu_score.corpus_bleu` for the same tokenized inputs.
+- [x] AC-CM-002: `rouge_l(predictions, references)` returns a float within ±0.01 of the `rouge-score` library's mean ROUGE-L F1 for the same inputs.
+- [x] AC-CM-003: `bert_score(predictions, references)` returns a float within ±0.01 of the `bert-score` library's mean F1 for the same inputs.
+- [x] AC-CM-004: `make_semantic_similarity()` with the default model returns cosine similarity in [0, 1] for any non-empty string inputs.
+- [x] AC-CM-005: `make_semantic_similarity(model_name="custom-model")` uses the specified model, not the default.
+- [x] AC-CM-006: `register_chat_metrics(registry)` registers exactly the names `"bleu"`, `"rouge_l"`, `"bert_score"`, `"semantic_similarity"` in the provided registry.
+- [x] AC-CM-007: All four metrics handle empty prediction/reference lists by returning 0.0 without raising.
 
 ## Edge Cases
 - Empty `predictions` or `references` list → return 0.0
