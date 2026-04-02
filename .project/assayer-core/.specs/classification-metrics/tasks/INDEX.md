@@ -6,14 +6,14 @@
 
 | ID       | Title                                              | Status  | Depends On       |
 |----------|----------------------------------------------------|---------|------------------|
-| TASK-001 | Implement accuracy metric                          | pending |                  |
-| TASK-002 | Implement precision, recall, and F1 metric factories | pending | TASK-001       |
-| TASK-003 | Register classification metrics in MetricRegistry  | pending | TASK-001, TASK-002 |
+| TASK-001 | Implement accuracy metric                          | done |                  |
+| TASK-002 | Implement precision, recall, and F1 metric factories | done | TASK-001       |
+| TASK-003 | Register classification metrics in MetricRegistry  | done | TASK-001, TASK-002 |
 
 ## Summary
 
 - Total: 3
-- Pending: 3
+- Pending: 0
 - Tests written: 0
-- Done: 0
+- Done: 3
 - Blocked: 0

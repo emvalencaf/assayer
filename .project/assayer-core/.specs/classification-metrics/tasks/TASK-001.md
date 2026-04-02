@@ -42,4 +42,4 @@ Comprehensive test coverage for the accuracy metric:
 Implemented `accuracy()` in `assayer/metrics/classification.py` wrapping `sklearn.metrics.accuracy_score`. Returns 0.0 for empty inputs. A test had an incorrect hardcoded expected value (0.4 → 0.6) which was corrected. All 18 tests pass.
 
 ## Commit
-Hash:
+Hash: ca71bb9
