@@ -128,6 +128,8 @@ class ExperimentResult:
         experiment_name: Human-readable experiment name. Must be non-empty and
             non-whitespace-only.
         runs: Collection of run results. Defaults to empty list.
+        metrics: Dictionary mapping metric names to computed aggregated values.
+            Defaults to empty dict.
 
     Raises:
         ValueError: If experiment_name is empty or whitespace-only after stripping.
@@ -135,6 +137,7 @@ class ExperimentResult:
 
     experiment_name: str
     runs: list[RunResult] = field(default_factory=list)
+    metrics: dict[str, float] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Validate field values after dataclass initialization.
