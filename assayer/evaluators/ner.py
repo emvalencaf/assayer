@@ -1,7 +1,10 @@
 """Named Entity Recognition (NER) evaluator components."""
 
 from dataclasses import dataclass
-from typing import List, Dict
+from typing import List, Dict, Any
+
+from assayer.evaluators.base import BaseEvaluator
+from assayer.models import FieldEvaluation
 
 
 @dataclass(frozen=True)
@@ -167,4 +170,99 @@ class NERMatcher:
             per_type_recall=per_type_recall,
             per_type_f1=per_type_f1,
             macro_f1=macro_f1
+        )
+
+
+class NEREvaluator(BaseEvaluator):
+    """Evaluator for Named Entity Recognition (NER) tasks.
+
+    Evaluates predicted entity spans against reference spans using exact matching.
+    Two EntitySpan objects match if all fields (text, entity_type, start, end) are
+    identical. Provides per-type precision, recall, and F1 metrics plus macro-averaged F1.
+
+    Args:
+        field_name: Name of the field being evaluated (e.g., "entities", "extracted_entities").
+
+    Example:
+        >>> evaluator = NEREvaluator(field_name="entities")
+        >>> predicted = [EntitySpan("John", "PERSON", 0, 4)]
+        >>> reference = [EntitySpan("John", "PERSON", 0, 4)]
+        >>> result = evaluator.evaluate(predicted, reference)
+        >>> result.score
+        1.0
+    """
+
+    def __init__(self, field_name: str) -> None:
+        """Initialize the NER evaluator with a field name.
+
+        Args:
+            field_name: Name of the field being evaluated. Must be non-empty.
+
+        Raises:
+            ValueError: If field_name is empty or whitespace-only after stripping.
+        """
+        # BaseEvaluator requires a name parameter - using "ner" as the evaluator name
+        super().__init__(name="ner")
+
+        # Validate and store field_name separately
+        stripped_field_name = field_name.strip()
+        if not stripped_field_name:
+            raise ValueError("field_name must not be empty")
+        self.field_name = stripped_field_name
+
+    def evaluate(
+        self,
+        prediction: List[EntitySpan],
+        reference: List[EntitySpan],
+        **kwargs: Any,
+    ) -> FieldEvaluation:
+        """Evaluate predicted entity spans against reference spans.
+
+        Uses exact matching: spans must have identical text, entity_type, start, and end.
+        Computes precision, recall, and F1 per entity type, then macro F1 across types.
+
+        Args:
+            prediction: List of predicted entity spans to evaluate.
+            reference: List of reference (ground truth) entity spans.
+            **kwargs: Additional keyword arguments (ignored but accepted for interface compatibility).
+
+        Returns:
+            FieldEvaluation containing the evaluation results with the following structure:
+            - field_name: The field name provided during initialization
+            - evaluator_method: Always "ner_exact_match"
+            - expected_value: The reference spans
+            - obtained_value: The predicted spans
+            - score: Macro F1 score (0.0-1.0)
+            - prompt_hash: Always None (not applicable for non-LLM evaluator)
+            - metadata: Dictionary containing per-type metrics and macro F1
+
+        Example:
+            >>> evaluator = NEREvaluator(field_name="entities")
+            >>> predicted = [EntitySpan("John", "PERSON", 0, 4)]
+            >>> reference = [EntitySpan("John", "PERSON", 0, 4)]
+            >>> result = evaluator.evaluate(predicted, reference)
+            >>> result.metadata["macro_f1"]
+            1.0
+        """
+        # Use NERMatcher to compute the matching results
+        matcher = NERMatcher()
+        match_result = matcher.match(prediction, reference)
+
+        # Build metadata according to the design specification
+        metadata = {
+            "per_type_f1": match_result.per_type_f1,
+            "per_type_precision": match_result.per_type_precision,
+            "per_type_recall": match_result.per_type_recall,
+            "macro_f1": match_result.macro_f1,
+        }
+
+        # Return FieldEvaluation with all required fields
+        return FieldEvaluation(
+            field_name=self.field_name,
+            evaluator_method="ner_exact_match",
+            expected_value=reference,
+            obtained_value=prediction,
+            score=match_result.macro_f1,
+            prompt_hash=None,
+            metadata=metadata
         )
