@@ -43,4 +43,4 @@ Implemented `EntitySpan` as a frozen dataclass in `/home/emvalenca/personal_proj
 All 18 test cases pass, confirming the implementation meets all acceptance criteria.
 
 ## Commit
-Hash:
+Hash: b1f2575

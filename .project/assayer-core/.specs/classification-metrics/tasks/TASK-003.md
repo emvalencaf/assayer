@@ -36,4 +36,4 @@ Test file: `/home/emvalenca/personal_projects/assayer/tests/metrics/test_classif
 - Note: There's a discrepancy between the acceptance criteria and actual implementation. The criteria specifies "Duplicate registration raises ValueError" but MetricRegistry.register() raises KeyError for duplicates (which is semantically correct for a registry). The existing tests correctly expect KeyError.
 
 ## Commit
-Hash:
+Hash: c827ce8

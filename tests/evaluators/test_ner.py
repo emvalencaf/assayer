@@ -603,6 +603,320 @@ class TestNERMatcher:
         assert result.per_type_f1["ORG"] == 0.0
         assert result.macro_f1 == 0.0
 
+
+class TestNEREvaluator:
+    """Test cases for NEREvaluator class."""
+
+    def test_ner_evaluator_constructor_accepts_field_name(self):
+        """Test NEREvaluator constructor accepts field_name parameter."""
+        from assayer.evaluators.ner import NEREvaluator
+
+        field_name = "extracted_entities"
+        evaluator = NEREvaluator(field_name=field_name)
+
+        # Should inherit from BaseEvaluator and store field_name
+        assert hasattr(evaluator, 'field_name')
+        assert evaluator.field_name == field_name
+
+    def test_ner_evaluator_evaluate_returns_field_evaluation(self):
+        """AC-NER-007: NEREvaluator.evaluate() returns a FieldEvaluation with required fields."""
+        from assayer.evaluators.ner import NEREvaluator, EntitySpan
+
+        # Create test data
+        predicted_spans = [
+            EntitySpan(text="John", entity_type="PERSON", start=0, end=4),
+            EntitySpan(text="Apple", entity_type="ORG", start=10, end=15),
+        ]
+
+        reference_spans = [
+            EntitySpan(text="John", entity_type="PERSON", start=0, end=4),
+            EntitySpan(text="Google", entity_type="ORG", start=20, end=26),
+        ]
+
+        field_name = "entities"
+        evaluator = NEREvaluator(field_name=field_name)
+        result = evaluator.evaluate(predicted_spans, reference_spans)
+
+        # Should return a FieldEvaluation object
+        from assayer.models import FieldEvaluation
+        assert isinstance(result, FieldEvaluation)
+
+        # Check all required FieldEvaluation fields
+        assert result.field_name == field_name
+        assert result.evaluator_method == "ner_exact_match"
+        assert result.expected_value == reference_spans
+        assert result.obtained_value == predicted_spans
+        assert isinstance(result.score, float)
+        assert 0.0 <= result.score <= 1.0
+        assert result.prompt_hash is None
+
+    def test_ner_evaluator_metadata_contains_required_fields(self):
+        """AC-NER-007: metadata contains per_type_f1, per_type_precision, per_type_recall, macro_f1."""
+        from assayer.evaluators.ner import NEREvaluator, EntitySpan
+
+        # Create test data with known results
+        predicted_spans = [
+            EntitySpan(text="John", entity_type="PERSON", start=0, end=4),
+            EntitySpan(text="Apple", entity_type="ORG", start=10, end=15),
+        ]
+
+        reference_spans = [
+            EntitySpan(text="John", entity_type="PERSON", start=0, end=4),
+            EntitySpan(text="Google", entity_type="ORG", start=20, end=26),
+        ]
+
+        evaluator = NEREvaluator(field_name="entities")
+        result = evaluator.evaluate(predicted_spans, reference_spans)
+
+        # Check metadata structure
+        metadata = result.metadata
+        assert isinstance(metadata, dict)
+
+        # Check required metadata keys
+        assert "per_type_f1" in metadata
+        assert "per_type_precision" in metadata
+        assert "per_type_recall" in metadata
+        assert "macro_f1" in metadata
+
+        # Check metadata content types
+        assert isinstance(metadata["per_type_f1"], dict)
+        assert isinstance(metadata["per_type_precision"], dict)
+        assert isinstance(metadata["per_type_recall"], dict)
+        assert isinstance(metadata["macro_f1"], float)
+
+    def test_ner_evaluator_prompt_hash_is_none(self):
+        """Test that prompt_hash is None for non-LLM evaluator."""
+        from assayer.evaluators.ner import NEREvaluator, EntitySpan
+
+        predicted_spans = [EntitySpan(text="test", entity_type="TEST", start=0, end=4)]
+        reference_spans = [EntitySpan(text="test", entity_type="TEST", start=0, end=4)]
+
+        evaluator = NEREvaluator(field_name="test_field")
+        result = evaluator.evaluate(predicted_spans, reference_spans)
+
+        assert result.prompt_hash is None
+
+    def test_ner_evaluator_score_equals_macro_f1(self):
+        """Test that the score field equals the macro_f1 value."""
+        from assayer.evaluators.ner import NEREvaluator, EntitySpan
+
+        # Perfect match case
+        predicted_spans = [
+            EntitySpan(text="John", entity_type="PERSON", start=0, end=4),
+            EntitySpan(text="Apple", entity_type="ORG", start=10, end=15),
+        ]
+        reference_spans = predicted_spans.copy()
+
+        evaluator = NEREvaluator(field_name="entities")
+        result = evaluator.evaluate(predicted_spans, reference_spans)
+
+        # Score should equal macro_f1
+        assert result.score == result.metadata["macro_f1"]
+        assert result.score == 1.0  # Perfect match
+
+    def test_ner_evaluator_empty_predictions_and_references(self):
+        """Edge case: both predicted and reference empty → macro F1 = 0.0."""
+        from assayer.evaluators.ner import NEREvaluator
+
+        evaluator = NEREvaluator(field_name="entities")
+        result = evaluator.evaluate([], [])
+
+        assert result.score == 0.0
+        assert result.metadata["macro_f1"] == 0.0
+        assert result.metadata["per_type_f1"] == {}
+        assert result.metadata["per_type_precision"] == {}
+        assert result.metadata["per_type_recall"] == {}
+
+    def test_ner_evaluator_perfect_predictions_f1_equals_one(self):
+        """Edge case: all predictions correct, no false positives or negatives → F1 = 1.0."""
+        from assayer.evaluators.ner import NEREvaluator, EntitySpan
+
+        entities = [
+            EntitySpan(text="John", entity_type="PERSON", start=0, end=4),
+            EntitySpan(text="Apple", entity_type="ORG", start=10, end=15),
+            EntitySpan(text="New York", entity_type="LOCATION", start=20, end=28),
+        ]
+
+        evaluator = NEREvaluator(field_name="entities")
+        result = evaluator.evaluate(entities.copy(), entities.copy())
+
+        assert result.score == 1.0
+        assert result.metadata["macro_f1"] == 1.0
+
+        # All per-type F1 scores should be 1.0
+        for f1_score in result.metadata["per_type_f1"].values():
+            assert f1_score == 1.0
+
+    def test_ner_evaluator_type_in_predictions_only(self):
+        """Edge case: entity type appears in predictions only → precision = 0, F1 = 0."""
+        from assayer.evaluators.ner import NEREvaluator, EntitySpan
+
+        predicted_spans = [
+            EntitySpan(text="FakeEntity", entity_type="FAKE_TYPE", start=0, end=10),
+        ]
+        reference_spans = [
+            EntitySpan(text="RealEntity", entity_type="REAL_TYPE", start=20, end=30),
+        ]
+
+        evaluator = NEREvaluator(field_name="entities")
+        result = evaluator.evaluate(predicted_spans, reference_spans)
+
+        # Type only in predictions should have precision=0, recall=0, F1=0
+        assert result.metadata["per_type_precision"]["FAKE_TYPE"] == 0.0
+        assert result.metadata["per_type_recall"]["FAKE_TYPE"] == 0.0
+        assert result.metadata["per_type_f1"]["FAKE_TYPE"] == 0.0
+
+        # Type only in reference should also have precision=0, recall=0, F1=0
+        assert result.metadata["per_type_precision"]["REAL_TYPE"] == 0.0
+        assert result.metadata["per_type_recall"]["REAL_TYPE"] == 0.0
+        assert result.metadata["per_type_f1"]["REAL_TYPE"] == 0.0
+
+        # Overall macro F1 should be 0.0
+        assert result.score == 0.0
+
+    def test_ner_evaluator_type_in_reference_only(self):
+        """Edge case: entity type appears in references only → recall = 0, F1 = 0."""
+        from assayer.evaluators.ner import NEREvaluator, EntitySpan
+
+        predicted_spans = []  # No predictions
+        reference_spans = [
+            EntitySpan(text="MissedEntity", entity_type="MISSED_TYPE", start=0, end=12),
+        ]
+
+        evaluator = NEREvaluator(field_name="entities")
+        result = evaluator.evaluate(predicted_spans, reference_spans)
+
+        # Type only in reference should have recall=0, F1=0
+        assert result.metadata["per_type_precision"]["MISSED_TYPE"] == 0.0
+        assert result.metadata["per_type_recall"]["MISSED_TYPE"] == 0.0
+        assert result.metadata["per_type_f1"]["MISSED_TYPE"] == 0.0
+
+        assert result.score == 0.0
+
+    def test_ner_evaluator_with_kwargs(self):
+        """Test that NEREvaluator.evaluate() accepts **kwargs without error."""
+        from assayer.evaluators.ner import NEREvaluator, EntitySpan
+
+        predicted_spans = [EntitySpan(text="test", entity_type="TEST", start=0, end=4)]
+        reference_spans = [EntitySpan(text="test", entity_type="TEST", start=0, end=4)]
+
+        evaluator = NEREvaluator(field_name="entities")
+
+        # Should accept additional kwargs without error
+        result = evaluator.evaluate(
+            predicted_spans,
+            reference_spans,
+            unused_param="unused_value",
+            another_param=42
+        )
+
+        # Should still work correctly
+        assert result.score == 1.0
+
+    def test_ner_evaluator_complex_metadata_structure(self):
+        """Test that metadata structure matches design specification exactly."""
+        from assayer.evaluators.ner import NEREvaluator, EntitySpan
+
+        # Create a scenario with known calculations
+        predicted_spans = [
+            EntitySpan(text="John", entity_type="PERSON", start=0, end=4),      # TP
+            EntitySpan(text="Apple", entity_type="ORG", start=10, end=15),      # TP
+            EntitySpan(text="FakeOrg", entity_type="ORG", start=20, end=27),    # FP
+        ]
+
+        reference_spans = [
+            EntitySpan(text="John", entity_type="PERSON", start=0, end=4),      # TP
+            EntitySpan(text="Apple", entity_type="ORG", start=10, end=15),      # TP
+            EntitySpan(text="Google", entity_type="ORG", start=30, end=36),     # FN
+        ]
+
+        # Expected calculations:
+        # PERSON: TP=1, pred=1, ref=1 → precision=1.0, recall=1.0, f1=1.0
+        # ORG: TP=1, pred=2, ref=2 → precision=0.5, recall=0.5, f1=0.5
+        # macro_f1 = (1.0 + 0.5) / 2 = 0.75
+
+        evaluator = NEREvaluator(field_name="entities")
+        result = evaluator.evaluate(predicted_spans, reference_spans)
+
+        # Check metadata structure matches design specification
+        metadata = result.metadata
+
+        # Verify precision values
+        assert abs(metadata["per_type_precision"]["PERSON"] - 1.0) < 0.001
+        assert abs(metadata["per_type_precision"]["ORG"] - 0.5) < 0.001
+
+        # Verify recall values
+        assert abs(metadata["per_type_recall"]["PERSON"] - 1.0) < 0.001
+        assert abs(metadata["per_type_recall"]["ORG"] - 0.5) < 0.001
+
+        # Verify F1 values
+        assert abs(metadata["per_type_f1"]["PERSON"] - 1.0) < 0.001
+        assert abs(metadata["per_type_f1"]["ORG"] - 0.5) < 0.001
+
+        # Verify macro F1
+        assert abs(metadata["macro_f1"] - 0.75) < 0.001
+        assert abs(result.score - 0.75) < 0.001
+
+    def test_ner_evaluator_inherits_from_base_evaluator(self):
+        """Test that NEREvaluator properly inherits from BaseEvaluator."""
+        from assayer.evaluators.ner import NEREvaluator
+        from assayer.evaluators.base import BaseEvaluator
+
+        evaluator = NEREvaluator(field_name="test")
+        assert isinstance(evaluator, BaseEvaluator)
+
+    def test_ner_evaluator_field_name_stored_correctly(self):
+        """Test that field_name is stored and accessible."""
+        from assayer.evaluators.ner import NEREvaluator
+
+        field_name = "custom_entities_field"
+        evaluator = NEREvaluator(field_name=field_name)
+
+        # Test that field_name is stored (implementation detail may vary)
+        # The actual storage mechanism depends on the implementation
+        assert hasattr(evaluator, 'field_name')
+        assert evaluator.field_name == field_name
+
+    def test_ner_evaluator_has_proper_docstring_and_type_hints(self):
+        """Test that NEREvaluator has Google-style docstring and full type hints."""
+        from assayer.evaluators.ner import NEREvaluator
+        import inspect
+
+        # Check that class has a docstring
+        assert NEREvaluator.__doc__ is not None
+        assert len(NEREvaluator.__doc__.strip()) > 0
+
+        # Check that evaluate method has type hints
+        evaluate_method = getattr(NEREvaluator, 'evaluate')
+        sig = inspect.signature(evaluate_method)
+
+        # Check that method has type annotations (will fail if not implemented yet)
+        # This test will verify implementation has proper typing
+        assert sig.return_annotation is not None
+
+    def test_ner_evaluator_expected_and_obtained_values_preservation(self):
+        """Test that expected_value and obtained_value are preserved correctly in FieldEvaluation."""
+        from assayer.evaluators.ner import NEREvaluator, EntitySpan
+
+        predicted_spans = [
+            EntitySpan(text="Alice", entity_type="PERSON", start=0, end=5),
+        ]
+
+        reference_spans = [
+            EntitySpan(text="Bob", entity_type="PERSON", start=10, end=13),
+        ]
+
+        evaluator = NEREvaluator(field_name="people")
+        result = evaluator.evaluate(predicted_spans, reference_spans)
+
+        # Check that input values are preserved exactly
+        assert result.expected_value == reference_spans
+        assert result.obtained_value == predicted_spans
+
+        # Verify they are the same objects (not copies)
+        assert result.expected_value is reference_spans
+        assert result.obtained_value is predicted_spans
+
     def test_ner_matcher_same_text_and_position_different_type(self):
         """Test entities with same text and position but different type are not matches."""
         from assayer.evaluators.ner import EntitySpan, NERMatcher

@@ -1,7 +1,7 @@
 ---
 prd: assayer-core
 id: ner-evaluator
-status: pending
+status: done
 depends-on: [registry-and-extension, core-models]
 created: 2026-03-30
 ---
