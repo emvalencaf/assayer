@@ -6,6 +6,7 @@ from typing import Any, Callable, Optional
 
 from assayer.evaluators.base import BaseEvaluator
 from assayer.models import FieldEvaluation
+from assayer.registries.evaluator_registry import EvaluatorRegistry
 import transformers
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -337,3 +338,25 @@ class LLMJudgeEvaluator(BaseEvaluator):
                 "prompt_hash": self._prompt_hash,
             }
         )
+
+
+def register_hallucination_evaluators(registry: EvaluatorRegistry) -> type(None):
+    """Register hallucination evaluators in the provided registry.
+
+    Registers the FaithfulnessEvaluator as 'faithfulness' and the
+    LLMJudgeEvaluator as 'llm_judge' in the evaluator registry.
+
+    Args:
+        registry: The EvaluatorRegistry instance to register evaluators in.
+
+    Returns:
+        None.
+
+    Raises:
+        ValueError: If any evaluator is already registered (duplicate registration).
+    """
+    try:
+        registry.register("faithfulness", FaithfulnessEvaluator)
+        registry.register("llm_judge", LLMJudgeEvaluator)
+    except KeyError as e:
+        raise ValueError(f"Evaluator already registered: {e}") from e
