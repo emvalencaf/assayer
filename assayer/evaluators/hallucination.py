@@ -1,11 +1,14 @@
 """Hallucination evaluator components."""
 
 import hashlib
+import re
 from typing import Any, Callable, Optional
 
 from assayer.evaluators.base import BaseEvaluator
 from assayer.models import FieldEvaluation
 import transformers
+from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_core.messages import HumanMessage, SystemMessage
 
 DEFAULT_JUDGE_SYSTEM_PROMPT: str = """\
 You are an expert evaluator assessing the quality and faithfulness of an AI assistant's response.
@@ -215,3 +218,122 @@ class FaithfulnessEvaluator(BaseEvaluator):
         union = len(pred_words | ref_words)
 
         return intersection / union if union > 0 else 0.0
+
+
+def _parse_score(response_text: str) -> float:
+    """Extract a float score from the judge's response.
+
+    Args:
+        response_text: Raw text returned by the judge LLM.
+
+    Returns:
+        A float in [0, 1] representing the parsed score.
+
+    Raises:
+        ValueError: If no valid float in range [0, 1] can be extracted.
+    """
+    import re
+    # Find potential numeric tokens, but be strict about what constitutes a valid number
+    # Use word boundaries to avoid partial matches, but handle edge cases
+    tokens = re.findall(r"\S+", response_text.strip())
+
+    for token in tokens:
+        # Try to match the token as a complete number in [0, 1] range
+        if re.fullmatch(r"0(?:\.\d+)?|1(?:\.0+)?", token):
+            return float(token)
+
+    raise ValueError(f"Could not parse score from judge response: {response_text!r}")
+
+
+class LLMJudgeEvaluator(BaseEvaluator):
+    """Evaluates text using an LLM judge with configurable prompts.
+
+    This evaluator uses a LangChain ChatModel to assess the quality of predictions
+    against optional reference text. The judge model returns a numerical score
+    between 0.0 and 1.0, which is parsed from the model's response.
+
+    Args:
+        field_name: Name of the field being evaluated.
+        judge_model: LangChain ChatModel instance to use for evaluation.
+        system_prompt: Custom system prompt for the judge. If None, uses
+            DEFAULT_JUDGE_SYSTEM_PROMPT.
+
+    Raises:
+        ValueError: If field_name is empty or whitespace-only after stripping.
+    """
+
+    def __init__(
+        self,
+        field_name: str,
+        judge_model: BaseChatModel,
+        system_prompt: str | None = None,
+    ) -> type(None):
+        """Initialize the LLM judge evaluator.
+
+        Args:
+            field_name: Name of the field being evaluated.
+            judge_model: LangChain ChatModel instance to use for evaluation.
+            system_prompt: Custom system prompt for the judge. If None, uses
+                DEFAULT_JUDGE_SYSTEM_PROMPT.
+
+        Raises:
+            ValueError: If field_name is empty or whitespace-only after stripping.
+        """
+        super().__init__(field_name)
+        self._judge_model = judge_model
+        self._prompt = system_prompt or DEFAULT_JUDGE_SYSTEM_PROMPT
+        self._prompt_hash = hash_prompt(self._prompt)
+
+    def evaluate(
+        self,
+        prediction: str,
+        reference: str | None = None,
+        **kwargs: Any,
+    ) -> FieldEvaluation:
+        """Evaluate prediction using the LLM judge.
+
+        Uses the configured judge model to assess the quality of the prediction,
+        optionally against a reference text. The judge's response is parsed to
+        extract a numerical score.
+
+        Args:
+            prediction: The predicted/obtained text to evaluate.
+            reference: The reference/expected text for comparison. If None,
+                evaluation is done without reference context.
+            **kwargs: Additional keyword arguments (unused).
+
+        Returns:
+            A FieldEvaluation object containing the judge's score and metadata.
+            Score is in [0, 1] where 1.0 indicates best quality.
+
+        Raises:
+            ValueError: If the judge's response cannot be parsed to extract a score.
+        """
+        # Construct user message with prediction and optional reference
+        if reference is None:
+            user_message = f"Response to evaluate: {prediction}"
+        else:
+            user_message = f"Context/Reference: {reference}\nResponse to evaluate: {prediction}"
+
+        # Create messages for the judge model
+        messages = [
+            SystemMessage(content=self._prompt),
+            HumanMessage(content=user_message)
+        ]
+
+        # Call the judge model and parse the response
+        response = self._judge_model.invoke(messages)
+        score = _parse_score(response.content)
+
+        return FieldEvaluation(
+            field_name=self.name,
+            evaluator_method="llm_judge",
+            expected_value=reference,
+            obtained_value=prediction,
+            score=score,
+            prompt_hash=self._prompt_hash,
+            metadata={
+                "judge_model": self._judge_model.__class__.__name__,
+                "prompt_hash": self._prompt_hash,
+            }
+        )
