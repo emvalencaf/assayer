@@ -1,7 +1,7 @@
 ---
 id: TASK-002
 spec: consistency-models
-status: pending
+status: done
 depends-on: [TASK-001]
 created: 2026-04-07
 ---
@@ -46,9 +46,32 @@ Add `ConsistencySummary` to the module's `__all__`.
 
 ## Tests
 
-Test file:
+Test file: `/home/emvalenca/personal_projects/assayer/tests/test_consistency_models.py`
+
+Tests for ConsistencySummary dataclass covering:
+- Instantiation with all required fields and typed attribute access
+- Validation of rate fields (pass_at_k_rate, mean_correct_rate, mean_recall_at_k, mean_agreement_rate) within [0.0, 1.0] range
+- Default empty lists for per_group and worst_groups fields
+- Boundary value acceptance for all validated fields
+- Unbounded validation for mean_entropy and mean_score_std
+- Edge cases with empty groups
 
 ## Implementation Notes
+
+Added the `ConsistencySummary` dataclass to `assayer/evaluators/consistency_models.py` with all required fields and validation:
+
+- Implemented all fields with proper Google-style docstrings and type hints
+- Added `__post_init__` validation for the four rate fields that must be in [0.0, 1.0]
+- Used `field(default_factory=list)` for `per_group` and `worst_groups` to provide empty list defaults
+- Left `mean_entropy` and `mean_score_std` unbounded above as specified
+- Added `ConsistencySummary` to the module's `__all__` list for proper public API exposure
+
+All tests now pass, including the specific TASK-002 tests for:
+- Field instantiation and type validation
+- Range validation for bounded rate fields  
+- Default empty list behavior
+- Boundary value acceptance
+- Unbounded validation for entropy and score std
 
 ## Commit
 
