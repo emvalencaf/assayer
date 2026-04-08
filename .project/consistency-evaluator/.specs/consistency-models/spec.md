@@ -31,6 +31,14 @@ This spec defines the data structures that carry consistency evaluation results 
 
 ## Technical Design
 
+> **HUMAN REVIEW — 2026-04-08:** The original design placed both models in
+> `assayer/evaluators/consistency_models.py`. After implementation, the module
+> layout was refactored: `ConsistencyFieldEvaluation` and `ConsistencySummary`
+> now live in `assayer/models/consistency_field_evaluation.py` and
+> `assayer/models/consistency_summary.py` respectively, and are re-exported
+> from `assayer/models/__init__.py`. The `assayer/evaluators/consistency_models.py`
+> file was removed. All public imports remain available via `assayer.models`.
+
 Both models are `@dataclass` classes placed in a new module `assayer/evaluators/consistency_models.py`, following the same pattern as `assayer/models.py`.
 
 ### ConsistencyFieldEvaluation

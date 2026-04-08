@@ -15,7 +15,7 @@ class TestModelsModuleIsolation:
     def test_models_module_has_no_assayer_imports(self):
         """Test AC-SPEC-008: assayer/models.py does not import from any other assayer.* module."""
         # Read the models.py file content
-        models_file_path = Path(__file__).parent.parent / "assayer" / "models.py"
+        models_file_path = Path(__file__).parent.parent / "assayer" / "models" / "__init__.py"
 
         with open(models_file_path, "r", encoding="utf-8") as f:
             content = f.read()
@@ -29,10 +29,10 @@ class TestModelsModuleIsolation:
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
                 for alias in node.names:
-                    if alias.name.startswith("assayer"):
+                    if alias.name.startswith("assayer") and not alias.name.startswith("assayer.models"):
                         assayer_imports.append(f"import {alias.name}")
             elif isinstance(node, ast.ImportFrom):
-                if node.module and node.module.startswith("assayer"):
+                if node.module and node.module.startswith("assayer") and not node.module.startswith("assayer.models"):
                     names = [alias.name for alias in node.names]
                     assayer_imports.append(f"from {node.module} import {', '.join(names)}")
 
@@ -50,7 +50,7 @@ class TestModelsExports:
         """Test that __all__ exports exactly TokenUsage, FieldEvaluation, RunResult, ExperimentResult."""
         import assayer.models
 
-        expected_symbols = {"TokenUsage", "FieldEvaluation", "RunResult", "ExperimentResult"}
+        expected_symbols = {"TokenUsage", "FieldEvaluation", "RunResult", "ExperimentResult", "ConsistencyFieldEvaluation", "ConsistencySummary"}
 
         # Check that __all__ exists
         assert hasattr(assayer.models, "__all__"), "assayer.models must define __all__"
