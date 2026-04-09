@@ -1,7 +1,7 @@
 ---
 id: TASK-001
 spec: consistency-metrics
-status: pending
+status: done
 depends-on: []
 created: 2026-04-07
 ---
@@ -42,9 +42,26 @@ Add both to `__all__`.
 
 ## Tests
 
-Test file:
+Test file: `/home/emvalenca/personal_projects/assayer/tests/evaluators/test_consistency_metrics.py`
+
+Comprehensive test suite covering all acceptance criteria:
+- Agreement rate with identical labels (perfect agreement)
+- Agreement rate with mixed labels (most frequent as dominant)
+- Agreement rate with empty list and single element
+- Entropy with identical labels (zero entropy)
+- Entropy with distinct values (positive entropy)
+- Entropy with single element and empty list
+- Type conversion handling for obtained_value
 
 ## Implementation Notes
+
+Successfully implemented both `compute_agreement_rate` and `compute_entropy` functions in `assayer/evaluators/consistency_metrics.py`:
+
+- **`compute_agreement_rate`**: Handles all edge cases (empty list, single element, ties) using `collections.Counter` to find the dominant label. Converts all `obtained_value` fields to strings for consistent comparison.
+
+- **`compute_entropy`**: Implements Shannon entropy formula `H = -Σ p(x) · log₂(p(x))` using `math.log2`. Returns 0.0 for empty lists, single elements, or identical values as specified.
+
+Both functions include comprehensive Google-style docstrings with type hints and are exported via `__all__`. All 13 test cases pass, covering agreement calculation, entropy computation, edge cases, and mixed data types.
 
 ## Commit
 
