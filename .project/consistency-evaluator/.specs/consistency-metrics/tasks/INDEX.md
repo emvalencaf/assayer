@@ -8,13 +8,13 @@
 |----------|----------------------------------------------------|---------|------------|
 | TASK-001 | Implement compute_agreement_rate and compute_entropy | tests-written |          |
 | TASK-002 | Implement compute_score_std                        | tests-written | TASK-001   |
-| TASK-003 | Implement compute_correct_rate and compute_pass_at_k | pending | TASK-001 |
+| TASK-003 | Implement compute_correct_rate and compute_pass_at_k | tests-written | TASK-001 |
 | TASK-004 | Implement compute_recall_at_k                      | pending | TASK-003   |
 
 ## Summary
 
 - Total: 4
-- Pending: 2
-- Tests written: 2
+- Pending: 1
+- Tests written: 3
 - Done: 0
 - Blocked: 0

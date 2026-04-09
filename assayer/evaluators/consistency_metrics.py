@@ -3,11 +3,22 @@
 import math
 import statistics
 from collections import Counter
-from typing import Union
+from typing import Any, Union
 
 from assayer.models.field_evaluation import FieldEvaluation
 
-__all__ = ["compute_agreement_rate", "compute_entropy", "compute_score_std"]
+__all__ = ["compute_agreement_rate", "compute_entropy", "compute_score_std", "compute_correct_rate", "compute_pass_at_k"]
+
+
+def _normalize_to_string(value: Any) -> str:
+    """Normalize a value to string with numeric conversion.
+
+    For numeric values, converts to int if the float value is equivalent
+    to an integer, otherwise keeps as float string representation.
+    """
+    if isinstance(value, float) and value.is_integer():
+        return str(int(value))
+    return str(value)
 
 
 def compute_agreement_rate(results: list[FieldEvaluation]) -> tuple[float, Union[str, None]]:
@@ -132,3 +143,100 @@ def compute_score_std(results: list[FieldEvaluation]) -> float:
 
     scores = [result.score for result in results]
     return statistics.stdev(scores)
+
+
+def compute_correct_rate(results: list[FieldEvaluation], reference: Any) -> float:
+    """Compute the rate of correct predictions against a reference value.
+
+    Compares each result's obtained_value against the reference. Automatically
+    detects single-label vs multi-label mode based on obtained_value types.
+    If any obtained_value is a list or set, uses multi-label comparison with
+    set equality. Otherwise uses single-label comparison with string equality.
+
+    Args:
+        results: List of FieldEvaluation objects to analyze. Each obtained_value
+            is compared against the reference.
+        reference: Reference value to compare against. Can be any type.
+
+    Returns:
+        Float in [0.0, 1.0] representing the proportion of results that match
+        the reference exactly. Returns 0.0 for empty lists.
+
+    Examples:
+        >>> # Single-label mode
+        >>> results = [
+        ...     FieldEvaluation("field", "method", "exp", "A", 0.8, None),
+        ...     FieldEvaluation("field", "method", "exp", "B", 0.9, None),
+        ... ]
+        >>> rate = compute_correct_rate(results, "A")
+        >>> rate
+        0.5
+
+        >>> # Multi-label mode
+        >>> results = [
+        ...     FieldEvaluation("field", "method", "exp", ["A", "B"], 0.8, None),
+        ...     FieldEvaluation("field", "method", "exp", {"A", "B"}, 0.9, None),
+        ... ]
+        >>> rate = compute_correct_rate(results, ["B", "A"])
+        >>> rate
+        1.0
+    """
+    if not results:
+        return 0.0
+
+    # Detect multi-label mode: if any obtained_value is a list or set
+    is_multilabel = any(isinstance(r.obtained_value, (list, set)) for r in results)
+
+    matches = 0
+    for result in results:
+        if is_multilabel:
+            # Multi-label mode: compare sets
+            try:
+                obtained_set = set(result.obtained_value)
+                reference_set = set(reference)
+                if obtained_set == reference_set:
+                    matches += 1
+            except TypeError:
+                # If obtained_value or reference is not iterable, skip this match
+                continue
+        else:
+            # Single-label mode: compare strings with numeric normalization
+            obtained_str = _normalize_to_string(result.obtained_value)
+            reference_str = _normalize_to_string(reference)
+            if obtained_str == reference_str:
+                matches += 1
+
+    return matches / len(results)
+
+
+def compute_pass_at_k(results: list[FieldEvaluation], reference: Any) -> bool:
+    """Determine if at least one result matches the reference value.
+
+    Equivalent to checking if compute_correct_rate returns a value greater
+    than 0.0. Uses the same single-label vs multi-label detection logic.
+
+    Args:
+        results: List of FieldEvaluation objects to analyze. Each obtained_value
+            is compared against the reference.
+        reference: Reference value to compare against. Can be any type.
+
+    Returns:
+        True if at least one result matches the reference exactly, False otherwise.
+        Returns False for empty lists.
+
+    Examples:
+        >>> # At least one match
+        >>> results = [
+        ...     FieldEvaluation("field", "method", "exp", "A", 0.8, None),
+        ...     FieldEvaluation("field", "method", "exp", "B", 0.9, None),
+        ... ]
+        >>> pass_at_k = compute_pass_at_k(results, "A")
+        >>> pass_at_k
+        True
+
+        >>> # No matches
+        >>> pass_at_k = compute_pass_at_k(results, "C")
+        >>> pass_at_k
+        False
+    """
+    return compute_correct_rate(results, reference) > 0.0

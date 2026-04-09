@@ -6,6 +6,7 @@ import pytest
 from assayer.models import FieldEvaluation
 from assayer.evaluators.consistency_metrics import compute_agreement_rate, compute_entropy
 # compute_score_std is not implemented yet - will be added when TASK-002 is completed
+# compute_correct_rate and compute_pass_at_k will be tested even though not implemented yet
 
 
 class TestComputeAgreementRate:
@@ -324,3 +325,365 @@ class TestComputeScoreStd:
         population_variance = sum((s - mean)**2 for s in scores) / len(scores)
         expected_population_std = population_variance**0.5
         assert abs(std_dev - expected_population_std) > 1e-10  # Should be different
+
+
+class TestComputeCorrectRate:
+    """Test compute_correct_rate function."""
+
+    def test_all_single_label_predictions_match_reference_string(self):
+        """Test that all single-label predictions matching reference returns 1.0."""
+        from assayer.evaluators.consistency_metrics import compute_correct_rate
+
+        results = [
+            FieldEvaluation("field", "method", "expected", "correct_label", 0.8, None),
+            FieldEvaluation("field", "method", "expected", "correct_label", 0.9, None),
+            FieldEvaluation("field", "method", "expected", "correct_label", 0.7, None),
+        ]
+        reference = "correct_label"
+
+        correct_rate = compute_correct_rate(results, reference)
+
+        assert correct_rate == 1.0
+
+    def test_no_prediction_matches_returns_zero(self):
+        """Test that no matching predictions returns 0.0."""
+        from assayer.evaluators.consistency_metrics import compute_correct_rate
+
+        results = [
+            FieldEvaluation("field", "method", "expected", "wrong_label", 0.8, None),
+            FieldEvaluation("field", "method", "expected", "another_wrong", 0.9, None),
+            FieldEvaluation("field", "method", "expected", "still_wrong", 0.7, None),
+        ]
+        reference = "correct_label"
+
+        correct_rate = compute_correct_rate(results, reference)
+
+        assert correct_rate == 0.0
+
+    def test_partial_single_label_matches(self):
+        """Test correct rate calculation with some matches in single-label mode."""
+        from assayer.evaluators.consistency_metrics import compute_correct_rate
+
+        results = [
+            FieldEvaluation("field", "method", "expected", "correct_label", 0.8, None),
+            FieldEvaluation("field", "method", "expected", "wrong_label", 0.9, None),
+            FieldEvaluation("field", "method", "expected", "correct_label", 0.7, None),
+            FieldEvaluation("field", "method", "expected", "wrong_again", 0.6, None),
+        ]
+        reference = "correct_label"
+
+        correct_rate = compute_correct_rate(results, reference)
+
+        assert correct_rate == 0.5  # 2 out of 4 match
+
+    def test_multi_label_exact_set_equality_all_match(self):
+        """Test multi-label mode uses exact set equality when all predictions match."""
+        from assayer.evaluators.consistency_metrics import compute_correct_rate
+
+        results = [
+            FieldEvaluation("field", "method", "expected", ["A", "B"], 0.8, None),
+            FieldEvaluation("field", "method", "expected", ["B", "A"], 0.9, None),  # order shouldn't matter
+            FieldEvaluation("field", "method", "expected", {"A", "B"}, 0.7, None),  # set vs list shouldn't matter
+        ]
+        reference = ["A", "B"]
+
+        correct_rate = compute_correct_rate(results, reference)
+
+        assert correct_rate == 1.0
+
+    def test_multi_label_exact_set_equality_partial_match(self):
+        """Test multi-label mode set equality with partial matches."""
+        from assayer.evaluators.consistency_metrics import compute_correct_rate
+
+        results = [
+            FieldEvaluation("field", "method", "expected", ["A", "B"], 0.8, None),  # exact match
+            FieldEvaluation("field", "method", "expected", ["A"], 0.9, None),       # subset, no match
+            FieldEvaluation("field", "method", "expected", ["A", "B", "C"], 0.7, None),  # superset, no match
+            FieldEvaluation("field", "method", "expected", {"B", "A"}, 0.6, None),  # exact match
+        ]
+        reference = ["A", "B"]
+
+        correct_rate = compute_correct_rate(results, reference)
+
+        assert correct_rate == 0.5  # 2 out of 4 exact matches
+
+    def test_multi_label_no_matches(self):
+        """Test multi-label mode returns 0.0 when no sets match exactly."""
+        from assayer.evaluators.consistency_metrics import compute_correct_rate
+
+        results = [
+            FieldEvaluation("field", "method", "expected", ["A"], 0.8, None),       # subset
+            FieldEvaluation("field", "method", "expected", ["A", "B", "C"], 0.9, None),  # superset
+            FieldEvaluation("field", "method", "expected", ["C", "D"], 0.7, None),  # different set
+        ]
+        reference = ["A", "B"]
+
+        correct_rate = compute_correct_rate(results, reference)
+
+        assert correct_rate == 0.0
+
+    def test_empty_list_returns_zero_without_raising(self):
+        """Test that empty results list returns 0.0 without raising exception."""
+        from assayer.evaluators.consistency_metrics import compute_correct_rate
+
+        results = []
+        reference = "any_reference"
+
+        correct_rate = compute_correct_rate(results, reference)
+
+        assert correct_rate == 0.0
+
+    def test_single_element_single_label_match(self):
+        """Test single-element list with matching single-label prediction."""
+        from assayer.evaluators.consistency_metrics import compute_correct_rate
+
+        results = [
+            FieldEvaluation("field", "method", "expected", "correct", 0.8, None),
+        ]
+        reference = "correct"
+
+        correct_rate = compute_correct_rate(results, reference)
+
+        assert correct_rate == 1.0
+
+    def test_single_element_single_label_no_match(self):
+        """Test single-element list with non-matching single-label prediction."""
+        from assayer.evaluators.consistency_metrics import compute_correct_rate
+
+        results = [
+            FieldEvaluation("field", "method", "expected", "wrong", 0.8, None),
+        ]
+        reference = "correct"
+
+        correct_rate = compute_correct_rate(results, reference)
+
+        assert correct_rate == 0.0
+
+    def test_single_element_multi_label_match(self):
+        """Test single-element list with matching multi-label prediction."""
+        from assayer.evaluators.consistency_metrics import compute_correct_rate
+
+        results = [
+            FieldEvaluation("field", "method", "expected", ["A", "B"], 0.8, None),
+        ]
+        reference = ["B", "A"]  # order shouldn't matter
+
+        correct_rate = compute_correct_rate(results, reference)
+
+        assert correct_rate == 1.0
+
+    def test_single_element_multi_label_no_match(self):
+        """Test single-element list with non-matching multi-label prediction."""
+        from assayer.evaluators.consistency_metrics import compute_correct_rate
+
+        results = [
+            FieldEvaluation("field", "method", "expected", ["A", "B"], 0.8, None),
+        ]
+        reference = ["A", "C"]
+
+        correct_rate = compute_correct_rate(results, reference)
+
+        assert correct_rate == 0.0
+
+    def test_multi_label_detection_with_mixed_types(self):
+        """Test that multi-label mode is triggered if ANY obtained_value is list/set."""
+        from assayer.evaluators.consistency_metrics import compute_correct_rate
+
+        results = [
+            FieldEvaluation("field", "method", "expected", "A", 0.8, None),     # string
+            FieldEvaluation("field", "method", "expected", ["A"], 0.9, None),   # list - triggers multi-label mode
+            FieldEvaluation("field", "method", "expected", "A", 0.7, None),     # string
+        ]
+        reference = ["A"]
+
+        correct_rate = compute_correct_rate(results, reference)
+
+        # In multi-label mode, "A" string should be compared as set(["A"]) which doesn't equal set(["A"])
+        # Actually, the string "A" would be compared as set("A") = {"A"}, which equals set(["A"]) = {"A"}
+        # But according to the spec, single strings should be compared differently in multi-label mode
+        # Let me check the spec again...
+
+        # Based on the spec: if ANY obtained_value is list/set, use multi-label path
+        # In multi-label path: set(r.obtained_value) == set(reference)
+        # For strings, set("A") = {"A"}; for lists, set(["A"]) = {"A"}
+        # So both should match reference ["A"] -> set(["A"]) = {"A"}
+        assert correct_rate == 1.0  # All three should match in multi-label mode
+
+    def test_single_label_string_conversion(self):
+        """Test that single-label mode converts both values to strings."""
+        from assayer.evaluators.consistency_metrics import compute_correct_rate
+
+        results = [
+            FieldEvaluation("field", "method", "expected", 42, 0.8, None),     # integer
+            FieldEvaluation("field", "method", "expected", "42", 0.9, None),   # string
+            FieldEvaluation("field", "method", "expected", 42.0, 0.7, None),   # float
+        ]
+        reference = "42"
+
+        correct_rate = compute_correct_rate(results, reference)
+
+        # str(42) == str(42.0) == "42" == reference
+        assert correct_rate == 1.0
+
+    def test_empty_multi_label_sets(self):
+        """Test multi-label mode with empty sets/lists."""
+        from assayer.evaluators.consistency_metrics import compute_correct_rate
+
+        results = [
+            FieldEvaluation("field", "method", "expected", [], 0.8, None),
+            FieldEvaluation("field", "method", "expected", set(), 0.9, None),
+            FieldEvaluation("field", "method", "expected", ["A"], 0.7, None),
+        ]
+        reference = []
+
+        correct_rate = compute_correct_rate(results, reference)
+
+        # set([]) == set(set()) == set([]) = {} (empty set)
+        # set(["A"]) != set([])
+        # So 2 out of 3 match
+        assert correct_rate == 2/3
+
+
+class TestComputePassAtK:
+    """Test compute_pass_at_k function."""
+
+    def test_returns_true_if_at_least_one_result_matches(self):
+        """Test that pass@k returns True when at least one result matches."""
+        from assayer.evaluators.consistency_metrics import compute_pass_at_k
+
+        results = [
+            FieldEvaluation("field", "method", "expected", "wrong", 0.8, None),
+            FieldEvaluation("field", "method", "expected", "correct", 0.9, None),  # this one matches
+            FieldEvaluation("field", "method", "expected", "wrong_again", 0.7, None),
+        ]
+        reference = "correct"
+
+        pass_at_k = compute_pass_at_k(results, reference)
+
+        assert pass_at_k is True
+
+    def test_returns_false_if_no_result_matches(self):
+        """Test that pass@k returns False when no result matches."""
+        from assayer.evaluators.consistency_metrics import compute_pass_at_k
+
+        results = [
+            FieldEvaluation("field", "method", "expected", "wrong", 0.8, None),
+            FieldEvaluation("field", "method", "expected", "also_wrong", 0.9, None),
+            FieldEvaluation("field", "method", "expected", "still_wrong", 0.7, None),
+        ]
+        reference = "correct"
+
+        pass_at_k = compute_pass_at_k(results, reference)
+
+        assert pass_at_k is False
+
+    def test_single_element_match_returns_true(self):
+        """Test single element that matches returns True."""
+        from assayer.evaluators.consistency_metrics import compute_pass_at_k
+
+        results = [
+            FieldEvaluation("field", "method", "expected", "correct", 0.8, None),
+        ]
+        reference = "correct"
+
+        pass_at_k = compute_pass_at_k(results, reference)
+
+        assert pass_at_k is True
+
+    def test_single_element_no_match_returns_false(self):
+        """Test single element that doesn't match returns False."""
+        from assayer.evaluators.consistency_metrics import compute_pass_at_k
+
+        results = [
+            FieldEvaluation("field", "method", "expected", "wrong", 0.8, None),
+        ]
+        reference = "correct"
+
+        pass_at_k = compute_pass_at_k(results, reference)
+
+        assert pass_at_k is False
+
+    def test_multi_label_at_least_one_match_returns_true(self):
+        """Test multi-label mode with at least one exact set match returns True."""
+        from assayer.evaluators.consistency_metrics import compute_pass_at_k
+
+        results = [
+            FieldEvaluation("field", "method", "expected", ["A"], 0.8, None),        # subset, no match
+            FieldEvaluation("field", "method", "expected", ["A", "B"], 0.9, None),   # exact match
+            FieldEvaluation("field", "method", "expected", ["A", "B", "C"], 0.7, None),  # superset, no match
+        ]
+        reference = ["B", "A"]  # order shouldn't matter
+
+        pass_at_k = compute_pass_at_k(results, reference)
+
+        assert pass_at_k is True
+
+    def test_multi_label_no_match_returns_false(self):
+        """Test multi-label mode with no exact set matches returns False."""
+        from assayer.evaluators.consistency_metrics import compute_pass_at_k
+
+        results = [
+            FieldEvaluation("field", "method", "expected", ["A"], 0.8, None),        # subset
+            FieldEvaluation("field", "method", "expected", ["A", "B", "C"], 0.9, None),  # superset
+            FieldEvaluation("field", "method", "expected", ["C", "D"], 0.7, None),   # different
+        ]
+        reference = ["A", "B"]
+
+        pass_at_k = compute_pass_at_k(results, reference)
+
+        assert pass_at_k is False
+
+    def test_empty_results_returns_false(self):
+        """Test that empty results list returns False."""
+        from assayer.evaluators.consistency_metrics import compute_pass_at_k
+
+        results = []
+        reference = "any_reference"
+
+        pass_at_k = compute_pass_at_k(results, reference)
+
+        assert pass_at_k is False
+
+    def test_all_results_match_returns_true(self):
+        """Test that all results matching returns True (correct_rate = 1.0)."""
+        from assayer.evaluators.consistency_metrics import compute_pass_at_k
+
+        results = [
+            FieldEvaluation("field", "method", "expected", "correct", 0.8, None),
+            FieldEvaluation("field", "method", "expected", "correct", 0.9, None),
+            FieldEvaluation("field", "method", "expected", "correct", 0.7, None),
+        ]
+        reference = "correct"
+
+        pass_at_k = compute_pass_at_k(results, reference)
+
+        assert pass_at_k is True
+
+    def test_is_equivalent_to_correct_rate_greater_than_zero(self):
+        """Test that pass@k is equivalent to correct_rate > 0.0."""
+        from assayer.evaluators.consistency_metrics import compute_pass_at_k, compute_correct_rate
+
+        # Test case where some match
+        results_some_match = [
+            FieldEvaluation("field", "method", "expected", "correct", 0.8, None),
+            FieldEvaluation("field", "method", "expected", "wrong", 0.9, None),
+        ]
+        reference = "correct"
+
+        correct_rate = compute_correct_rate(results_some_match, reference)
+        pass_at_k = compute_pass_at_k(results_some_match, reference)
+
+        assert correct_rate > 0.0
+        assert pass_at_k is True
+
+        # Test case where none match
+        results_none_match = [
+            FieldEvaluation("field", "method", "expected", "wrong1", 0.8, None),
+            FieldEvaluation("field", "method", "expected", "wrong2", 0.9, None),
+        ]
+
+        correct_rate_none = compute_correct_rate(results_none_match, reference)
+        pass_at_k_none = compute_pass_at_k(results_none_match, reference)
+
+        assert correct_rate_none == 0.0
+        assert pass_at_k_none is False
