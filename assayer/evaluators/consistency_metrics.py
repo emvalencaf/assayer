@@ -1,12 +1,13 @@
 """Consistency metrics for evaluating agreement and entropy in results."""
 
 import math
+import statistics
 from collections import Counter
 from typing import Union
 
 from assayer.models.field_evaluation import FieldEvaluation
 
-__all__ = ["compute_agreement_rate", "compute_entropy"]
+__all__ = ["compute_agreement_rate", "compute_entropy", "compute_score_std"]
 
 
 def compute_agreement_rate(results: list[FieldEvaluation]) -> tuple[float, Union[str, None]]:
@@ -100,3 +101,34 @@ def compute_entropy(results: list[FieldEvaluation]) -> float:
         entropy -= probability * math.log2(probability)
 
     return entropy
+
+
+def compute_score_std(results: list[FieldEvaluation]) -> float:
+    """Compute sample standard deviation of scores from field evaluation results.
+
+    Calculates the sample standard deviation of the score field across all
+    FieldEvaluation objects. Uses statistics.stdev with ddof=1 for sample
+    standard deviation calculation.
+
+    Args:
+        results: List of FieldEvaluation objects to analyze. Extracts the
+            score field from each object for standard deviation calculation.
+
+    Returns:
+        Sample standard deviation as a float >= 0.0. Returns 0.0 for empty
+        lists or single-element lists to avoid StatisticsError.
+
+    Examples:
+        >>> results = [
+        ...     FieldEvaluation("field", "method", "exp", "A", 0.5, None),
+        ...     FieldEvaluation("field", "method", "exp", "B", 0.9, None),
+        ... ]
+        >>> std_dev = compute_score_std(results)
+        >>> std_dev
+        0.28284271247461906
+    """
+    if len(results) <= 1:
+        return 0.0
+
+    scores = [result.score for result in results]
+    return statistics.stdev(scores)
