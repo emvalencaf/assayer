@@ -687,3 +687,311 @@ class TestComputePassAtK:
 
         assert correct_rate_none == 0.0
         assert pass_at_k_none is False
+
+
+class TestComputeRecallAtK:
+    """Test compute_recall_at_k function."""
+
+    def test_multi_label_full_coverage_returns_one(self):
+        """Test that union of all predicted sets covering all reference labels returns 1.0."""
+        from assayer.evaluators.consistency_metrics import compute_recall_at_k
+
+        results = [
+            FieldEvaluation("field", "method", "expected", ["A"], 0.8, None),
+            FieldEvaluation("field", "method", "expected", ["B", "C"], 0.9, None),
+            FieldEvaluation("field", "method", "expected", ["C", "D"], 0.7, None),
+        ]
+        reference = ["A", "B", "C", "D"]
+
+        recall = compute_recall_at_k(results, reference)
+
+        # union_predicted = {A} ∪ {B, C} ∪ {C, D} = {A, B, C, D}
+        # intersection with reference = {A, B, C, D}
+        # recall = 4/4 = 1.0
+        assert recall == 1.0
+
+    def test_multi_label_partial_coverage_returns_fraction(self):
+        """Test that partial coverage returns the correct fraction."""
+        from assayer.evaluators.consistency_metrics import compute_recall_at_k
+
+        results = [
+            FieldEvaluation("field", "method", "expected", ["A"], 0.8, None),
+            FieldEvaluation("field", "method", "expected", ["B"], 0.9, None),
+            FieldEvaluation("field", "method", "expected", ["A", "B"], 0.7, None),  # doesn't add new labels
+        ]
+        reference = ["A", "B", "C", "D"]
+
+        recall = compute_recall_at_k(results, reference)
+
+        # union_predicted = {A} ∪ {B} ∪ {A, B} = {A, B}
+        # intersection with reference = {A, B}
+        # recall = 2/4 = 0.5
+        assert recall == 0.5
+
+    def test_multi_label_no_predicted_labels_in_reference_returns_zero(self):
+        """Test that no predicted labels appearing in reference returns 0.0."""
+        from assayer.evaluators.consistency_metrics import compute_recall_at_k
+
+        results = [
+            FieldEvaluation("field", "method", "expected", ["X"], 0.8, None),
+            FieldEvaluation("field", "method", "expected", ["Y", "Z"], 0.9, None),
+            FieldEvaluation("field", "method", "expected", ["W"], 0.7, None),
+        ]
+        reference = ["A", "B", "C"]
+
+        recall = compute_recall_at_k(results, reference)
+
+        # union_predicted = {X, Y, Z, W}
+        # intersection with reference = {} (empty)
+        # recall = 0/3 = 0.0
+        assert recall == 0.0
+
+    def test_multi_label_empty_reference_returns_zero_without_raising(self):
+        """Test that empty reference list returns 0.0 without raising exception."""
+        from assayer.evaluators.consistency_metrics import compute_recall_at_k
+
+        results = [
+            FieldEvaluation("field", "method", "expected", ["A"], 0.8, None),
+            FieldEvaluation("field", "method", "expected", ["B", "C"], 0.9, None),
+        ]
+        reference = []
+
+        recall = compute_recall_at_k(results, reference)
+
+        # ref_set is empty, so function returns 0.0 (not raise ZeroDivisionError)
+        assert recall == 0.0
+
+    def test_single_label_match_returns_one(self):
+        """Test single-label mode with at least one match returns 1.0."""
+        from assayer.evaluators.consistency_metrics import compute_recall_at_k
+
+        results = [
+            FieldEvaluation("field", "method", "expected", "wrong", 0.8, None),
+            FieldEvaluation("field", "method", "expected", "correct", 0.9, None),  # this one matches
+            FieldEvaluation("field", "method", "expected", "wrong_again", 0.7, None),
+        ]
+        reference = "correct"
+
+        recall = compute_recall_at_k(results, reference)
+
+        # Single-label: ref_set = {"correct"}
+        # union_predicted = {"wrong", "correct", "wrong_again"}
+        # intersection = {"correct"}
+        # Since ref_set ∩ union_predicted is non-empty, returns 1.0
+        assert recall == 1.0
+
+    def test_single_label_no_match_returns_zero(self):
+        """Test single-label mode with no matches returns 0.0."""
+        from assayer.evaluators.consistency_metrics import compute_recall_at_k
+
+        results = [
+            FieldEvaluation("field", "method", "expected", "wrong", 0.8, None),
+            FieldEvaluation("field", "method", "expected", "also_wrong", 0.9, None),
+            FieldEvaluation("field", "method", "expected", "still_wrong", 0.7, None),
+        ]
+        reference = "correct"
+
+        recall = compute_recall_at_k(results, reference)
+
+        # Single-label: ref_set = {"correct"}
+        # union_predicted = {"wrong", "also_wrong", "still_wrong"}
+        # intersection = {} (empty)
+        # Since ref_set ∩ union_predicted is empty, returns 0.0
+        assert recall == 0.0
+
+    def test_single_label_equivalent_to_pass_at_k_when_true(self):
+        """Test that single-label recall@k returns 1.0 when pass@k is True."""
+        from assayer.evaluators.consistency_metrics import compute_recall_at_k, compute_pass_at_k
+
+        results = [
+            FieldEvaluation("field", "method", "expected", "wrong", 0.8, None),
+            FieldEvaluation("field", "method", "expected", "correct", 0.9, None),
+            FieldEvaluation("field", "method", "expected", "wrong_again", 0.7, None),
+        ]
+        reference = "correct"
+
+        pass_at_k = compute_pass_at_k(results, reference)
+        recall = compute_recall_at_k(results, reference)
+
+        assert pass_at_k is True
+        assert recall == 1.0
+
+    def test_single_label_equivalent_to_pass_at_k_when_false(self):
+        """Test that single-label recall@k returns 0.0 when pass@k is False."""
+        from assayer.evaluators.consistency_metrics import compute_recall_at_k, compute_pass_at_k
+
+        results = [
+            FieldEvaluation("field", "method", "expected", "wrong", 0.8, None),
+            FieldEvaluation("field", "method", "expected", "also_wrong", 0.9, None),
+        ]
+        reference = "correct"
+
+        pass_at_k = compute_pass_at_k(results, reference)
+        recall = compute_recall_at_k(results, reference)
+
+        assert pass_at_k is False
+        assert recall == 0.0
+
+    def test_empty_results_returns_zero_without_raising(self):
+        """Test that empty results list returns 0.0 without raising exception."""
+        from assayer.evaluators.consistency_metrics import compute_recall_at_k
+
+        results = []
+        reference = ["A", "B", "C"]
+
+        recall = compute_recall_at_k(results, reference)
+
+        assert recall == 0.0
+
+    def test_empty_results_single_label_returns_zero(self):
+        """Test that empty results list with single-label reference returns 0.0."""
+        from assayer.evaluators.consistency_metrics import compute_recall_at_k
+
+        results = []
+        reference = "any_value"
+
+        recall = compute_recall_at_k(results, reference)
+
+        assert recall == 0.0
+
+    def test_multi_label_with_sets_and_lists_mixed(self):
+        """Test multi-label mode handles both sets and lists as obtained_value."""
+        from assayer.evaluators.consistency_metrics import compute_recall_at_k
+
+        results = [
+            FieldEvaluation("field", "method", "expected", ["A", "B"], 0.8, None),  # list
+            FieldEvaluation("field", "method", "expected", {"C", "D"}, 0.9, None),  # set
+            FieldEvaluation("field", "method", "expected", ["B", "E"], 0.7, None),  # list with duplicate
+        ]
+        reference = ["A", "B", "C", "D", "E", "F"]
+
+        recall = compute_recall_at_k(results, reference)
+
+        # union_predicted = {A, B} ∪ {C, D} ∪ {B, E} = {A, B, C, D, E}
+        # intersection with reference = {A, B, C, D, E}
+        # recall = 5/6 ≈ 0.8333
+        expected_recall = 5/6
+        assert abs(recall - expected_recall) < 1e-10
+
+    def test_single_label_string_conversion(self):
+        """Test single-label mode converts both reference and obtained_values to strings."""
+        from assayer.evaluators.consistency_metrics import compute_recall_at_k
+
+        results = [
+            FieldEvaluation("field", "method", "expected", 42, 0.8, None),      # int
+            FieldEvaluation("field", "method", "expected", "wrong", 0.9, None), # string
+            FieldEvaluation("field", "method", "expected", 42.0, 0.7, None),   # float
+        ]
+        reference = "42"
+
+        recall = compute_recall_at_k(results, reference)
+
+        # Single-label: ref_set = {"42"}
+        # union_predicted = {"42", "wrong", "42.0"}
+        # str(42) = "42", str(42.0) = "42.0" (different from "42")
+        # intersection = {"42"}
+        # Since ref_set ∩ union_predicted contains "42", returns 1.0
+        assert recall == 1.0
+
+    def test_multi_label_mode_triggered_by_any_list_or_set(self):
+        """Test that multi-label mode is triggered if ANY obtained_value is list or set."""
+        from assayer.evaluators.consistency_metrics import compute_recall_at_k
+
+        results = [
+            FieldEvaluation("field", "method", "expected", "A", 0.8, None),     # string
+            FieldEvaluation("field", "method", "expected", ["A"], 0.9, None),   # list triggers multi-label
+            FieldEvaluation("field", "method", "expected", "B", 0.7, None),     # string
+        ]
+        reference = ["A", "B"]
+
+        recall = compute_recall_at_k(results, reference)
+
+        # Multi-label mode: ref_set = {A, B}
+        # union_predicted = set("A") ∪ {A} ∪ set("B") = {"A"} ∪ {A} ∪ {"B"} = {A, B}
+        # intersection = {A, B}
+        # recall = 2/2 = 1.0
+        assert recall == 1.0
+
+    def test_multi_label_empty_obtained_values(self):
+        """Test multi-label mode with empty lists/sets as obtained_values."""
+        from assayer.evaluators.consistency_metrics import compute_recall_at_k
+
+        results = [
+            FieldEvaluation("field", "method", "expected", [], 0.8, None),      # empty list
+            FieldEvaluation("field", "method", "expected", set(), 0.9, None),   # empty set
+            FieldEvaluation("field", "method", "expected", ["A"], 0.7, None),   # non-empty
+        ]
+        reference = ["A", "B"]
+
+        recall = compute_recall_at_k(results, reference)
+
+        # union_predicted = {} ∪ {} ∪ {A} = {A}
+        # intersection with {A, B} = {A}
+        # recall = 1/2 = 0.5
+        assert recall == 0.5
+
+    def test_single_element_multi_label_perfect_match(self):
+        """Test single-element list with perfect multi-label match."""
+        from assayer.evaluators.consistency_metrics import compute_recall_at_k
+
+        results = [
+            FieldEvaluation("field", "method", "expected", ["A", "B", "C"], 0.8, None),
+        ]
+        reference = ["A", "B", "C"]
+
+        recall = compute_recall_at_k(results, reference)
+
+        # union_predicted = {A, B, C}
+        # intersection with {A, B, C} = {A, B, C}
+        # recall = 3/3 = 1.0
+        assert recall == 1.0
+
+    def test_single_element_single_label_perfect_match(self):
+        """Test single-element list with perfect single-label match."""
+        from assayer.evaluators.consistency_metrics import compute_recall_at_k
+
+        results = [
+            FieldEvaluation("field", "method", "expected", "correct", 0.8, None),
+        ]
+        reference = "correct"
+
+        recall = compute_recall_at_k(results, reference)
+
+        # Single-label: ref_set = {"correct"}, union_predicted = {"correct"}
+        # intersection = {"correct"}, returns 1.0
+        assert recall == 1.0
+
+    def test_multi_label_superset_predictions(self):
+        """Test multi-label mode where predictions contain extra labels not in reference."""
+        from assayer.evaluators.consistency_metrics import compute_recall_at_k
+
+        results = [
+            FieldEvaluation("field", "method", "expected", ["A", "B", "X"], 0.8, None),
+            FieldEvaluation("field", "method", "expected", ["C", "Y", "Z"], 0.9, None),
+        ]
+        reference = ["A", "B", "C"]
+
+        recall = compute_recall_at_k(results, reference)
+
+        # union_predicted = {A, B, X, C, Y, Z}
+        # intersection with {A, B, C} = {A, B, C}
+        # recall = 3/3 = 1.0 (extra predicted labels don't hurt recall)
+        assert recall == 1.0
+
+    def test_multi_label_duplicate_labels_in_results(self):
+        """Test multi-label mode with duplicate labels across different results."""
+        from assayer.evaluators.consistency_metrics import compute_recall_at_k
+
+        results = [
+            FieldEvaluation("field", "method", "expected", ["A", "B"], 0.8, None),
+            FieldEvaluation("field", "method", "expected", ["A", "C"], 0.9, None),  # A appears again
+            FieldEvaluation("field", "method", "expected", ["B", "D"], 0.7, None),  # B appears again
+        ]
+        reference = ["A", "B", "C", "D", "E"]
+
+        recall = compute_recall_at_k(results, reference)
+
+        # union_predicted = {A, B} ∪ {A, C} ∪ {B, D} = {A, B, C, D}
+        # intersection with {A, B, C, D, E} = {A, B, C, D}
+        # recall = 4/5 = 0.8
+        assert recall == 0.8

@@ -7,7 +7,7 @@ from typing import Any, Union
 
 from assayer.models.field_evaluation import FieldEvaluation
 
-__all__ = ["compute_agreement_rate", "compute_entropy", "compute_score_std", "compute_correct_rate", "compute_pass_at_k"]
+__all__ = ["compute_agreement_rate", "compute_entropy", "compute_score_std", "compute_correct_rate", "compute_pass_at_k", "compute_recall_at_k"]
 
 
 def _normalize_to_string(value: Any) -> str:
@@ -240,3 +240,80 @@ def compute_pass_at_k(results: list[FieldEvaluation], reference: Any) -> bool:
         False
     """
     return compute_correct_rate(results, reference) > 0.0
+
+
+def compute_recall_at_k(results: list[FieldEvaluation], reference: Any) -> float:
+    """Compute recall@k as the fraction of reference labels covered by predictions.
+
+    Measures how many reference labels are covered by the union of all predicted
+    labels across k results. Automatically detects single-label vs multi-label mode
+    based on obtained_value types. For single-label mode, this is equivalent to
+    checking if pass@k is True (returns 1.0) or False (returns 0.0).
+
+    Args:
+        results: List of FieldEvaluation objects to analyze. Each obtained_value
+            represents a prediction to union together.
+        reference: Reference value to compute recall against. Can be any type.
+            For multi-label mode, should be iterable.
+
+    Returns:
+        Float in [0.0, 1.0] representing the fraction of reference labels that
+        appear in the union of all predictions. Returns 0.0 for empty results
+        or empty reference without raising exceptions.
+
+    Examples:
+        >>> # Multi-label mode - partial coverage
+        >>> results = [
+        ...     FieldEvaluation("field", "method", "exp", ["A"], 0.8, None),
+        ...     FieldEvaluation("field", "method", "exp", ["B"], 0.9, None),
+        ... ]
+        >>> recall = compute_recall_at_k(results, ["A", "B", "C", "D"])
+        >>> recall
+        0.5
+
+        >>> # Single-label mode - equivalent to pass@k
+        >>> results = [
+        ...     FieldEvaluation("field", "method", "exp", "wrong", 0.8, None),
+        ...     FieldEvaluation("field", "method", "exp", "correct", 0.9, None),
+        ... ]
+        >>> recall = compute_recall_at_k(results, "correct")
+        >>> recall
+        1.0
+    """
+    if not results:
+        return 0.0
+
+    # Detect multi-label mode: if any obtained_value is a list or set
+    is_multilabel = any(isinstance(r.obtained_value, (list, set)) for r in results)
+
+    if is_multilabel:
+        # Multi-label path
+        try:
+            ref_set = set(reference)
+        except TypeError:
+            # Reference is not iterable, treat as empty set
+            return 0.0
+
+        if not ref_set:
+            # Empty reference set
+            return 0.0
+
+        # Union all predicted sets
+        union_predicted = set()
+        for result in results:
+            try:
+                union_predicted.update(set(result.obtained_value))
+            except TypeError:
+                # obtained_value is not iterable, skip
+                continue
+
+        # Calculate recall as intersection size / reference size
+        intersection = union_predicted & ref_set
+        return len(intersection) / len(ref_set)
+    else:
+        # Single-label path - equivalent to pass@k
+        ref_set = {str(reference)}
+        union_predicted = {str(r.obtained_value) for r in results}
+
+        # Return 1.0 if reference appears in predictions, 0.0 otherwise
+        return 1.0 if ref_set & union_predicted else 0.0
