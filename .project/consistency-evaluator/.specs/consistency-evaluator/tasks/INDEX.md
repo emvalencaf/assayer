@@ -9,12 +9,12 @@
 | TASK-001 | Implement ConsistencyEvaluator class skeleton          | done |                   |
 | TASK-002 | Implement evaluate_dataset (historical mode)           | done | TASK-001          |
 | TASK-003 | Implement evaluate_live (live mode)                    | done | TASK-001          |
-| TASK-004 | Export ConsistencyEvaluator and integration smoke tests | pending | TASK-002, TASK-003 |
+| TASK-004 | Export ConsistencyEvaluator and integration smoke tests | done | TASK-002, TASK-003 |
 
 ## Summary
 
 - Total: 4
-- Pending: 1
+- Pending: 0
 - Tests written: 0
-- Done: 3
+- Done: 4
 - Blocked: 0

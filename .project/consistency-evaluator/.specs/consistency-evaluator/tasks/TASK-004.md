@@ -1,7 +1,7 @@
 ---
 id: TASK-004
 spec: consistency-evaluator
-status: pending
+status: done
 depends-on: [TASK-002, TASK-003]
 created: 2026-04-07
 ---
@@ -30,9 +30,32 @@ The LLM-based evaluators (`LLMJudgeEvaluator`, `NERJudgeEvaluator`, `Faithfulnes
 
 ## Tests
 
-Test file:
+Test file: `/home/emvalenca/personal_projects/assayer/tests/evaluators/test_consistency_integration.py`
+
+Integration smoke tests covering:
+- Import test that fails when ConsistencyEvaluator is not exported from assayer.evaluators
+- ConsistencyEvaluator wrapping MockClassificationEvaluator for dataset evaluation
+- ConsistencyEvaluator wrapping mocked LLMJudgeEvaluator for live evaluation
+- ConsistencyEvaluator wrapping mocked NEREvaluator for dataset evaluation
+- ConsistencyEvaluator wrapping mocked FaithfulnessEvaluator for dataset evaluation
+- Verification that no built-in evaluator classes are modified
+- Empty dataset handling verification
+
+All tests use mocks to avoid external LLM calls and validate proper return types (ConsistencySummary, ConsistencyFieldEvaluation) and structure.
 
 ## Implementation Notes
+
+Added `ConsistencyEvaluator` to the exports in `assayer/evaluators/__init__.py`:
+- Imported `ConsistencyEvaluator` from `assayer.evaluators.consistency`
+- Added it to the `__all__` list alongside `BaseEvaluator`
+
+The implementation is complete and working correctly:
+- `ConsistencyEvaluator` is now importable from `assayer.evaluators`
+- All functional integration tests pass (6/6)
+- The import works correctly with both named imports and wildcard imports
+- No existing functionality was broken
+
+The stale `test_consistency_evaluator_import_fails_initially` test was replaced with `test_consistency_evaluator_is_importable` to verify the export is working.
 
 ## Commit
 
