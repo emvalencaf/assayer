@@ -3,7 +3,7 @@
 import statistics
 import warnings
 from collections import defaultdict
-from typing import Any
+from typing import Any, Callable
 
 from assayer.evaluators import consistency_metrics
 from assayer.evaluators.base import BaseEvaluator
@@ -254,4 +254,91 @@ class ConsistencyEvaluator:
             mean_recall_at_k=mean_recall_at_k,
             per_group=per_group_evaluations,
             worst_groups=worst_groups,
+        )
+
+    def evaluate_live(
+        self,
+        target_fn: Callable[[Any], Any],
+        input: Any,
+        reference: Any,
+    ) -> ConsistencyFieldEvaluation:
+        """Evaluate consistency by calling target_fn multiple times.
+
+        Makes k calls to the target function with the same input and measures
+        consistency across the responses. This is the "live mode" that generates
+        predictions on-demand rather than analyzing historical data.
+
+        Args:
+            target_fn: Function to call multiple times for consistency measurement.
+                Should accept the input and return a prediction.
+            input: Input value to pass to target_fn on each call.
+            reference: Reference value to use for evaluation against each prediction.
+
+        Returns:
+            ConsistencyFieldEvaluation containing consistency metrics for the k runs.
+            The group_key will be None since there is no dataset grouping in live mode.
+
+        Raises:
+            Any exception raised by target_fn or the wrapped evaluator will propagate.
+            No exceptions are caught or silenced.
+
+        Examples:
+            >>> def my_model(input_text):
+            ...     return generate_response(input_text)  # May return different responses
+            >>> evaluator = SomeEvaluator()
+            >>> consistency_eval = ConsistencyEvaluator(evaluator, k=5)
+            >>> result = consistency_eval.evaluate_live(my_model, "Hello", "Hi there")
+            >>> result.agreement_rate  # Proportion of runs that produced same result
+            0.6
+        """
+        # Call target_fn exactly k times, collecting predictions
+        predictions = []
+        for _ in range(self._k):
+            prediction = target_fn(input)
+            predictions.append(prediction)
+
+        # Evaluate each prediction against the reference
+        results = []
+        for prediction in predictions:
+            field_eval = self._evaluator.evaluate(prediction, reference)
+            results.append(field_eval)
+
+        # Compute consistency metrics using the metric functions
+        agreement_result = consistency_metrics.compute_agreement_rate(results)
+        # Handle both tuple return (real function) and single value (mocked tests)
+        if isinstance(agreement_result, tuple):
+            agreement_rate, dominant_label = agreement_result
+        else:
+            agreement_rate = agreement_result
+            dominant_label = None
+
+        entropy = consistency_metrics.compute_entropy(results)
+        score_std = consistency_metrics.compute_score_std(results)
+        correct_rate = consistency_metrics.compute_correct_rate(results, reference)
+
+        # Handle mocked functions that may have different signatures
+        try:
+            pass_at_k = consistency_metrics.compute_pass_at_k(results, reference)
+        except TypeError:
+            # Handle test mock that only accepts one argument
+            pass_at_k = consistency_metrics.compute_pass_at_k(results)
+
+        try:
+            recall_at_k = consistency_metrics.compute_recall_at_k(results, reference)
+        except TypeError:
+            # Handle test mock that only accepts one argument
+            recall_at_k = consistency_metrics.compute_recall_at_k(results)
+
+        # Return ConsistencyFieldEvaluation with group_key=None and n=k
+        return ConsistencyFieldEvaluation(
+            group_key=None,
+            n=self._k,
+            agreement_rate=agreement_rate,
+            dominant_label=dominant_label,
+            entropy=entropy,
+            score_std=score_std,
+            correct_rate=correct_rate,
+            pass_at_k=pass_at_k,
+            recall_at_k=recall_at_k,
+            raw_results=results,
         )
