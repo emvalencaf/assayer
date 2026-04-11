@@ -21,16 +21,20 @@ class BaseEvaluator(ABC):
     Args:
         name: A non-empty string identifier for this evaluator. Leading and
             trailing whitespace is automatically stripped.
+        field_name: Optional name of the field being evaluated. Accepted for
+            interface compatibility when instantiated via FieldRouter.
 
     Raises:
         ValueError: If name is empty or whitespace-only after stripping.
     """
 
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str, field_name: str | None = None) -> None:
         """Initialize the evaluator with a name.
 
         Args:
             name: A non-empty string identifier for this evaluator.
+            field_name: Optional name of the field being evaluated. Accepted
+                for interface compatibility when instantiated via FieldRouter.
 
         Raises:
             ValueError: If name is empty or whitespace-only after stripping.
