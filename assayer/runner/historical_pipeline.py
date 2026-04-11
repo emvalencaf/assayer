@@ -6,6 +6,8 @@ of already-collected (historical) data without requiring a live target function.
 
 from typing import Union
 
+from assayer.models import ExperimentResult, RunResult, TokenUsage
+from assayer.runner.dataset_loader import load_dataset
 from assayer.runner.field_router import FieldRouter
 from assayer.registries.evaluator_registry import EvaluatorRegistry
 from assayer.registries.metric_registry import MetricRegistry
@@ -86,10 +88,61 @@ class HistoricalPipeline:
         # Validate evaluator names and create FieldRouter (raises KeyError if invalid)
         self._field_router = FieldRouter(field_evaluators, evaluator_registry)
 
-    def run(self) -> None:
-        """Execute the historical evaluation pipeline.
+    def run(self) -> ExperimentResult:
+        """Execute the historical evaluation pipeline over the stored dataset.
+
+        Loads the dataset, routes each record's prediction through the
+        FieldRouter, builds a RunResult per record, computes aggregate metrics,
+        and returns a fully-populated ExperimentResult.
+
+        Returns:
+            An ExperimentResult containing one RunResult per dataset record and
+            the computed aggregate metric values.
 
         Raises:
-            NotImplementedError: This method is not yet implemented.
+            ValueError: If any record in the dataset is missing the
+                ``"prediction"`` key. The error message includes the zero-based
+                index of the offending record.
         """
-        raise NotImplementedError
+        records = load_dataset(self.dataset)
+
+        runs: list[RunResult] = []
+        all_predictions: list = []
+        all_references: list = []
+
+        for i, record in enumerate(records):
+            if "prediction" not in record:
+                raise ValueError(
+                    f"Record at index {i} is missing 'prediction'"
+                )
+
+            prediction = record["prediction"]
+            expected_output = record["expected_output"]
+
+            evaluations = self._field_router.route(prediction, expected_output)
+
+            runs.append(
+                RunResult(
+                    input=record["input"],
+                    output=prediction,
+                    token_usage=TokenUsage(
+                        input_tokens=0,
+                        output_tokens=0,
+                        cost_usd=None,
+                    ),
+                    evaluations=evaluations,
+                )
+            )
+            all_predictions.append(prediction)
+            all_references.append(expected_output)
+
+        computed_metrics: dict[str, float] = {}
+        for metric_name in self.metrics:
+            metric_fn = self.metric_registry.get(metric_name)
+            computed_metrics[metric_name] = metric_fn(all_predictions, all_references)
+
+        return ExperimentResult(
+            experiment_name=self.experiment_name,
+            runs=runs,
+            metrics=computed_metrics,
+        )
