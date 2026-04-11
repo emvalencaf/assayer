@@ -50,7 +50,7 @@ class TestModelsExports:
         """Test that __all__ exports exactly TokenUsage, FieldEvaluation, RunResult, ExperimentResult."""
         import assayer.models
 
-        expected_symbols = {"TokenUsage", "FieldEvaluation", "RunResult", "ExperimentResult", "ConsistencyFieldEvaluation", "ConsistencySummary"}
+        expected_symbols = {"TokenUsage", "FieldEvaluation", "RunResult", "ExperimentResult", "ConsistencyFieldEvaluation", "ConsistencySummary", "ConsistencyRunResult", "ConsistencyReport"}
 
         # Check that __all__ exists
         assert hasattr(assayer.models, "__all__"), "assayer.models must define __all__"
