@@ -1081,3 +1081,36 @@ class TestRunDocstringAndTypeHints:
 
         hints = get_type_hints(ConsistencyPipeline.run)
         assert hints["return"] is ConsistencyReport
+
+
+# ---------------------------------------------------------------------------
+# SPEC-003-TASK-003: Public export from assayer.runner
+# ---------------------------------------------------------------------------
+
+class TestConsistencyPipelinePublicExport:
+    """ConsistencyPipeline is exported from the assayer.runner package."""
+
+    def test_importable_from_runner_package(self):
+        """ConsistencyPipeline is importable via 'from assayer.runner import ConsistencyPipeline'."""
+        from assayer.runner import ConsistencyPipeline  # noqa: F401
+
+    def test_listed_in_runner_all(self):
+        """ConsistencyPipeline is listed in assayer.runner.__all__."""
+        import assayer.runner as runner_pkg
+
+        assert "ConsistencyPipeline" in runner_pkg.__all__
+
+    def test_consistency_report_importable_from_models(self):
+        """ConsistencyReport is importable via 'from assayer.models import ConsistencyReport'."""
+        from assayer.models import ConsistencyReport  # noqa: F401
+
+    def test_consistency_run_result_importable_from_models(self):
+        """ConsistencyRunResult is importable via 'from assayer.models import ConsistencyRunResult'."""
+        from assayer.models import ConsistencyRunResult  # noqa: F401
+
+    def test_runner_export_is_same_class_as_module(self):
+        """assayer.runner.ConsistencyPipeline and assayer.runner.consistency_pipeline.ConsistencyPipeline are the same object."""
+        from assayer.runner import ConsistencyPipeline as ExportedClass
+        from assayer.runner.consistency_pipeline import ConsistencyPipeline as DirectClass
+
+        assert ExportedClass is DirectClass

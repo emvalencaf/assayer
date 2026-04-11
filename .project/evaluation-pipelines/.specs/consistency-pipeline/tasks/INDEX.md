@@ -5,12 +5,12 @@
 | ID                | Title                                                       | Status  | Depends On        |
 |-------------------|-------------------------------------------------------------|---------|-------------------|
 | SPEC-003-TASK-001 | Implement ConsistencyPipeline constructor with validation   | done    |                   |
-| SPEC-003-TASK-002 | Implement ConsistencyPipeline.run()                         | pending | SPEC-003-TASK-001 |
+| SPEC-003-TASK-002 | Implement ConsistencyPipeline.run()                         | done    | SPEC-003-TASK-001 |
 | SPEC-003-TASK-003 | Export ConsistencyPipeline from assayer.runner               | pending | SPEC-003-TASK-002 |
 
 ## Summary
 - Total: 3
-- Pending: 2
+- Pending: 1
 - Tests written: 0
-- Done: 1
+- Done: 2
 - Blocked: 0
