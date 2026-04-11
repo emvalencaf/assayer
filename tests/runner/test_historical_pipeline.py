@@ -1187,3 +1187,28 @@ class TestHistoricalPipelineRunDocstringAndTypeHints:
         hints = get_type_hints(HistoricalPipeline.run)
         assert "return" in hints
         assert hints["return"] is ExperimentResult
+
+
+# ---------------------------------------------------------------------------
+# SPEC-002-TASK-003: Export HistoricalPipeline from assayer.runner
+# ---------------------------------------------------------------------------
+
+class TestHistoricalPipelinePublicExport:
+    """Verify HistoricalPipeline is exported from the assayer.runner package."""
+
+    def test_historical_pipeline_importable_from_assayer_runner(self):
+        """HistoricalPipeline can be imported directly from assayer.runner."""
+        from assayer.runner import HistoricalPipeline  # noqa: F401
+
+    def test_historical_pipeline_in_dunder_all(self):
+        """assayer.runner.__all__ contains 'HistoricalPipeline'."""
+        import assayer.runner as runner_pkg
+
+        assert "HistoricalPipeline" in runner_pkg.__all__
+
+    def test_historical_pipeline_exported_class_is_same_object(self):
+        """The name exported from assayer.runner refers to the same class."""
+        from assayer.runner import HistoricalPipeline as exported
+        from assayer.runner.historical_pipeline import HistoricalPipeline as direct
+
+        assert exported is direct
