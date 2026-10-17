@@ -1,6 +1,9 @@
 # Update Log
 
 ## 2026-10-17
+* **Update**: [Adapters](architecture/adapters.md) records that `plan_export` returns an `ExportPlan` with `notes` for unlinkable Scores and Trajectories, the new `export_experiment` (an unplannable Experiment is one `validation` failure of target kind `experiment`), and that `include_content=False` now also drops Step errors and Score comments.
+* **Addition**: Documented the [Adapters](architecture/adapters.md) core (#35): `Adapter` Protocol, `ExportReport`, failure taxonomy, deterministic ids, retry policy and `InMemoryAdapter`, listed in the [architecture index](architecture/index.md).
+* **Update**: [Runner](architecture/runner.md) records `Runner(adapter=...)` and `Runner.export`; [Package organization](architecture/package-organization.md) lists `adapters/`.
 * **Addition**: Documented [goal success, faithfulness, context precision and recall, and pass^k](metrics/rag-and-pass-hat-k.md) (#34), listed in the [metrics index](metrics/index.md).
 * **Addition**: Documented [Judge metrics](metrics/judge-metrics.md) (Judge Protocol, prompts, parsing, accounting, `make_criteria_judge`).
 * **Update**: [Package organization](architecture/package-organization.md) now lists `judges/`.

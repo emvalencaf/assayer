@@ -5,7 +5,7 @@ description: Runs a target over a Dataset of Cases and returns an Experiment wit
 resource: assayer/runner/runner.py
 tags: [runner, experiment, dataset]
 status: draft
-generated: { by: claude-code/pre-commit, at: 2026-10-18T01:00:00Z }
+generated: { by: claude-code/pre-commit, at: 2026-10-17T22:00:00Z }
 sources:
   - id: runner
     resource: assayer/runner/runner.py
@@ -20,7 +20,7 @@ sources:
 
 # Overview
 
-`Runner(target, metrics, repetitions=1, pricing=None, field_metrics=None).run(dataset)` calls the target with each
+`Runner(target, metrics, repetitions=1, pricing=None, field_metrics=None, adapter=None).run(dataset)` calls the target with each
 `Case.input` and returns an `Experiment` (#26).[^runner] `target` is optional:
 `run` raises `ValueError` without one, and only `score` works without it.
 
@@ -47,6 +47,10 @@ without calling the target (#27).[^runner]
   result (`case_id`, Step ids) on a copy; the caller's object is untouched.
 * Metrics, Scores and `EvaluationFailure`s behave as in `run`. Two Experiments can
   then be diffed with [Comparison](comparison.md).
+
+# Exporting
+
+`Runner(adapter=...)` takes an [Adapter](adapters.md), and `Runner.export(experiment, include_content=True)` sends an Experiment (from `run` or `score`) through it and returns its `ExportReport`. Failures to export items are in the report, not raised; without an adapter `export` raises `ValueError`. Only `export` needs the adapter.
 
 # Loading
 

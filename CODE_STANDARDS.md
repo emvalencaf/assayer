@@ -24,7 +24,7 @@ These standards apply to everything committed here.
 
 The `assayer/` package is split by responsibility. Each subpackage owns one
 concern, and dependencies point from the outer layers inward:
-`runner` → `evaluators`, `metrics`, `registries`, `integrations` → `judges` → `models`.
+`runner` → `evaluators`, `metrics`, `registries`, `integrations`, `adapters` → `judges` → `models`.
 
 | Subpackage | Holds | Does not hold |
 |---|---|---|
@@ -35,6 +35,7 @@ concern, and dependencies point from the outer layers inward:
 | `registries/` | `Registry` (holds `Metric` objects) and the legacy `MetricRegistry` and `EvaluatorRegistry` | Built-in metric or evaluator definitions |
 | `runner/` | Pipelines (`EvaluationPipeline`, `HistoricalPipeline`, `ConsistencyPipeline`), `FieldRouter`, dataset loading, `Runner` (target → Experiment), the `field_map/` package (field metrics, Alignment of list Fields, Field scoring, the schema utility and YAML/JSON loading), token extraction, pricing, comparison | Metric math |
 | `alignment.py`, `path.py` (top level) | Alignment of list items and dotted-path `resolve`, pure helpers shared by `metrics/` and `runner/field_map/`; they import nothing else from `assayer` but each other | Metric or pipeline logic |
+| `adapters/` | The `Adapter` Protocol, `ExportReport`/`ExportFailure`, the closed failure taxonomy (`AdapterCallError`, `AdapterConfigError`), deterministic export ids, the retry policy, `plan_export`/`run_export` (what every Adapter shares) and `InMemoryAdapter` | Backend-specific clients (those come in their own module per backend) |
 | `integrations/` | Adapters for external services (`langsmith`) | Domain rules |
 
 Conventions:
