@@ -94,6 +94,27 @@ def _recall_at_k(outputs: list[Any], reference: Any) -> float:
     return float(str(reference) in {str(o) for o in outputs})
 
 
+def _scores_by_case(experiment: Experiment, of: str | None, caller: str) -> dict[str, list[float]]:
+    """The trajectory-level Scores of a metric, per Case; `of` defaults to the only one."""
+    scores = [s for s in experiment.scores if s.target == "trajectory"]
+    name = of
+    if name is None:
+        names = sorted({s.name for s in scores})
+        if len(names) != 1:
+            raise ValueError(
+                f"{caller} needs the metric to measure: {caller}(of=...); "
+                f"trajectory-level Scores so far: {names}"
+            )
+        name = names[0]
+    by_case: dict[str, list[float]] = {}
+    for score in scores:
+        if score.name == name:
+            by_case.setdefault(score.target_id, []).append(score.value)
+    if not by_case:
+        raise ValueError(f"no Scores of metric {name!r} to measure")
+    return by_case
+
+
 def make_score_std(of: str | None = None) -> Metric:
     """Create the metric for how much a metric's Scores vary across a Case's repetitions.
 
@@ -110,27 +131,56 @@ def make_score_std(of: str | None = None) -> Metric:
     """
 
     def score_std(experiment: Experiment, case=None) -> float:
-        scores = [s for s in experiment.scores if s.target == "trajectory"]
-        name = of
-        if name is None:
-            names = sorted({s.name for s in scores})
-            if len(names) != 1:
-                raise ValueError(
-                    "score_std needs the metric to measure: make_score_std(of=...); "
-                    f"trajectory-level Scores so far: {names}"
-                )
-            name = names[0]
-        by_case: dict[str, list[float]] = {}
-        for score in scores:
-            if score.name == name:
-                by_case.setdefault(score.target_id, []).append(score.value)
-        if not by_case:
-            raise ValueError(f"no Scores of metric {name!r} to take the spread of")
+        by_case = _scores_by_case(experiment, of, "score_std")
         return statistics.mean(
             statistics.stdev(values) if len(values) > 1 else 0.0 for values in by_case.values()
         )
 
     return Metric(name="score_std", level="experiment", fn=score_std)
+
+
+def make_pass_hat_k(
+    of: str | None = None, threshold: float = 0.5, name: str = "pass_hat_k"
+) -> Metric:
+    """Create the pass^k metric: the share of Cases a target solves in all k repetitions.
+
+    A repetition succeeds when its Score for metric `of` is at least `threshold`, and a
+    Case counts only when all its k repetitions do; the Score is the share of such
+    Cases. It is stricter than `pass_at_k`, which needs one repetition only. The metric
+    `of` must run before this one, and every repetition must have its Score: a Case
+    with a repetition whose metric failed makes this an evaluation failure, not a miss.
+
+    Args:
+        of: Name of the trajectory-level metric whose Scores decide success. Without
+            it, the only trajectory-level metric that scored the output is used.
+        threshold: Lowest Score that counts as a success. The default 0.5 is the
+            midpoint, so it splits a binary metric such as `goal_success` at 1 and
+            suits a normalised scale; raise it to be stricter.
+        name: Name of the metric; becomes the name of its Score.
+
+    Returns:
+        The Experiment-level Metric.
+
+    Raises:
+        ValueError: If threshold is outside [0, 1].
+    """
+    if not 0.0 <= threshold <= 1.0:
+        raise ValueError("threshold must be between 0 and 1")
+
+    def pass_hat_k(experiment: Experiment, case=None) -> float:
+        by_case = _scores_by_case(experiment, of, "make_pass_hat_k")
+        repetitions = Counter(t.case_id for t in experiment.trajectories)
+        for case_id, count in repetitions.items():
+            if len(by_case.get(case_id, [])) != count:
+                raise ValueError(
+                    f"Case {case_id!r} has {len(by_case.get(case_id, []))} Scores for "
+                    f"{count} repetitions: a repetition was not scored"
+                )
+        return statistics.mean(
+            all(value >= threshold for value in values) for values in by_case.values()
+        )
+
+    return Metric(name=name, level="experiment", fn=pass_hat_k)
 
 
 def register_consistency_metrics(registry) -> None:

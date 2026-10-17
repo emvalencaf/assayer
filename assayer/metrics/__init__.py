@@ -21,7 +21,11 @@ from assayer.metrics.classification import (
     make_recall,
     register_classification_metrics,
 )
-from assayer.metrics.consistency import make_score_std, register_consistency_metrics
+from assayer.metrics.consistency import (
+    make_pass_hat_k,
+    make_score_std,
+    register_consistency_metrics,
+)
 from assayer.metrics.corpus import corpus_metric, register_corpus_metrics
 from assayer.metrics.field import (
     exact_match,
@@ -30,12 +34,28 @@ from assayer.metrics.field import (
     numeric_tolerance,
     register_field_metrics,
 )
-from assayer.metrics.judge import CRITERIA_PROMPT, make_criteria_judge
+from assayer.metrics.judge import (
+    CLAIM_VERDICTS_PROMPT,
+    CLAIMS_PROMPT,
+    CRITERIA_PROMPT,
+    GOAL_SUCCESS_PROMPT,
+    make_criteria_judge,
+    make_faithfulness,
+    make_goal_success,
+)
 from assayer.metrics.metric import Detailed, Metric, MetricOutcome
 from assayer.metrics.ner import ner_macro_f1, register_ner_evaluators, register_ner_metrics
+from assayer.metrics.retrieval import (
+    make_context_precision,
+    make_context_recall,
+    register_retrieval_metrics,
+)
 
 __all__ = [
+    "CLAIMS_PROMPT",
+    "CLAIM_VERDICTS_PROMPT",
     "CRITERIA_PROMPT",
+    "GOAL_SUCCESS_PROMPT",
     "Detailed",
     "Metric",
     "MetricOutcome",
@@ -46,8 +66,13 @@ __all__ = [
     "end_state_match",
     "exact_match",
     "list_f1",
+    "make_context_precision",
+    "make_context_recall",
     "make_criteria_judge",
     "make_f1",
+    "make_faithfulness",
+    "make_goal_success",
+    "make_pass_hat_k",
     "make_precision",
     "make_recall",
     "make_score_std",
@@ -63,6 +88,7 @@ __all__ = [
     "register_field_metrics",
     "register_ner_evaluators",
     "register_ner_metrics",
+    "register_retrieval_metrics",
     "rouge_l",
     "step_efficiency",
     "tool_argument_match",

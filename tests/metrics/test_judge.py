@@ -3,7 +3,7 @@
 import pytest
 
 from assayer.judges import JudgeResponse, Prompt
-from assayer.metrics import make_criteria_judge
+from assayer.metrics import make_criteria_judge, make_faithfulness, make_goal_success
 from assayer.models import Case, Dataset, Step, TokenUsage, Trajectory
 from assayer.runner import Runner
 
@@ -257,3 +257,106 @@ class TestConstruction:
         assert experiment.scores == []
         assert "final_output" in experiment.failures[0].error
         assert judge.calls == []
+
+
+def _rag_target(answer="Paris is the capital."):
+    return lambda q: Trajectory(
+        steps=[Step(kind="retrieval", output=["Paris is the capital of France."])],
+        final_output=answer,
+    )
+
+
+class TestGoalSuccess:
+    def test_is_binary_and_reference_free_without_an_expected_outcome(self):
+        judge = FakeJudge('{"score": 1, "reason": "done"}')
+        metric = make_goal_success(judge)
+
+        experiment = Runner(lambda q: "4", [metric]).run(
+            Dataset("d", [Case(input="2+2?", id="c1")])
+        )
+
+        (score,) = experiment.scores
+        assert (score.name, score.value, score.comment) == ("goal_success", 1.0, "done")
+        assert (score.target, score.target_id) == ("trajectory", "c1")
+        assert score.metadata["reference"] is False
+        assert "Expected outcome" not in judge.calls[0][0][1]["content"]
+
+    def test_is_reference_based_with_an_expected_outcome(self):
+        judge = FakeJudge('{"score": 0, "reason": "not booked"}')
+        metric = make_goal_success(judge)
+        case = Case(input="book a flight", id="c1", expected_outcome="a flight is booked")
+
+        experiment = Runner(lambda q: "sorry", [metric]).run(Dataset("d", [case]))
+
+        (score,) = experiment.scores
+        assert score.value == 0.0
+        assert score.metadata["reference"] is True
+        assert "a flight is booked" in judge.calls[0][0][1]["content"]
+
+    def test_a_score_outside_the_binary_scale_is_retried_then_a_failure(self):
+        metric = make_goal_success(FakeJudge('{"score": 3, "reason": "x"}', "nope"))
+
+        experiment = Runner(lambda q: "4", [metric]).run(Dataset("d", [Case(input="q", id="c1")]))
+
+        assert experiment.scores == []
+        assert [f.metric for f in experiment.failures] == ["goal_success"]
+
+
+class TestFaithfulness:
+    CLAIMS = '{"claims": ["Paris is a city", "Paris is in Spain"]}'
+    VERDICTS = '{"verdicts": [{"supported": true, "reason": "stated"}, {"supported": false}]}'
+
+    def test_scores_supported_over_total_claims_with_two_judge_calls(self):
+        judge = FakeJudge(self.CLAIMS, self.VERDICTS, usage=TokenUsage(10, 5, None))
+        metric = make_faithfulness(judge)
+
+        experiment = Runner(_rag_target(), [metric]).run(
+            Dataset("d", [Case(input="Where is Paris?", id="c1")])
+        )
+
+        (score,) = experiment.scores
+        assert score.value == 0.5
+        assert score.metadata["supported_claims"] == 1
+        assert score.metadata["total_claims"] == 2
+        assert score.metadata["claims"][0] == {
+            "claim": "Paris is a city",
+            "supported": True,
+            "reason": "stated",
+        }
+        assert len(judge.calls) == 2 == experiment.judge_calls
+        assert experiment.judge_usage == TokenUsage(20, 10, None)
+        verdict_request = judge.calls[1][0][1]["content"]
+        assert "Paris is the capital of France." in verdict_request
+        assert "2. Paris is in Spain" in verdict_request
+
+    def test_each_reply_is_retried_once(self):
+        judge = FakeJudge("garbage", self.CLAIMS, '{"verdicts": []}', self.VERDICTS)
+
+        experiment = Runner(_rag_target(), [make_faithfulness(judge)]).run(
+            Dataset("d", [Case(input="q", id="c1")])
+        )
+
+        assert experiment.scores[0].value == 0.5
+        assert experiment.judge_calls == 4
+
+    def test_no_retrieved_context_is_a_failure_before_any_call(self):
+        judge = FakeJudge()
+        target = lambda q: Trajectory(final_output="an answer")
+
+        experiment = Runner(target, [make_faithfulness(judge)]).run(
+            Dataset("d", [Case(input="q", id="c1")])
+        )
+
+        assert experiment.scores == []
+        assert "retrieval" in experiment.failures[0].error
+        assert judge.calls == []
+
+    def test_an_answer_without_claims_is_a_failure_not_a_score(self):
+        judge = FakeJudge('{"claims": []}')
+
+        experiment = Runner(_rag_target(), [make_faithfulness(judge)]).run(
+            Dataset("d", [Case(input="q", id="c1")])
+        )
+
+        assert experiment.scores == []
+        assert "no claims" in experiment.failures[0].error
