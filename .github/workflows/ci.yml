@@ -36,12 +36,41 @@ jobs:
             uv run .agents/skills/validate/scripts/okf_validate.py .wiki --strict
           fi
 
+  changes:
+    name: Changed paths
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          # a PR that only touches docs and the wiki skips the (slow) test job
+          predicate-quantifier: every
+          filters: |
+            code:
+              - '**'
+              - '!**/*.md'
+              - '!docs/**'
+              - '!.wiki/**'
+
   tests:
     name: Tests
+    needs: changes
+    # a skipped job counts as passed for required status checks
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
+      - name: Cache Hugging Face models
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-${{ runner.os }}-v1
       - name: Pytest
         run: uv run --group dev pytest
 
