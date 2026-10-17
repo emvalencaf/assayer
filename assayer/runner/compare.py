@@ -7,9 +7,17 @@ The compare_experiments function can be used standalone, and this module
 also monkey-patches the ExperimentResult.compare method when imported.
 """
 
+from collections import defaultdict
+from statistics import fmean
 from typing import Any
 
-from assayer.models import ExperimentResult, RunResult
+from assayer.models import (
+    Comparison,
+    Experiment,
+    ExperimentResult,
+    PricingConfig,
+    RunResult,
+)
 
 
 def compare_experiments(
@@ -88,6 +96,59 @@ def compare_experiments(
             "cost_usd": cost_delta,
         },
     }
+
+
+def compare(
+    experiment_a: Experiment, experiment_b: Experiment, pricing: PricingConfig | None = None
+) -> Comparison:
+    """Report how the second Experiment differs from the first.
+
+    Args:
+        experiment_a: The baseline.
+        experiment_b: The Experiment compared with the baseline.
+        pricing: Token prices. Without it, the cost delta is None.
+
+    Returns:
+        The deltas (b minus a) per (metric, Field) and the mean token and cost
+        deltas per Case. Repetitions of a Case are averaged inside it first.
+    """
+    means_a = _mean_scores(experiment_a)
+    means_b = _mean_scores(experiment_b)
+    metric_deltas = {
+        key: means_b[key] - means_a[key] if key in means_a and key in means_b else None
+        for key in sorted(means_a.keys() | means_b.keys(), key=lambda k: (k[0], k[1] or ""))
+    }
+
+    usage_a = _mean_usage_per_case(experiment_a, pricing)
+    usage_b = _mean_usage_per_case(experiment_b, pricing)
+    deltas = [
+        b - a if a is not None and b is not None else None
+        for a, b in zip(usage_a, usage_b, strict=True)
+    ]
+    return Comparison(metric_deltas, *deltas)
+
+
+def _mean_scores(experiment: Experiment) -> dict[tuple[str, str | None], float]:
+    values: dict[tuple[str, str | None], list[float]] = defaultdict(list)
+    for score in experiment.scores:
+        values[(score.name, score.field)].append(score.value)
+    return {key: fmean(vals) for key, vals in values.items()}
+
+
+def _mean_usage_per_case(
+    experiment: Experiment, pricing: PricingConfig | None
+) -> tuple[float | None, float | None, float | None]:
+    per_case: dict[str | None, list] = defaultdict(list)
+    for trajectory in experiment.trajectories:
+        per_case[trajectory.case_id].append(trajectory.total_usage(pricing))
+    if not per_case:
+        return None, None, None
+    inputs = fmean(fmean(u.input_tokens for u in usages) for usages in per_case.values())
+    outputs = fmean(fmean(u.output_tokens for u in usages) for usages in per_case.values())
+    cost = None
+    if pricing is not None:
+        cost = fmean(fmean(u.cost_usd for u in usages) for usages in per_case.values())
+    return inputs, outputs, cost
 
 
 def _compare_method_impl(self: ExperimentResult, other: ExperimentResult) -> dict[str, Any]:

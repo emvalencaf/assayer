@@ -5,6 +5,7 @@ for carrying evaluation results, token usage data, and experiment-level aggregat
 """
 
 from assayer.models.case import Case
+from assayer.models.comparison import Comparison
 from assayer.models.consistency_field_evaluation import ConsistencyFieldEvaluation
 from assayer.models.consistency_report import ConsistencyReport
 from assayer.models.consistency_run_result import ConsistencyRunResult
@@ -23,6 +24,7 @@ from assayer.models.trajectory import Trajectory
 
 __all__ = [
     "Case",
+    "Comparison",
     "ConsistencyFieldEvaluation",
     "ConsistencyReport",
     "ConsistencyRunResult",

@@ -67,6 +67,7 @@ class TestModelsExports:
             "ConsistencyRunResult",
             "ConsistencyReport",
             "Case",
+            "Comparison",
             "Dataset",
             "EvaluationFailure",
             "Experiment",

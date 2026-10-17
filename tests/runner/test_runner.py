@@ -164,3 +164,48 @@ class TestLoading:
     def test_unknown_keys_are_rejected(self):
         with pytest.raises(ValueError, match="nope"):
             Runner(_echo, []).run([{"input": "a", "nope": 1}])
+
+
+class TestScoreCollectedOutputs:
+    def test_plain_outputs_are_scored_without_a_target(self):
+        dataset = Dataset(
+            "d",
+            [
+                Case(input="a", id="c1", expected_output="a"),
+                Case(input="b", id="c2", expected_output="x"),
+            ],
+        )
+
+        experiment = Runner(metrics=[EXACT]).score(dataset, ["a", "b"])
+
+        assert [(s.name, s.value, s.target_id) for s in experiment.scores] == [
+            ("exact", 1.0, "c1"),
+            ("exact", 0.0, "c2"),
+        ]
+        assert [t.final_output for t in experiment.trajectories] == ["a", "b"]
+        assert experiment.trajectories[0].steps[0].input == "a"
+
+    def test_collected_trajectories_are_kept_and_tagged(self):
+        collected = Trajectory(steps=[Step(kind="tool", name="t")], final_output="a")
+        dataset = Dataset("d", [Case(input="a", id="c1", expected_output="a")])
+
+        experiment = Runner(metrics=[EXACT]).score(dataset, [collected])
+
+        (trajectory,) = experiment.trajectories
+        assert trajectory.case_id == "c1"
+        assert trajectory.steps[0].id == "c1/0/0"
+        assert collected.case_id is None  # the caller's object is untouched
+        assert experiment.scores[0].value == 1.0
+
+    def test_loads_a_list_source_like_run(self):
+        experiment = Runner(metrics=[EXACT]).score([{"input": "a", "expected_output": "a"}], ["a"])
+
+        assert experiment.scores[0].value == 1.0
+
+    def test_one_output_per_case(self):
+        with pytest.raises(ValueError, match="outputs"):
+            Runner(metrics=[EXACT]).score(Dataset("d", [Case(input="a")]), [])
+
+    def test_run_needs_a_target(self):
+        with pytest.raises(ValueError, match="target"):
+            Runner(metrics=[]).run(Dataset("d", []))
