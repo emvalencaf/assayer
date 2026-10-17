@@ -30,6 +30,19 @@ Workflow:
 Branch names use the same `tag` list as commits, lowercase, words separated by
 `-`.
 
+## Releasing
+
+Releases are published to PyPI as `llm-assayer-eval` by `.github/workflows/publish.yml`, through
+trusted publishing (no token is stored). Set that up once with `scripts/setup-pypi-publishing.sh`.
+
+1. On `development`, set `version` in `pyproject.toml` and move `Unreleased` in
+   [CHANGELOG.md](CHANGELOG.md) under the new version.
+2. Open a PR from `development` into `master` and merge it.
+3. `git switch master && git pull`, then `git tag vX.Y.Z && git push origin vX.Y.Z`.
+   The workflow refuses a tag that differs from the `pyproject.toml` version.
+
+A PyPI release cannot be overwritten, only yanked, so the tag is the point of no return.
+
 ## Commit convention
 
 Commits are **always written in English**.

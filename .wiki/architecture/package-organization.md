@@ -22,6 +22,12 @@ sources:
   - id: license
     resource: LICENSE
     title: MIT license text
+  - id: publish
+    resource: .github/workflows/publish.yml
+    title: Tag-triggered PyPI publishing workflow
+  - id: releasing
+    resource: CONTRIBUTING.md
+    title: Releasing section
 ---
 
 # Overview
@@ -48,6 +54,8 @@ build on `judges` and `models`.
 
 * The package is MIT licensed: the `LICENSE` file at the repository root (Edson Mota Valença Filho, 2026) is declared in `pyproject.toml` with `license = "MIT"` and `license-files = ["LICENSE"]`.[^license]
 
+* Releases go to PyPI as `llm-assayer-eval` through `.github/workflows/publish.yml`, which runs when a `v*` tag is pushed. A build job refuses a tag that differs from the `pyproject.toml` version, then runs `uv build`; a publish job in the `pypi` environment uploads with trusted publishing (no stored token). `scripts/setup-pypi-publishing.sh` is the wizard for the one-time PyPI pending publisher and GitHub environment. A PyPI release can only be yanked, never overwritten, so the tag is the point of no return.[^publish]
+
 * One concept per module; each subpackage re-exports its public API in `__init__.py` with `__all__`.
 * Registration is explicit through `register_<task>_metrics(registry)`; importing never registers.
 * New metrics are added, not edited into core files.
@@ -56,3 +64,4 @@ build on `judges` and `models`.
 The full rules live in the **Package organization** section of `CODE_STANDARDS.md`.
 
 [^license]: The `LICENSE` file at the repository root.
+[^publish]: `.github/workflows/publish.yml` and the "Releasing" section of `CONTRIBUTING.md`.

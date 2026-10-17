@@ -1,6 +1,7 @@
 # Update Log
 
 ## 2026-10-17
+* **Update**: [Package organization](architecture/package-organization.md) records the tag-triggered PyPI publishing workflow (trusted publishing, tag must match the `pyproject.toml` version), the `scripts/setup-pypi-publishing.sh` wizard and the 0.1.0 release steps.
 * **Update**: `scripts/check_core_only.py` now asserts that the missing-extra `ImportError` names `llm-assayer-eval[<extra>]`; [Package organization](architecture/package-organization.md) already described this, so no concept text changed.
 * **Addition**: Documented the [example scripts and live evaluation](architecture/examples-and-live-evaluation.md): six new offline examples, and that Assayer has no built-in live mode (score logged traffic in batches with `Runner.score`); listed in the [architecture index](architecture/index.md) and linked from [Runner](architecture/runner.md).
 * **Update**: [Package organization](architecture/package-organization.md) and [Per-Field measurement](architecture/field-measurement.md) record the rename of the distribution to `llm-assayer-eval` (import name unchanged); missing-extra errors and install hints now name `llm-assayer-eval[<extra>]`.
