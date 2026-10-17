@@ -25,11 +25,14 @@ sources:
 trajectory-level metrics:
 
 ```python
-Runner(target, field_metrics={
-    "label": [exact],
-    "address.city": [exact, (within, {"tolerance": 1})],
-    "meta.tags.0": [exact],
-})
+Runner(
+    target,
+    field_metrics={
+        "label": [exact],
+        "address.city": [exact, (within, {"tolerance": 1})],
+        "meta.tags.0": [exact],
+    },
+)
 ```
 
 * A path walks nested dictionaries; a numeric segment indexes a list (`meta.tags.0`). Only ASCII digits count as an index: a segment such as `²` is not one, so it resolves to a missing Field and fails as an `EvaluationFailure` instead of aborting the run.[^field-map]
