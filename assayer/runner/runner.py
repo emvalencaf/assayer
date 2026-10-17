@@ -5,6 +5,7 @@ import dataclasses
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from typing import Any
 
+from assayer.adapters import Adapter, ExportReport
 from assayer.metrics import Metric, MetricOutcome
 from assayer.models import (
     Case,
@@ -46,6 +47,7 @@ class Runner:
             its own Trajectory.
         pricing: Prices of the target's model, kept on the Experiment so its cost
             can be compared. Not applied to the Judge.
+        adapter: Where `export` sends an Experiment. Only `export` needs it.
 
     Raises:
         ValueError: If repetitions is less than 1, or a field path or metric in
@@ -61,6 +63,7 @@ class Runner:
         repetitions: int = 1,
         pricing: PricingConfig | None = None,
         field_metrics: Mapping[str, Sequence[Any]] | None = None,
+        adapter: Adapter | None = None,
     ) -> None:
         if repetitions < 1:
             raise ValueError("repetitions must be at least 1")
@@ -68,6 +71,7 @@ class Runner:
         self.metrics = list(metrics)
         self.repetitions = repetitions
         self.pricing = pricing
+        self.adapter = adapter
         self._field_pairs = build_field_map(field_metrics)
 
     def run(self, dataset: Dataset | list[dict] | str) -> Experiment:
@@ -138,6 +142,23 @@ class Runner:
 
         self._apply_all(experiment, pairs)
         return experiment
+
+    def export(self, experiment: Experiment, *, include_content: bool = True) -> ExportReport:
+        """Export an Experiment through the Runner's Adapter.
+
+        Args:
+            experiment: What `run` or `score` returned.
+            include_content: When False, only structure, Scores and metadata are exported.
+
+        Returns:
+            The Adapter's report. Failures to export items are in it, not raised.
+
+        Raises:
+            ValueError: If the Runner has no adapter.
+        """
+        if self.adapter is None:
+            raise ValueError("export needs an adapter")
+        return self.adapter.export(experiment, include_content=include_content)
 
     def _all_metrics(self) -> list[Metric]:
         return [*self.metrics, *metrics_of(self._field_pairs)]
