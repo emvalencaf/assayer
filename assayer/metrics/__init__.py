@@ -1,6 +1,12 @@
 """Metric implementations for evaluating model outputs."""
 
-from assayer.metrics.agent import register_agent_metrics, step_efficiency
+from assayer.metrics.agent import (
+    end_state_match,
+    register_agent_metrics,
+    step_efficiency,
+    tool_argument_match,
+    tool_correctness,
+)
 from assayer.metrics.chat import (
     bert_score,
     bleu,
@@ -24,16 +30,18 @@ from assayer.metrics.field import (
     numeric_tolerance,
     register_field_metrics,
 )
-from assayer.metrics.metric import Metric, MetricOutcome
+from assayer.metrics.metric import Detailed, Metric, MetricOutcome
 from assayer.metrics.ner import ner_macro_f1, register_ner_evaluators, register_ner_metrics
 
 __all__ = [
+    "Detailed",
     "Metric",
     "MetricOutcome",
     "accuracy",
     "bert_score",
     "bleu",
     "corpus_metric",
+    "end_state_match",
     "exact_match",
     "list_f1",
     "make_f1",
@@ -54,4 +62,6 @@ __all__ = [
     "register_ner_metrics",
     "rouge_l",
     "step_efficiency",
+    "tool_argument_match",
+    "tool_correctness",
 ]

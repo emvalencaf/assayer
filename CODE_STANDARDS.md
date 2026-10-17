@@ -33,6 +33,7 @@ concern, and dependencies point from the outer layers inward:
 | `metrics/` | The `Metric` contract (`level`, `requires`, `kind`) and built-in metrics, grouped by task (`agent`, `chat`, `classification`, `ner`, `consistency`, `field` for the Field comparisons; `corpus` lifts the chat, classification and NER functions to Experiment level); legacy ones are pure functions `(predictions, references) -> float` | State, network calls |
 | `registries/` | `Registry` (holds `Metric` objects) and the legacy `MetricRegistry` and `EvaluatorRegistry` | Built-in metric or evaluator definitions |
 | `runner/` | Pipelines (`EvaluationPipeline`, `HistoricalPipeline`, `ConsistencyPipeline`), `FieldRouter`, dataset loading, `Runner` (target → Experiment), the `field_map/` package (field metrics, Alignment of list Fields, Field scoring, the schema utility and YAML/JSON loading), token extraction, pricing, comparison | Metric math |
+| `alignment.py`, `path.py` (top level) | Alignment of list items and dotted-path `resolve`, pure helpers shared by `metrics/` and `runner/field_map/`; they import nothing else from `assayer` but each other | Metric or pipeline logic |
 | `integrations/` | Adapters for external services (`langsmith`) | Domain rules |
 
 Conventions:

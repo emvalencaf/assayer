@@ -4,7 +4,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from assayer.runner.field_map.path import resolve
+from assayer.path import resolve
 
 
 @dataclass
