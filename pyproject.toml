@@ -4,15 +4,32 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "llm-assayer-eval"
-version = "0.1.0"
+version = "0.1.1"
 description = "Evaluate and observe LLM-powered applications with deterministic metrics and LLM-as-Judge."
+readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
 license-files = ["LICENSE"]
+authors = [{ name = "Edson Mota Valença Filho" }]
+keywords = ["llm", "evaluation", "llm-as-judge", "agents", "ner", "rag", "langsmith", "langfuse"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Software Development :: Testing",
+    "Typing :: Typed",
+]
 dependencies = [
     "numpy",
     "scikit-learn",
 ]
+
+[project.urls]
+Homepage = "https://github.com/emvalencaf/assayer"
+Repository = "https://github.com/emvalencaf/assayer"
+Issues = "https://github.com/emvalencaf/assayer/issues"
+Changelog = "https://github.com/emvalencaf/assayer/blob/master/CHANGELOG.md"
 
 [project.optional-dependencies]
 semantic = ["bert-score", "sentence-transformers", "torch", "transformers"]

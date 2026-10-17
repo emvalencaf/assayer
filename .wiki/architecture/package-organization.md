@@ -28,6 +28,9 @@ sources:
   - id: releasing
     resource: CONTRIBUTING.md
     title: Releasing section
+  - id: metadata
+    resource: pyproject.toml
+    title: Project metadata for the PyPI page (0.1.1)
 ---
 
 # Overview
@@ -56,6 +59,8 @@ build on `judges` and `models`.
 
 * Releases go to PyPI as `llm-assayer-eval` through `.github/workflows/publish.yml`, which runs when a `v*` tag is pushed. A build job refuses a tag that differs from the `pyproject.toml` version, then runs `uv build`; a publish job in the `pypi` environment uploads with trusted publishing (no stored token). `scripts/setup-pypi-publishing.sh` is the wizard for the one-time PyPI pending publisher and GitHub environment. A PyPI release can only be yanked, never overwritten, so the tag is the point of no return.[^publish]
 
+* 0.1.0 shipped without a `readme`, so its PyPI page had no description; it cannot be edited, so the fix is the 0.1.1 release. `pyproject.toml` now sets `readme = "README.md"`, `authors`, `keywords`, `classifiers` and `[project.urls]` (Homepage, Repository, Issues, Changelog). PyPI renders the README outside the repository, so it links to files by absolute `https://github.com/emvalencaf/assayer/blob/master/...` URLs rather than relative paths, and its Installation section starts with `pip install llm-assayer-eval`.[^metadata]
+
 * One concept per module; each subpackage re-exports its public API in `__init__.py` with `__all__`.
 * Registration is explicit through `register_<task>_metrics(registry)`; importing never registers.
 * New metrics are added, not edited into core files.
@@ -65,3 +70,4 @@ The full rules live in the **Package organization** section of `CODE_STANDARDS.m
 
 [^license]: The `LICENSE` file at the repository root.
 [^publish]: `.github/workflows/publish.yml` and the "Releasing" section of `CONTRIBUTING.md`.
+[^metadata]: `pyproject.toml` (`[project]` and `[project.urls]`), `README.md` and the 0.1.1 entry of `CHANGELOG.md`.
