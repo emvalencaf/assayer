@@ -30,10 +30,12 @@ from assayer.metrics.field import (
     numeric_tolerance,
     register_field_metrics,
 )
+from assayer.metrics.judge import CRITERIA_PROMPT, make_criteria_judge
 from assayer.metrics.metric import Detailed, Metric, MetricOutcome
 from assayer.metrics.ner import ner_macro_f1, register_ner_evaluators, register_ner_metrics
 
 __all__ = [
+    "CRITERIA_PROMPT",
     "Detailed",
     "Metric",
     "MetricOutcome",
@@ -44,6 +46,7 @@ __all__ = [
     "end_state_match",
     "exact_match",
     "list_f1",
+    "make_criteria_judge",
     "make_f1",
     "make_precision",
     "make_recall",

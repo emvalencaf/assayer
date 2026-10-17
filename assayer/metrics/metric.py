@@ -9,7 +9,17 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field, fields
 from typing import Any, Literal, get_args
 
-from assayer.models import Case, EvaluationFailure, Experiment, Score, Step, Trajectory
+from assayer.judges import track_judge
+from assayer.models import (
+    Case,
+    EvaluationFailure,
+    Experiment,
+    Score,
+    Step,
+    TokenUsage,
+    Trajectory,
+    add_usage,
+)
 
 MetricLevel = Literal["step", "trajectory", "experiment"]
 METRIC_LEVELS = get_args(MetricLevel)
@@ -28,10 +38,14 @@ class Detailed:
         value: The number in [0, 1] (or boolean) that is the metric's own Score.
         details: Further Scores, such as one per leaf of a state or per tool call;
             emitted after the metric's own Score, which is the mean of them.
+        comment: Explanation recorded on the metric's own Score, such as a Judge's reason.
+        metadata: Extra data recorded on the metric's own Score.
     """
 
     value: float | bool
     details: list[Score] = field(default_factory=list)
+    comment: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -41,10 +55,24 @@ class MetricOutcome:
     Args:
         scores: The Scores computed; empty when the metric could not be computed.
         failures: Evaluation failures; empty when a Score was computed.
+        judge_usage: Tokens the Judge consumed, failed attempts included; None when
+            it reported none.
+        judge_calls: How many Judge calls were made.
     """
 
     scores: list[Score] = field(default_factory=list)
     failures: list[EvaluationFailure] = field(default_factory=list)
+    judge_usage: TokenUsage | None = None
+    judge_calls: int = 0
+
+    def add_judge(self, other: "MetricOutcome") -> None:
+        """Add the Judge calls and tokens of another outcome to this one.
+
+        Args:
+            other: The outcome whose Judge accounting is added.
+        """
+        self.judge_calls += other.judge_calls
+        self.judge_usage = add_usage(self.judge_usage, other.judge_usage)
 
 
 @dataclass
@@ -122,6 +150,19 @@ class Metric:
             required input is missing or the metric raised. Never raises and never scores a
             missing input as 0.
         """
+        with track_judge() as ledger:
+            outcome = self._apply(subject, case, field, params)
+        outcome.judge_calls = ledger.calls
+        outcome.judge_usage = ledger.usage
+        return outcome
+
+    def _apply(
+        self,
+        subject: Any,
+        case: Case | None,
+        field: str | None,
+        params: Mapping[str, Any] | None,
+    ) -> MetricOutcome:
         target_id = None
         try:
             target_id = self._target_id(subject)
@@ -134,19 +175,21 @@ class Metric:
             result = self.fn(subject, case, **(params or {}))
             if result is None:
                 return MetricOutcome()
-            details = result.details if isinstance(result, Detailed) else []
+            detailed = result if isinstance(result, Detailed) else Detailed(value=result)
             score = Score(
                 name=self.name,
-                value=result.value if isinstance(result, Detailed) else result,
+                value=detailed.value,
                 field=field,
                 target=self.level,
                 target_id=target_id,
+                comment=detailed.comment,
+                metadata=detailed.metadata,
             )
         except Exception as exc:
             return MetricOutcome(
                 failures=[EvaluationFailure(self.name, str(exc), target_id, field)]
             )
-        return MetricOutcome(scores=[score, *details])
+        return MetricOutcome(scores=[score, *detailed.details])
 
     def _target_id(self, subject: Any) -> str | None:
         if self.level == "step":

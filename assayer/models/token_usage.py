@@ -55,3 +55,18 @@ class TokenUsage:
             output_tokens=self.output_tokens + other.output_tokens,
             cost_usd=cost,
         )
+
+
+def add_usage(a: TokenUsage | None, b: TokenUsage | None) -> TokenUsage | None:
+    """Add two optional usages, where None means "none reported".
+
+    Args:
+        a: A usage, or None.
+        b: A usage, or None.
+
+    Returns:
+        The sum, the one that is not None, or None when both are.
+    """
+    if a is None or b is None:
+        return a if b is None else b
+    return a + b
