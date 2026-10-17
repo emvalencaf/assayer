@@ -5,7 +5,7 @@ description: The Trajectory, Step, Score, Experiment, EvaluationFailure, Dataset
 resource: assayer/models/__init__.py
 tags: [architecture, models, domain]
 status: draft
-generated: { by: claude-code/pre-commit, at: 2026-10-17T12:00:00Z }
+generated: { by: claude-code/pre-commit, at: 2026-10-17T18:00:00Z }
 sources:
   - id: models-init
     resource: assayer/models/__init__.py
@@ -36,7 +36,7 @@ terms in `GLOSSARY.md` (#24).[^glossary]
 | `EvaluationFailure` | A metric that could not be computed, kept as data (`metric`, `error`, `target_id`) instead of raised. |
 | `Dataset` | A named list of Cases. |
 | `Case` | One input with optional references (`expected_output`, `expected_tool_calls`, `expected_steps`, `expected_outcome`, `expected_state`, `reference_contexts`, `reference_context_ids`). |
-| `PricingConfig` | Per-token input and output prices. Moved here from `assayer.runner.pricing`, which re-exports it. |
+| `PricingConfig` | Per-token input and output prices, with `cost(input_tokens, output_tokens)` to price a token count. Moved here from `assayer.runner.pricing`, which re-exports it. |
 
 # Validation rules
 
@@ -48,8 +48,9 @@ terms in `GLOSSARY.md` (#24).[^glossary]
 
 # Usage and cost
 
-* `Trajectory.total_usage(pricing=None)` sums the usage of its model Steps only. `cost_usd` is None unless a `PricingConfig` is given, then it is derived from the token counts.[^trajectory]
+* `Trajectory.total_usage(pricing=None)` sums the usage of its model Steps only. `cost_usd` is None unless a `PricingConfig` is given, then it is derived from the token counts with `PricingConfig.cost`.[^trajectory]
 * `Experiment.total_usage(pricing=None)` sums the Trajectory totals and excludes `judge_usage`, which is kept apart from the target's totals.[^experiment]
+* `Experiment.total_judge_usage(pricing=None)` prices the Judge bucket: it returns None when `judge_usage` is None, otherwise a `TokenUsage` with the same tokens and a `cost_usd` computed from the Judge model's `PricingConfig` (None without it).[^experiment]
 * `TokenUsage` supports `+`: tokens are summed, and `cost_usd` is None unless both operands have a known cost. `Experiment.total_usage` folds the Trajectory totals with it.
 
 [^glossary]: Domain language

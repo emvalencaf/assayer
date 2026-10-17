@@ -40,8 +40,5 @@ class Trajectory:
         output_tokens = sum(usage.output_tokens for usage in usages)
         cost = None
         if pricing is not None:
-            cost = (
-                input_tokens * pricing.cost_per_input_token
-                + output_tokens * pricing.cost_per_output_token
-            )
+            cost = pricing.cost(input_tokens, output_tokens)
         return TokenUsage(input_tokens=input_tokens, output_tokens=output_tokens, cost_usd=cost)

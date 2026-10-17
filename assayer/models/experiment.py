@@ -50,3 +50,22 @@ class Experiment:
         for trajectory in self.trajectories:
             total = total + trajectory.total_usage(pricing)
         return total
+
+    def total_judge_usage(self, pricing: PricingConfig | None = None) -> TokenUsage | None:
+        """Return the Judge's token usage, priced when prices are given.
+
+        Args:
+            pricing: Prices of the Judge model. Without it, `cost_usd` of the
+                result is None.
+
+        Returns:
+            The Judge usage, or None when no Judge was used.
+        """
+        if self.judge_usage is None:
+            return None
+
+        usage = self.judge_usage
+        cost = None
+        if pricing is not None:
+            cost = pricing.cost(usage.input_tokens, usage.output_tokens)
+        return TokenUsage(usage.input_tokens, usage.output_tokens, cost)

@@ -15,3 +15,15 @@ class PricingConfig:
 
     cost_per_input_token: float
     cost_per_output_token: float
+
+    def cost(self, input_tokens: int, output_tokens: int) -> float:
+        """Price a number of input and output tokens.
+
+        Args:
+            input_tokens: Number of input tokens.
+            output_tokens: Number of output tokens.
+
+        Returns:
+            The cost in the pricing unit.
+        """
+        return input_tokens * self.cost_per_input_token + output_tokens * self.cost_per_output_token

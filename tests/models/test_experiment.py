@@ -60,3 +60,14 @@ class TestExperiment:
 
         assert experiment.scores[0].value == 0.5
         assert experiment.failures[0].error == "boom"
+
+    def test_judge_usage_is_priced_when_prices_given(self):
+        judge = TokenUsage(input_tokens=100, output_tokens=50, cost_usd=None)
+        experiment = Experiment(name="e", judge_usage=judge)
+        pricing = PricingConfig(cost_per_input_token=0.01, cost_per_output_token=0.1)
+
+        assert experiment.total_judge_usage(pricing).cost_usd == pytest.approx(6.0)
+        assert experiment.total_judge_usage().cost_usd is None
+
+    def test_no_judge_usage_gives_none(self):
+        assert Experiment(name="e").total_judge_usage() is None
