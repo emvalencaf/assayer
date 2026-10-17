@@ -40,6 +40,10 @@ _Avoid_: Example, item, sample
 The Trajectories and Scores produced by running one target over a Dataset, with each repetition of a Case kept as its own Trajectory.
 _Avoid_: Run, evaluation run
 
+**Metric**:
+A named way of computing Scores for a Step, a Trajectory or an Experiment, declaring the inputs it requires and whether it is deterministic or uses a Judge.
+_Avoid_: Evaluator, scorer
+
 **Evaluation failure**:
 A metric that could not be computed for a Step or Trajectory, kept as data in the Experiment instead of aborting it.
 _Avoid_: Exception, crash

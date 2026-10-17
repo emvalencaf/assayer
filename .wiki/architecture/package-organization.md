@@ -5,7 +5,7 @@ description: How the assayer package is split by responsibility, and the convent
 resource: CODE_STANDARDS.md
 tags: [architecture, conventions]
 status: stable
-generated: { by: claude-code/pre-commit, at: 2026-10-17T00:00:00Z }
+generated: { by: claude-code/pre-commit, at: 2026-10-17T20:00:00Z }
 sources:
   - id: standards
     resource: CODE_STANDARDS.md
@@ -25,8 +25,8 @@ build on `models`.
 |---|---|
 | `models/` | Dataclasses that carry results (`TokenUsage`, `RunResult`, `ExperimentResult`, `Consistency*`) and the vendor-neutral [domain models](domain-models.md) (`Trajectory`, `Step`, `Score`, `Experiment`, `Dataset`, `Case`, `PricingConfig`). |
 | `evaluators/` | `BaseEvaluator` and its implementations (NER, hallucination, consistency). |
-| `metrics/` | Pure `(predictions, references) -> float` functions, one module per task. |
-| `registries/` | `MetricRegistry` and `EvaluatorRegistry`, instantiable, no global state. |
+| `metrics/` | The [`Metric` contract](../metrics/metric-contract.md) (`level`, `requires`, `kind`) and built-in metrics, one module per task (`agent`, `chat`, `classification`, `ner`); legacy ones are pure `(predictions, references) -> float` functions. |
+| `registries/` | `Registry` (holds `Metric` objects) and the legacy `MetricRegistry` and `EvaluatorRegistry`, instantiable, no global state. |
 | `runner/` | Evaluation, historical and consistency pipelines, field routing, pricing. |
 | `integrations/` | Adapters for external services (LangSmith). |
 
