@@ -46,10 +46,7 @@ class Experiment:
         Returns:
             The summed usage, with cost only when pricing is given.
         """
-        usages = [trajectory.total_usage(pricing) for trajectory in self.trajectories]
-        cost = sum(usage.cost_usd or 0.0 for usage in usages) if pricing is not None else None
-        return TokenUsage(
-            input_tokens=sum(usage.input_tokens for usage in usages),
-            output_tokens=sum(usage.output_tokens for usage in usages),
-            cost_usd=cost,
-        )
+        total = TokenUsage(input_tokens=0, output_tokens=0, cost_usd=0.0 if pricing else None)
+        for trajectory in self.trajectories:
+            total = total + trajectory.total_usage(pricing)
+        return total

@@ -5,7 +5,7 @@ description: The Trajectory, Step, Score, Experiment, EvaluationFailure, Dataset
 resource: assayer/models/__init__.py
 tags: [architecture, models, domain]
 status: draft
-generated: { by: claude-code/pre-commit, at: 2026-10-17T00:00:00Z }
+generated: { by: claude-code/pre-commit, at: 2026-10-17T12:00:00Z }
 sources:
   - id: models-init
     resource: assayer/models/__init__.py
@@ -31,7 +31,7 @@ terms in `GLOSSARY.md` (#24).[^glossary]
 |---|---|
 | `Trajectory` | Ordered record of what an agent did for one input: `steps`, `session_id`, `final_output`, `final_state`, `case_id`, `repetition` (default 0). May be empty. |
 | `Step` | One unit of work in a Trajectory, with `kind` (`model`, `tool`, `retrieval` or `other`), `id`, `parent_id`, `name`, `model`, `input`, `output`, `error`, `usage`. |
-| `Score` | One named result in [0, 1] of a metric, with optional `field`, `label`, `comment`, `metadata`, `target` and `target_id`. |
+| `Score` | One named result in [0, 1] of a metric, with optional `field`, `label`, `comment`, `metadata`, `target` (`ScoreTarget`) and `target_id`. |
 | `Experiment` | Trajectories, Scores and failures from running one target over a Dataset, plus `judge_usage`. |
 | `EvaluationFailure` | A metric that could not be computed, kept as data (`metric`, `error`, `target_id`) instead of raised. |
 | `Dataset` | A named list of Cases. |
@@ -41,13 +41,16 @@ terms in `GLOSSARY.md` (#24).[^glossary]
 # Validation rules
 
 * `Step` raises `ValueError` for an unknown `kind`, or for `usage` on a non-model Step. A Step `error` is data and never invalidates the Trajectory.
-* `Score` converts `value` with `float()` (so booleans become 0.0 or 1.0), raises `ValueError` outside [0, 1], and only accepts `target` of `step`, `trajectory` or `experiment` (default `trajectory`).
+* `Step.kind` is typed as `StepKind`, a `Literal` of the four kinds.
+* `Score` raises `ValueError` for a non-numeric `value` (for example `None` or a string), converts numbers with `float()` (so booleans become 0.0 or 1.0), and raises `ValueError` outside [0, 1].
+* `Score` only accepts `target` of `step`, `trajectory` or `experiment` (default `trajectory`), typed as `ScoreTarget`. A `step` target requires `target_id`, otherwise `ValueError`.
 * `Experiment` raises `ValueError` for an empty or whitespace-only `name`.
 
 # Usage and cost
 
 * `Trajectory.total_usage(pricing=None)` sums the usage of its model Steps only. `cost_usd` is None unless a `PricingConfig` is given, then it is derived from the token counts.[^trajectory]
 * `Experiment.total_usage(pricing=None)` sums the Trajectory totals and excludes `judge_usage`, which is kept apart from the target's totals.[^experiment]
+* `TokenUsage` supports `+`: tokens are summed, and `cost_usd` is None unless both operands have a known cost. `Experiment.total_usage` folds the Trajectory totals with it.
 
 [^glossary]: Domain language
 [^trajectory]: Trajectory model

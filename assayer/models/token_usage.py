@@ -36,3 +36,22 @@ class TokenUsage:
 
         if self.cost_usd is not None and self.cost_usd < 0:
             raise ValueError("cost_usd must be non-negative when provided")
+
+    def __add__(self, other: "TokenUsage") -> "TokenUsage":
+        """Sum two usages; the cost is None unless both costs are known.
+
+        Args:
+            other: The usage to add.
+
+        Returns:
+            A new TokenUsage with the summed tokens and cost.
+        """
+        cost = None
+        if self.cost_usd is not None and other.cost_usd is not None:
+            cost = self.cost_usd + other.cost_usd
+
+        return TokenUsage(
+            input_tokens=self.input_tokens + other.input_tokens,
+            output_tokens=self.output_tokens + other.output_tokens,
+            cost_usd=cost,
+        )

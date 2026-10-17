@@ -40,3 +40,12 @@ class TestScore:
     def test_unknown_target_is_rejected(self):
         with pytest.raises(ValueError):
             Score(name="m", value=1, target="span")
+
+    def test_step_target_requires_target_id(self):
+        with pytest.raises(ValueError):
+            Score(name="m", value=1, target="step")
+
+    @pytest.mark.parametrize("value", [None, "0.5"])
+    def test_non_numeric_value_is_rejected_with_value_error(self, value):
+        with pytest.raises(ValueError):
+            Score(name="m", value=value)

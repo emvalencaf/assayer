@@ -9,7 +9,7 @@ The ordered record of what an agent did for one input: its Steps, up to the fina
 _Avoid_: Trace, run log
 
 **Step**:
-One unit of work inside a Trajectory: a model call, a tool call or a retrieval.
+One unit of work inside a Trajectory: a model call, a tool call, a retrieval or any other kind of work.
 _Avoid_: Span, observation, run
 
 **Score**:
@@ -39,6 +39,10 @@ _Avoid_: Example, item, sample
 **Experiment**:
 The Trajectories and Scores produced by running one target over a Dataset, with each repetition of a Case kept as its own Trajectory.
 _Avoid_: Run, evaluation run
+
+**Evaluation failure**:
+A metric that could not be computed for a Step or Trajectory, kept as data in the Experiment instead of aborting it.
+_Avoid_: Exception, crash
 
 **Adapter**:
 The vendor-neutral boundary through which Assayer exchanges results with an observability backend such as Langfuse or LangSmith.

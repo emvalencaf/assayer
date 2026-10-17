@@ -76,3 +76,15 @@ class TestTokenUsage:
         assert token_usage.input_tokens == 1
         assert token_usage.output_tokens == 1
         assert token_usage.cost_usd == 0.0001
+
+
+class TestTokenUsageAddition:
+    """Test cases for summing TokenUsage values."""
+
+    def test_tokens_are_summed_and_cost_kept_when_both_known(self):
+        total = TokenUsage(1, 2, 0.5) + TokenUsage(3, 4, 0.25)
+
+        assert (total.input_tokens, total.output_tokens, total.cost_usd) == (4, 6, 0.75)
+
+    def test_cost_is_none_when_either_cost_is_unknown(self):
+        assert (TokenUsage(1, 2, 0.5) + TokenUsage(3, 4, None)).cost_usd is None

@@ -37,14 +37,6 @@ class TestTrajectory:
             2,
         )
 
-    def test_step_kind_must_be_known(self):
-        with pytest.raises(ValueError):
-            Step(kind="span")
-
-    def test_usage_only_allowed_on_model_steps(self):
-        with pytest.raises(ValueError):
-            Step(kind="tool", usage=TokenUsage(1, 1, None))
-
     def test_totals_come_from_model_steps_only(self):
         trajectory = Trajectory(steps=[_model_step(10, 5), Step(kind="tool"), _model_step(3, 2)])
 

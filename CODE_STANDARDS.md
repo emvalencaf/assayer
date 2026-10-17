@@ -28,7 +28,7 @@ concern, and dependencies point from the outer layers inward:
 
 | Subpackage | Holds | Does not hold |
 |---|---|---|
-| `models/` | Plain data structures (`@dataclass`) that carry results: `TokenUsage`, `FieldEvaluation`, `RunResult`, `ExperimentResult` and the `Consistency*` family | Logic that calls evaluators, I/O or external services |
+| `models/` | Plain data structures (`@dataclass`) that carry results: `TokenUsage`, `PricingConfig`, `FieldEvaluation`, `RunResult`, `ExperimentResult`, the `Consistency*` family and the vendor-neutral `Trajectory`, `Step`, `Score`, `Experiment`, `EvaluationFailure`, `Dataset` and `Case` | Logic that calls evaluators, I/O or external services |
 | `evaluators/` | `BaseEvaluator` (ABC) and its implementations (`ner`, `hallucination`, `consistency`) | Aggregation across a dataset |
 | `metrics/` | Pure functions `(predictions, references) -> float`, grouped by task (`chat`, `classification`, `ner`) | State, network calls |
 | `registries/` | `MetricRegistry` and `EvaluatorRegistry` | Built-in metric or evaluator definitions |

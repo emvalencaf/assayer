@@ -1,8 +1,9 @@
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 
 from assayer.models.token_usage import TokenUsage
 
+StepKind = Literal["model", "tool", "retrieval", "other"]
 STEP_KINDS = ("model", "tool", "retrieval", "other")
 
 
@@ -25,7 +26,7 @@ class Step:
         ValueError: If kind is unknown or usage is given on a non-model Step.
     """
 
-    kind: str
+    kind: StepKind
     id: str | None = None
     parent_id: str | None = None
     name: str | None = None

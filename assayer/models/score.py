@@ -1,7 +1,7 @@
-from dataclasses import dataclass
-from dataclasses import field as dataclass_field
-from typing import Any
+from dataclasses import dataclass, field
+from typing import Any, Literal
 
+ScoreTarget = Literal["step", "trajectory", "experiment"]
 SCORE_TARGETS = ("step", "trajectory", "experiment")
 
 
@@ -20,24 +20,29 @@ class Score:
         target_id: Id of the targeted Step or Trajectory, if any.
 
     Raises:
-        ValueError: If value is outside [0, 1] or target is unknown.
+        ValueError: If value is not a number, is outside [0, 1], target is
+            unknown, or target is 'step' without target_id.
     """
 
     name: str
     value: float
+    metadata: dict[str, Any] = field(default_factory=dict)  # before `field`, which it shadows
     field: str | None = None
     label: str | None = None
     comment: str | None = None
-    metadata: dict[str, Any] = dataclass_field(default_factory=dict)
-    target: str = "trajectory"
+    target: ScoreTarget = "trajectory"
     target_id: str | None = None
 
     def __post_init__(self) -> None:
         """Normalize booleans and validate value and target.
 
         Raises:
-            ValueError: If value is outside [0, 1] or target is unknown.
+            ValueError: If value is not a number, is outside [0, 1], target is
+            unknown, or target is 'step' without target_id.
         """
+        if not isinstance(self.value, (int, float)):
+            raise ValueError("value must be a number or a boolean")
+
         self.value = float(self.value)
 
         if not 0.0 <= self.value <= 1.0:
@@ -45,3 +50,6 @@ class Score:
 
         if self.target not in SCORE_TARGETS:
             raise ValueError(f"target must be one of {SCORE_TARGETS}")
+
+        if self.target == "step" and self.target_id is None:
+            raise ValueError("target_id is required when target is 'step'")

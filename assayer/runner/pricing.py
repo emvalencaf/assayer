@@ -1,5 +1,5 @@
-"""Pricing configuration for LLM token costs."""
+"""Compatibility alias: `PricingConfig` now lives in `assayer.models`."""
 
-from assayer.models.pricing_config import PricingConfig
+from assayer.models import PricingConfig
 
 __all__ = ["PricingConfig"]
