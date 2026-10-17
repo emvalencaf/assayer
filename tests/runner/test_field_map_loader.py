@@ -135,3 +135,8 @@ class TestInvalidMaps:
 
         with pytest.raises(FieldMapError, match=r"\.json.*\.yaml"):
             load_field_map(path)
+
+
+def test_a_missing_file_is_reported_as_a_field_map_error(tmp_path):
+    with pytest.raises(FieldMapError, match="missing.json.*cannot be read"):
+        load_field_map(tmp_path / "missing.json")

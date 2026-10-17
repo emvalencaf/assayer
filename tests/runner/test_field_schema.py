@@ -114,7 +114,7 @@ class TestKeyHint:
         assert draft.spec["lines"]["align"] == "best_match"
         assert "key" not in draft.spec["lines"]
 
-    def test_an_item_with_only_a_key_property_still_has_something_to_compare(self):
+    def test_an_item_with_only_a_key_property_aligns_by_that_key(self):
         schema = {
             "type": "object",
             "properties": {
@@ -127,8 +127,31 @@ class TestKeyHint:
 
         draft = schema_to_field_map(schema)
 
-        assert list(draft.spec["rows"]["properties"]) == ["id"]
-        parse_field_map(draft.spec)
+        assert draft.spec["rows"] == {"align": "key", "key": "id", "properties": {}}
+        assert "# key" not in draft.to_yaml()
+        output = {"rows": [{"id": "1"}, {"id": "2"}]}
+        case = Case(input="x", id="c1", expected_output=output)
+        runner = Runner(field_metrics=parse_field_map(draft.spec))
+        experiment = runner.score(Dataset("d", [case]), [{"rows": [{"id": "2"}]}])
+        by_name = {s.name: s.value for s in experiment.scores}
+        assert by_name["list_precision"] == 1.0
+        assert by_name["list_recall"] == 0.5
+
+    def test_the_yaml_of_a_key_only_list_loads_back(self):
+        yaml = pytest.importorskip("yaml")
+        schema = {
+            "type": "object",
+            "properties": {
+                "rows": {
+                    "type": "array",
+                    "items": {"type": "object", "properties": {"id": {"type": "string"}}},
+                }
+            },
+        }
+
+        text = schema_to_field_map(schema).to_yaml()
+
+        assert parse_field_map(yaml.safe_load(text))["rows"].key == "id"
 
 
 class TestEditableOutput:
@@ -161,3 +184,41 @@ class TestEditableOutput:
 def test_a_schema_that_is_not_an_object_is_rejected():
     with pytest.raises(ValueError, match="object"):
         schema_to_field_map({"type": "string"})
+
+
+class TestUnsupportedSchemas:
+    def test_a_union_of_several_types_names_the_property(self):
+        schema = {
+            "type": "object",
+            "properties": {"v": {"anyOf": [{"type": "string"}, {"type": "integer"}]}},
+        }
+
+        with pytest.raises(ValueError, match=r"property 'v'.*anyOf"):
+            schema_to_field_map(schema)
+
+    def test_a_reference_that_does_not_end_names_the_property(self):
+        schema = {
+            "type": "object",
+            "properties": {"v": {"$ref": "#/$defs/A"}},
+            "$defs": {"A": {"$ref": "#/$defs/A"}},
+        }
+
+        with pytest.raises(ValueError, match=r"property 'v'.*\$ref"):
+            schema_to_field_map(schema)
+
+    def test_the_path_of_a_property_inside_a_list_item_is_given_in_full(self):
+        schema = {
+            "type": "object",
+            "properties": {
+                "rows": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {"v": {"oneOf": [{"type": "string"}, {"type": "number"}]}},
+                    },
+                }
+            },
+        }
+
+        with pytest.raises(ValueError, match="property 'rows.v'"):
+            schema_to_field_map(schema)

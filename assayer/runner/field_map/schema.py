@@ -55,9 +55,14 @@ class FieldMapDraft:
                 lines.extend(f"{pad}  - {json.dumps(entry)}" for entry in value)
                 continue
             lines.append(f"{pad}  align: {value['align']}")
+            if "key" in value:
+                lines.append(f"{pad}  key: {json.dumps(value['key'])}")
             hint = self.key_hints.get(prefix + path)
-            if hint:
+            if hint and "key" not in value:
                 lines.append(f"{pad}  # key: {hint}  # with align: key, pairs items by it")
+            if not value["properties"]:
+                lines.append(f"{pad}  properties: {{}}")
+                continue
             lines.append(f"{pad}  properties:")
             self._emit(value["properties"], f"{prefix}{path}.", depth + 2, lines)
 
@@ -78,7 +83,8 @@ def schema_to_field_map(schema: Any) -> FieldMapDraft:
 
     Inside a list item, `f1` and `rouge_l` are left out (a single item has no corpus to be
     scored over) and a free string gets `normalized_exact_match`. An id-like property of an
-    item (`id`, `key`, `uuid`, `*_id`, `*_key`) is not scored; it only yields a key hint.
+    item (`id`, `key`, `uuid`, `*_id`, `*_key`) is not scored; it only yields a key hint, unless
+    it is the item's only property: then the list aligns by that `key`, with no properties.
 
     Args:
         schema: A JSON Schema as a dictionary, or a Pydantic model class (anything with
@@ -88,7 +94,9 @@ def schema_to_field_map(schema: Any) -> FieldMapDraft:
         The draft; edit `spec` or its YAML and load it with `parse_field_map`.
 
     Raises:
-        ValueError: If the schema does not describe an object with properties.
+        ValueError: If the schema does not describe an object with properties, or a property
+            has a union of several types or a `$ref` that does not resolve; the message names
+            the property, so it can be simplified or dropped from the schema.
     """
     if hasattr(schema, "model_json_schema"):
         schema = schema.model_json_schema()
@@ -102,7 +110,11 @@ def schema_to_field_map(schema: Any) -> FieldMapDraft:
 
 
 def _resolve(node: Any, root: dict) -> dict:
-    """Follow `$ref`s and drop `null` from unions, so a node has one type when it can."""
+    """Follow `$ref`s and drop `null` from unions, so a node has one type.
+
+    Raises:
+        ValueError: If a union keeps more than one type, or `$ref`s do not end.
+    """
     for _ in range(32):
         if not isinstance(node, dict):
             return {}
@@ -118,10 +130,10 @@ def _resolve(node: Any, root: dict) -> dict:
                 if len(options) == 1:
                     node = options[0]
                     break
-                return {}
+                raise ValueError(f"{union} with {len(options)} non-null options is not supported")
         else:
             return node
-    return {}
+    raise ValueError("$ref chain does not end")
 
 
 def _type_of(node: dict) -> str | None:
@@ -165,20 +177,19 @@ def _object_fields(
     hint_prefix: str,
 ) -> None:
     for name, raw in node.get("properties", {}).items():
-        child = _resolve(raw, root)
         path = f"{prefix}{name}"
-        kind = _type_of(child)
+        try:
+            child = _resolve(raw, root)
+            kind = _type_of(child)
+            item = _resolve(child.get("items", {}), root) if kind == "array" else {}
+        except ValueError as exc:
+            raise ValueError(f"property '{hint_prefix}{path}': {exc}") from exc
         if kind == "object" and child.get("properties"):
             _object_fields(child, root, f"{path}.", in_item, out, hints, hint_prefix)
-        elif kind == "array" and _is_object_array(child, root):
-            out[path] = _list_field(_resolve(child["items"], root), root, hints, hint_prefix + path)
+        elif kind == "array" and _type_of(item) == "object" and item.get("properties"):
+            out[path] = _list_field(item, root, hints, hint_prefix + path)
         else:
             out[path] = list(_defaults(child)[in_item])
-
-
-def _is_object_array(node: dict, root: dict) -> bool:
-    items = _resolve(node.get("items", {}), root)
-    return _type_of(items) == "object" and bool(items.get("properties"))
 
 
 def _list_field(item: dict, root: dict, hints: dict[str, str], full_path: str) -> dict[str, Any]:
@@ -190,5 +201,6 @@ def _list_field(item: dict, root: dict, hints: dict[str, str], full_path: str) -
         # the key property is only a hint; scoring it would not help pair the items
         properties = {p: v for p, v in properties.items() if p.split(".")[0] not in keys}
         if not properties:
-            properties = {hints[full_path]: ["exact_match"]}
+            # nothing else to compare the items by: the key is the only way to pair them
+            return {"align": "key", "key": hints[full_path], "properties": {}}
     return {"align": "best_match", "properties": properties}

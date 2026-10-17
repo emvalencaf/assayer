@@ -29,15 +29,18 @@ def load_field_map(path: str | Path, registry: Registry | None = None) -> dict[s
         A map to pass as `Runner(field_metrics=...)`.
 
     Raises:
-        FieldMapError: If the extension is unknown, the file does not parse, or the
-            map is invalid.
+        FieldMapError: If the extension is unknown, the file cannot be read or does not
+            parse, or the map is invalid.
         ImportError: If the file is YAML and the `yaml` extra is not installed.
     """
     path = Path(path)
     suffix = path.suffix.lower()
     if suffix not in (".json", ".yaml", ".yml"):
         raise FieldMapError(f"{path}: unsupported extension {suffix!r}; use .json, .yaml or .yml")
-    text = path.read_text(encoding="utf-8")
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise FieldMapError(f"{path}: cannot be read: {exc}") from exc
     try:
         if suffix == ".json":
             data = json.loads(text)
@@ -108,8 +111,8 @@ def _field(path: str, value: Any, registry: Registry) -> Any:
         if unknown:
             raise FieldMapError(f"field {path!r}: unknown option {unknown[0]!r} for a list field")
         properties = value.get("properties")
-        if not isinstance(properties, Mapping) or not properties:
-            raise FieldMapError(f"field {path!r}: a list field needs a non-empty 'properties' map")
+        if not isinstance(properties, Mapping):
+            raise FieldMapError(f"field {path!r}: a list field needs a 'properties' map")
         options = {k: v for k, v in value.items() if k != "properties"}
         return ListField(properties=_resolve(properties, registry), **options)
     if not isinstance(value, list):
