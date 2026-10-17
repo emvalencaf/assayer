@@ -5,7 +5,7 @@ description: The public Metric dataclass, its MetricOutcome result and the Regis
 resource: assayer/metrics/metric.py
 tags: [metrics, contract, registry]
 status: draft
-generated: { by: claude-code/pre-commit, at: 2026-10-17T20:00:00Z }
+generated: { by: claude-code/pre-commit, at: 2026-10-17T23:30:00Z }
 sources:
   - id: metric
     resource: assayer/metrics/metric.py
@@ -37,7 +37,7 @@ and `EvaluatorRegistry`, which stay until the clean break.[^glossary]
 |---|---|
 | `name` | Name of the metric; becomes the name of its Scores. |
 | `level` | What it scores: `step`, `trajectory` or `experiment`. |
-| `fn` | Called as `fn(subject, case)`; returns a number in [0, 1] or a boolean. |
+| `fn` | Called as `fn(subject, case)`, plus keyword parameters given for a Field; returns a number in [0, 1] or a boolean. |
 | `requires` | Names of Case, Trajectory or Step fields the metric needs (for example `expected_output`, `final_state`). Default empty. |
 | `kind` | `deterministic` (default), or `judge` when a Judge scores the output. |
 
@@ -47,8 +47,10 @@ a `requires` entry that names a field of no Case, Trajectory or Step. It raises
 
 # Evaluating
 
-`Metric.evaluate(subject, case=None)` applies the metric once and returns a
+`Metric.evaluate(subject, case=None, field=None, params=None)` applies the metric once and returns a
 `MetricOutcome` (`scores`, `failures`). It never raises.[^metric]
+
+* `field` is the dotted path of the output Field the subject and case were cut down to; it is recorded on the Score or `EvaluationFailure`. `params` are passed to `fn` as keyword arguments. See [Per-Field measurement](../architecture/field-measurement.md).
 
 * Each `requires` name is looked up on the Case first, then on the subject. If any is `None`, no Score is emitted and one `EvaluationFailure` ("missing required input: ...") is returned. A missing input is never scored as 0.
 * A missing answer is different: the metric itself scores it 0 (an empty `final_output` against an expected one).

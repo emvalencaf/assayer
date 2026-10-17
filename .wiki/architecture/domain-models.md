@@ -5,7 +5,7 @@ description: The Trajectory, Step, Score, Experiment, EvaluationFailure, Dataset
 resource: assayer/models/__init__.py
 tags: [architecture, models, domain]
 status: draft
-generated: { by: claude-code/pre-commit, at: 2026-10-17T23:00:00Z }
+generated: { by: claude-code/pre-commit, at: 2026-10-17T23:30:00Z }
 sources:
   - id: models-init
     resource: assayer/models/__init__.py
@@ -33,7 +33,7 @@ terms in `GLOSSARY.md` (#24).[^glossary]
 | `Step` | One unit of work in a Trajectory, with `kind` (`model`, `tool`, `retrieval` or `other`), `id`, `parent_id`, `name`, `model`, `input`, `output`, `error`, `usage`. |
 | `Score` | One named result in [0, 1] of a metric, with optional `field`, `label`, `comment`, `metadata`, `target` (`ScoreTarget`) and `target_id`. |
 | `Experiment` | Trajectories, Scores and failures from running one target over a Dataset, plus `judge_usage` and `pricing` (the target's `PricingConfig`, optional). |
-| `EvaluationFailure` | A metric that could not be computed, kept as data (`metric`, `error`, `target_id`) instead of raised. |
+| `EvaluationFailure` | A metric that could not be computed, kept as data (`metric`, `error`, `target_id`, optional `field`) instead of raised. |
 | `Dataset` | A named list of Cases. |
 | `Case` | One input with optional references (`expected_output`, `expected_tool_calls`, `expected_steps`, `expected_outcome`, `expected_state`, `reference_contexts`, `reference_context_ids`). |
 | `Comparison` | The difference between two Experiments (second minus first): `metric_deltas`, `input_tokens_delta`, `output_tokens_delta`, `cost_usd_delta`, plus `only_in_a` and `only_in_b` (the Cases only one side has). Returned by `compare`; see [Comparison](comparison.md). |
@@ -51,6 +51,7 @@ terms in `GLOSSARY.md` (#24).[^glossary]
 
 * `Trajectory.total_usage(pricing=None)` sums the usage of its model Steps only. `cost_usd` is None unless a `PricingConfig` is given, then it is derived from the token counts with `PricingConfig.cost`.[^trajectory]
 * `Experiment.total_usage(pricing=None)` sums the Trajectory totals and excludes `judge_usage`, which is kept apart from the target's totals. `pricing` defaults to `Experiment.pricing`; with neither, `cost_usd` is None.[^experiment]
+* `Experiment.scores_by_field()` groups the Scores by their `field` path, in computed order; Scores of the whole output are under `None`. See [Per-Field measurement](field-measurement.md).
 * `Experiment.pricing` is never applied to `judge_usage`, whose model is another one: price it with `total_judge_usage(pricing)`.[^experiment]
 * `Experiment.total_judge_usage(pricing=None)` prices the Judge bucket: it returns None when `judge_usage` is None, otherwise a `TokenUsage` with the same tokens and a `cost_usd` computed from the Judge model's `PricingConfig` (None without it).[^experiment]
 * `TokenUsage` supports `+`: tokens are summed, and `cost_usd` is None unless both operands have a known cost. `Experiment.total_usage` folds the Trajectory totals with it.
