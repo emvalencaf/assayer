@@ -8,6 +8,7 @@
 - Test job in CI and a `dev` dependency group with `pytest`.
 
 ### Changed
+- CI skips the test job on PRs that only touch Markdown, `docs/` or `.wiki/`, and caches Hugging Face models.
 - README follows the Best-README-Template structure.
 - `register_chat_metrics` moved to `assayer/metrics/chat.py`; `assayer.metrics` now re-exports the chat, classification and NER metrics with `__all__`.
 - Tests moved into `tests/<subpackage>/` mirroring the package.
