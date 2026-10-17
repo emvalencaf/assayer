@@ -58,8 +58,8 @@ tag(subject/subsubject): short summary
 - `subject/subsubject` — the area touched, from broad to narrow, e.g.
   `skills/query`, `docs/contributing`. `subsubject` is optional:
   `feat(skills): ...` is valid.
-- `summary` — imperative mood, lowercase, no trailing period, ≲ 72 characters
-  for the whole title.
+- `summary` — imperative mood, lowercase, no trailing period. There is no
+  length limit, but keep the title readable.
 
 ### Body
 
@@ -70,16 +70,17 @@ Separated from the title by a blank line. Brief, in English:
 
 ### Trailers
 
-Every commit ends with, in this order:
+Every commit ends with, in this order (`Session-Id` is optional):
 
 ```
 Session-Id: <session uuid>
 Co-Authored-By: <model name> <noreply@anthropic.com>
 ```
 
-- `Session-Id` is the id of the Claude Code session that produced the change.
-  It is the UUID in the session's scratchpad path and transcript filename.
-- `Co-Authored-By` names the model that co-authored the commit, exactly as given
+- `Session-Id` (optional) is the id of the Claude Code session that produced the
+  change. It is the UUID in the session's scratchpad path and transcript
+  filename. Omit the line when the commit was not made in a Claude Code session.
+- `Co-Authored-By` (required) names the model that co-authored the commit, exactly as given
   in the session's attribution instructions.
 
 ### Example

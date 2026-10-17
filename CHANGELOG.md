@@ -14,3 +14,4 @@
 - Runtime dependencies declared in `pyproject.toml` and `uv.lock` generated.
 - ruff lint and format applied to the whole repository; tests relax stylistic rules via `per-file-ignores`.
 - README documents the status line budget.
+- Commit convention: `Session-Id` trailer is optional and the title has no length limit.
