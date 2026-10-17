@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Changed
+- The distribution is renamed `llm-assayer-eval`, because `assayer` is taken on PyPI by another project. The import name stays `assayer`; the extras are now `llm-assayer-eval[<extra>]`, which is what the `ImportError` of a missing extra names.
+
 ### Breaking
 The legacy API is removed in one change (#39), with no aliases: the old imports fail with `ImportError`. Use `Runner` (see "Migrating from the legacy API" in the README).
 - `EvaluationPipeline`, `HistoricalPipeline` and `ConsistencyPipeline` (`assayer.runner`): use `Runner(...).run(dataset)` and `Runner(...).score(dataset, outputs)`; consistency is `Runner(repetitions=k)` with `register_consistency_metrics`.
@@ -21,6 +24,8 @@ The legacy API is removed in one change (#39), with no aliases: the old imports 
 - `LangSmithPublisher` and `make_langsmith_publisher` (`assayer.integrations.langsmith`), replaced by `LangSmithAdapter` (#36). Its gaps are listed in `docs/research/langsmith.md`.
 
 ### Added
+- Example `schema_structured_output.py`: a JSON Schema drafted into a field map with `schema_to_field_map`, adjusted and used to score classification, text generation and extraction Fields of one output, including a list of objects.
+- Examples `ner_extraction.py` (pure NER), `support_pipeline.py` (classification, NER and text generation on one structured output), `agent_tool_use.py` (agent metrics and a two-agent comparison with cost) and `logged_traffic_scoring.py` (live traffic scored in batches with `Runner.score`), listed in the README together with a new "Historical and live evaluation" section that states that a live mode is not built in and shows how to assemble one.
 - `LICENSE` (MIT, Edson Mota Valença Filho, 2026), declared in `pyproject.toml`.
 - `model_step(response, model=, input=, name=)` (`assayer.runner`) builds a model Step from a LangChain-style reply (`content` and `usage_metadata`, read by attribute, so no extra), the way to report a target's tokens now that the token extractor is gone. `EntitySpan`, `NERMatchResult` and `NERMatcher` live in `assayer/metrics/ner_matching.py`.
 - README section "Using Assayer from another repository" with a custom-metric example and one runnable example per extra, a migration table, and a rewritten quick start (the old one imported names that did not exist).

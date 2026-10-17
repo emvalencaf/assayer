@@ -1,6 +1,7 @@
 # Update Log
 
 ## 2026-10-17
+* **Addition**: Documented the [example scripts and live evaluation](architecture/examples-and-live-evaluation.md): six new offline examples, and that Assayer has no built-in live mode (score logged traffic in batches with `Runner.score`); listed in the [architecture index](architecture/index.md) and linked from [Runner](architecture/runner.md).
 * **Update**: [Package organization](architecture/package-organization.md) and [Per-Field measurement](architecture/field-measurement.md) record the rename of the distribution to `llm-assayer-eval` (import name unchanged); missing-extra errors and install hints now name `llm-assayer-eval[<extra>]`.
 * **Update**: [Package organization](architecture/package-organization.md) records the MIT `LICENSE` file and its declaration in `pyproject.toml`.
 * **Update**: [Package organization](architecture/package-organization.md) records `model_step` in `runner/` and the `ner_matching` module (#39).

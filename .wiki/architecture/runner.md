@@ -46,7 +46,7 @@ without calling the target (#27).[^runner]
   becomes the Case's only repetition (`repetition` 0). It is tagged like a run
   result (`case_id`, Step ids) on a copy; the caller's object is untouched.
 * Metrics, Scores and `EvaluationFailure`s behave as in `run`. Two Experiments can
-  then be diffed with [Comparison](comparison.md).
+  then be diffed with [Comparison](comparison.md). Scoring batches of logged traffic this way is the recipe for live evaluation, which has no built-in mode: see [Examples and live evaluation](examples-and-live-evaluation.md).
 
 # Exporting
 

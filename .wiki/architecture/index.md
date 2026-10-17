@@ -6,3 +6,4 @@
 * [Adapters](adapters.md) - export an Experiment to an observability backend: `Adapter`, `ExportReport`, deterministic ids.
 * [Per-Field measurement](field-measurement.md) - `Runner(field_metrics=...)` scores output Fields by dotted path.
 * [Comparison](comparison.md) - `compare(a, b)` diffs two Experiments (b minus a).
+* [Examples and live evaluation](examples-and-live-evaluation.md) - the offline example scripts, and why live scoring is assembled from `Runner.score`.
