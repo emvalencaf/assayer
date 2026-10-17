@@ -4,4 +4,30 @@ observability/grafana/data/
 observability/prometheus/data/
 observability/loki/data/
 venv
-__pycache__
+__pycache__# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+# Environment and secrets
+.env
+.env.*
+!.env.example
+# Dependencies and build output
+node_modules/
+.venv/
+__pycache__/
+dist/
+build/
+coverage/
+# Agent local state
+.claude/settings.local.json
+graphify-out/
+.wiki/viz.html
+.claude/budget
+.claude/usage/
+
+# Python
+.coverage
+*.egg-info/

@@ -1,64 +1,6 @@
 {
-  "env": {
-    "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
-    "OTEL_METRICS_EXPORTER": "otlp",
-    "OTEL_LOGS_EXPORTER": "otlp",
-    "OTEL_EXPORTER_OTLP_PROTOCOL": "http/protobuf",
-    "OTEL_EXPORTER_OTLP_ENDPOINT": "http://localhost:4317",
-    "OTEL_METRIC_EXPORT_INTERVAL": "60000",
-    "OTEL_LOGS_EXPORT_INTERVAL": "5000",
-    "OTEL_METRICS_INCLUDE_SESSION_ID": "true",
-    "OTEL_LOG_USER_PROMPTS": "0"
-  },
-  "permissions": {
-    "allow": [
-      "Bash(pytest --tb=short)",
-      "Bash(bash /home/emvalenca/personal_projects/assayer/.claude/hooks/relay-state.sh set-agent agent-tester)",
-      "Bash(bash /home/emvalenca/personal_projects/assayer/.claude/hooks/relay-state.sh set-task assayer-core classification-metrics TASK-001)",
-      "Bash(pytest tests/metrics/test_classification.py -v)",
-      "Bash(python -c \"import sklearn; print\\(''sklearn available''\\)\")",
-      "Bash(pytest tests/metrics/test_classification.py::TestMakeF1::test_make_f1_perfect_classification -v)"
-    ],
-    "additionalDirectories": [
-      "/home/emvalenca/personal_projects/assayer/tests"
-    ]
-  },
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": ".*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/pre-tool.sh",
-            "timeout": 5000
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": ".*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/post-tool.sh",
-            "timeout": 5000
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "matcher": ".*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/session-start.sh",
-            "timeout": 5000
-          }
-        ]
-      }
-    ]
+  "statusLine": {
+    "type": "command",
+    "command": "bash -c 'exec \"$(git rev-parse --show-toplevel)/scripts/statusline.sh\"'"
   }
 }

@@ -1,86 +1,27 @@
-# Project Constitution
+# CLAUDE.md
 
-## Overview
-Read `.project/PROJECT.md` for the high-level description of this project.
-Read `.project/ADR.md` for global technical decisions before making new ones.
+@AGENTS.md
 
-## Mandatory Workflow
-Every feature follows this gate sequence — no skipping, no reordering:
+Before committing, branching or opening a PR, follow [CONTRIBUTING.md](CONTRIBUTING.md).
 
-```
-/project:prd <feature>           → PRD (requires human approval)
-      ↓
-/project:spec-plan <prd>         → Spec plan (requires human approval)
-      ↓
-/project:spec-create <prd/spec>  → Spec + tasks (requires human approval)
-      ↓
-/project:implement <prd/spec>    → Test → Code → Commit (per task)
-```
+## Status line budget
 
-## Agents
-| Agent            | When to use                                      |
-|------------------|--------------------------------------------------|
-| @agent-research  | Exploring requirements, writing PRDs             |
-| @agent-spec      | Decomposing PRDs into specs and tasks            |
-| @agent-tester    | Writing tests from acceptance criteria           |
-| @agent-coder     | Implementing code to make tests pass             |
-| @agent-docs      | Creating and validating Mermaid diagrams         |
+When the user pays per token, the status line shows spend against a budget
+(default `$ 100`). To change it, run `scripts/set-budget.sh <usd>` (this project,
+stored in the git-ignored `.claude/budget`) or `scripts/set-budget.sh <usd> --global`
+(all projects). Use `--show` to see the budget in effect and `--clear` to remove
+it. `CLAUDE_BUDGET_USD` overrides both. See [README.md](README.md#status-line-budget).
 
-## Decision Hierarchy
-```
-.project/ADR.md                          → global technical decisions
-.project/{prd}/architecture.md           → decisions scoped to a PRD
-.project/{prd}/.specs/{spec}/design.md   → decisions scoped to a spec
-```
+## Agent skills
 
-## Project Structure
-```
-.project/
-├── PROJECT.md
-├── ADR.md
-└── {prd-name}/
-    ├── prd.md
-    ├── architecture.md
-    ├── diagrams/
-    └── .specs/
-        └── {spec-name}/
-            ├── spec.md
-            ├── design.md         (optional)
-            └── tasks/
-                ├── INDEX.md      (generated, never edited manually)
-                └── TASK-NNN.md
-```
+### Issue tracker
 
-## Commit Format
-```
-type(TASK-ID): short imperative description
+Issues are tracked in GitHub Issues (`gh` CLI). See `docs/agents/issue-tracker.md`.
 
-- acceptance criterion ✓
-- acceptance criterion ✓
+### Triage labels
 
-Refs: {spec-name}
-```
-Valid types: `feat` | `fix` | `refactor` | `test` | `docs` | `chore`
-**One task per commit. No exceptions.**
+Default vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
 
-## Code Conventions
-- **Language:** Python 3.11.13 minimum.
-- All public functions, methods, and classes must have **Google-style docstrings** (description, Args, Returns, Raises) and full **type hints**.
-- No global mutable state — evaluators and runners must be instantiable as independent objects.
-- Custom metrics and evaluators must be registerable without modifying core library files (Open/Closed Principle).
-- Test files follow `test_*.py` naming; fixtures go in `conftest.py`.
-- No `unittest` subclassing — use pytest exclusively.
+### Domain docs
 
-## Test Commands
-```bash
-source venv/bin/activate
-pytest                        # run all tests
-pytest --cov=assayer          # with coverage (target: ≥ 90%)
-```
-
-## Build & Run
-```bash
-python -m venv venv
-source venv/bin/activate
-pip install -e .
-```
+Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
