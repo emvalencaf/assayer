@@ -1,6 +1,7 @@
 # Update Log
 
 ## 2026-10-17
+* **Update**: [Package organization](architecture/package-organization.md) records the 0.1.1 fix: 0.1.0 had no PyPI description, so `pyproject.toml` now sets `readme`, authors, keywords, classifiers and project URLs, and the README links files by absolute URL.
 * **Update**: [Package organization](architecture/package-organization.md) records the tag-triggered PyPI publishing workflow (trusted publishing, tag must match the `pyproject.toml` version), the `scripts/setup-pypi-publishing.sh` wizard and the 0.1.0 release steps.
 * **Update**: `scripts/check_core_only.py` now asserts that the missing-extra `ImportError` names `llm-assayer-eval[<extra>]`; [Package organization](architecture/package-organization.md) already described this, so no concept text changed.
 * **Addition**: Documented the [example scripts and live evaluation](architecture/examples-and-live-evaluation.md): six new offline examples, and that Assayer has no built-in live mode (score logged traffic in batches with `Runner.score`); listed in the [architecture index](architecture/index.md) and linked from [Runner](architecture/runner.md).
