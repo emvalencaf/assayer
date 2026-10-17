@@ -5,7 +5,7 @@ Judge to split each answer into claims and to check every claim against the retr
 context; the Score is the share of supported claims.
 
 The Judge here is a scripted stand-in so the example runs offline. In production, wrap a
-LangChain chat model (needs `assayer[langchain]`):
+LangChain chat model (needs `llm-assayer-eval[langchain]`):
 
     from langchain_openai import ChatOpenAI
     from assayer.judges import LangChainJudge

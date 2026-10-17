@@ -86,7 +86,7 @@ items:
         path = tmp_path / "map.yml"
         path.write_text("a: [exact_match]")
 
-        with pytest.raises(ImportError, match=r"assayer\[yaml\]"):
+        with pytest.raises(ImportError, match=r"llm-assayer-eval\[yaml\]"):
             load_field_map(path)
 
 

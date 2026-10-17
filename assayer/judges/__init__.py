@@ -1,7 +1,7 @@
 """The Judge: the injected language model behind judge-based metrics.
 
 `LangChainJudge` is importable from here too; it is loaded on first access and needs
-`assayer[langchain]`.
+`llm-assayer-eval[langchain]`.
 """
 
 from assayer._extras import lazy_exports

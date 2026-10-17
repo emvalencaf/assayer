@@ -1,6 +1,7 @@
 # Update Log
 
 ## 2026-10-17
+* **Update**: [Package organization](architecture/package-organization.md) and [Per-Field measurement](architecture/field-measurement.md) record the rename of the distribution to `llm-assayer-eval` (import name unchanged); missing-extra errors and install hints now name `llm-assayer-eval[<extra>]`.
 * **Update**: [Package organization](architecture/package-organization.md) records the MIT `LICENSE` file and its declaration in `pyproject.toml`.
 * **Update**: [Package organization](architecture/package-organization.md) records `model_step` in `runner/` and the `ner_matching` module (#39).
 * **Update**: [Package organization](architecture/package-organization.md), [Domain models](architecture/domain-models.md), [Comparison](architecture/comparison.md), [Metric contract](metrics/metric-contract.md) and [Corpus and consistency metrics](metrics/corpus-and-consistency.md) record the legacy clean break (#39): pipelines, `FieldRouter`, `ExperimentResult`, `RunResult`, `FieldEvaluation`, `Consistency*`, the evaluators package and the second registry are gone.

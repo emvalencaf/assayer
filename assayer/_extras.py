@@ -13,9 +13,11 @@ def missing_extra(extra: str, feature: str) -> ImportError:
         feature: What needs it, such as `LangfuseAdapter`.
 
     Returns:
-        An ImportError naming `assayer[extra]`.
+        An ImportError naming `llm-assayer-eval[extra]`.
     """
-    return ImportError(f"{feature} needs the {extra} extra: pip install 'assayer[{extra}]'")
+    return ImportError(
+        f"{feature} needs the {extra} extra: pip install 'llm-assayer-eval[{extra}]'"
+    )
 
 
 def require(module: str, extra: str, feature: str) -> ModuleType:
@@ -30,7 +32,7 @@ def require(module: str, extra: str, feature: str) -> ModuleType:
         The imported module.
 
     Raises:
-        ImportError: If the module is not installed, naming `assayer[extra]`.
+        ImportError: If the module is not installed, naming `llm-assayer-eval[extra]`.
     """
     try:
         return importlib.import_module(module)

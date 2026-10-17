@@ -54,82 +54,6 @@ wheels = [
 ]
 
 [[package]]
-name = "assayer"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
-    { name = "numpy", version = "2.5.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
-    { name = "scikit-learn" },
-]
-
-[package.optional-dependencies]
-all = [
-    { name = "bert-score" },
-    { name = "langchain-core" },
-    { name = "langfuse" },
-    { name = "langsmith" },
-    { name = "nltk" },
-    { name = "pyyaml" },
-    { name = "rouge-score" },
-    { name = "sentence-transformers" },
-    { name = "torch" },
-    { name = "transformers" },
-]
-langchain = [
-    { name = "langchain-core" },
-]
-langfuse = [
-    { name = "langfuse" },
-]
-langsmith = [
-    { name = "langsmith" },
-]
-semantic = [
-    { name = "bert-score" },
-    { name = "sentence-transformers" },
-    { name = "torch" },
-    { name = "transformers" },
-]
-text = [
-    { name = "nltk" },
-    { name = "rouge-score" },
-]
-yaml = [
-    { name = "pyyaml" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-    { name = "pytest-cov" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "assayer", extras = ["semantic", "text", "langchain", "langfuse", "langsmith", "yaml"], marker = "extra == 'all'" },
-    { name = "bert-score", marker = "extra == 'semantic'" },
-    { name = "langchain-core", marker = "extra == 'langchain'" },
-    { name = "langfuse", marker = "extra == 'langfuse'", specifier = ">=5.0.2" },
-    { name = "langsmith", marker = "extra == 'langsmith'" },
-    { name = "nltk", marker = "extra == 'text'" },
-    { name = "numpy" },
-    { name = "pyyaml", marker = "extra == 'yaml'" },
-    { name = "rouge-score", marker = "extra == 'text'" },
-    { name = "scikit-learn" },
-    { name = "sentence-transformers", marker = "extra == 'semantic'" },
-    { name = "torch", marker = "extra == 'semantic'" },
-    { name = "transformers", marker = "extra == 'semantic'" },
-]
-provides-extras = ["semantic", "text", "langchain", "langfuse", "langsmith", "yaml", "all"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pytest" },
-    { name = "pytest-cov" },
-]
-
-[[package]]
 name = "backoff"
 version = "2.2.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1227,6 +1151,82 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/f8/c3/a9a98d7adf573fdd5ea5c92cadbc26d7c597ab36f4dc31c093eb19507808/langsmith-0.14.11.tar.gz", hash = "sha256:d9e7ffe587e12ce51573cab654d02e84feb924d3b1f582274c4b1412ebeabf4c", size = 5020659, upload-time = "2026-10-16T07:16:56.865Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e2/1d/b683b3d8777e625e021efeaaf72dc04f709be59e6a5f2d65725cebaedcfb/langsmith-0.14.11-py3-none-any.whl", hash = "sha256:9ecca7633df228ef2c44563f7187e426b8a79e7c5c2351c5dd8c9074c61512e7", size = 869018, upload-time = "2026-10-16T07:16:54.634Z" },
+]
+
+[[package]]
+name = "llm-assayer-eval"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "numpy", version = "2.5.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "scikit-learn" },
+]
+
+[package.optional-dependencies]
+all = [
+    { name = "bert-score" },
+    { name = "langchain-core" },
+    { name = "langfuse" },
+    { name = "langsmith" },
+    { name = "nltk" },
+    { name = "pyyaml" },
+    { name = "rouge-score" },
+    { name = "sentence-transformers" },
+    { name = "torch" },
+    { name = "transformers" },
+]
+langchain = [
+    { name = "langchain-core" },
+]
+langfuse = [
+    { name = "langfuse" },
+]
+langsmith = [
+    { name = "langsmith" },
+]
+semantic = [
+    { name = "bert-score" },
+    { name = "sentence-transformers" },
+    { name = "torch" },
+    { name = "transformers" },
+]
+text = [
+    { name = "nltk" },
+    { name = "rouge-score" },
+]
+yaml = [
+    { name = "pyyaml" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "bert-score", marker = "extra == 'semantic'" },
+    { name = "langchain-core", marker = "extra == 'langchain'" },
+    { name = "langfuse", marker = "extra == 'langfuse'", specifier = ">=5.0.2" },
+    { name = "langsmith", marker = "extra == 'langsmith'" },
+    { name = "llm-assayer-eval", extras = ["semantic", "text", "langchain", "langfuse", "langsmith", "yaml"], marker = "extra == 'all'" },
+    { name = "nltk", marker = "extra == 'text'" },
+    { name = "numpy" },
+    { name = "pyyaml", marker = "extra == 'yaml'" },
+    { name = "rouge-score", marker = "extra == 'text'" },
+    { name = "scikit-learn" },
+    { name = "sentence-transformers", marker = "extra == 'semantic'" },
+    { name = "torch", marker = "extra == 'semantic'" },
+    { name = "transformers", marker = "extra == 'semantic'" },
+]
+provides-extras = ["semantic", "text", "langchain", "langfuse", "langsmith", "yaml", "all"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
 ]
 
 [[package]]

@@ -73,7 +73,7 @@ def test_missing_extra_raises_import_error_naming_it(statement, extra):
         try:
             {statement}
         except ImportError as exc:
-            assert "assayer[{extra}]" in str(exc), str(exc)
+            assert "llm-assayer-eval[{extra}]" in str(exc), str(exc)
         else:
             raise SystemExit("no ImportError")
         """

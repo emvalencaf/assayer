@@ -21,7 +21,7 @@ def load_field_map(path: str | Path, registry: Registry | None = None) -> dict[s
     """Read a field map from a `.json`, `.yaml` or `.yml` file and validate it.
 
     Args:
-        path: The file. YAML needs the `yaml` extra (`pip install 'assayer[yaml]'`).
+        path: The file. YAML needs the `yaml` extra (`pip install 'llm-assayer-eval[yaml]'`).
         registry: Resolves the metric names; defaults to the field-level and corpus
             metrics (see `parse_field_map`).
 
@@ -59,7 +59,7 @@ def _load_yaml(text: str) -> Any:
         import yaml
     except ImportError as exc:
         raise ImportError(
-            "Loading a YAML field map needs the yaml extra: pip install 'assayer[yaml]'"
+            "Loading a YAML field map needs the yaml extra: pip install 'llm-assayer-eval[yaml]'"
         ) from exc
     try:
         return yaml.safe_load(text)
