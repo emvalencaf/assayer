@@ -2,8 +2,8 @@
 
 import pytest
 
-from assayer.evaluators.ner import EntitySpan
 from assayer.metrics import (
+    EntitySpan,
     accuracy,
     bleu,
     make_f1,

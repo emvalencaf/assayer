@@ -5,9 +5,8 @@ import statistics
 
 import pytest
 
-from assayer.evaluators import consistency_metrics as legacy
 from assayer.metrics import Metric, make_pass_hat_k, make_score_std, register_consistency_metrics
-from assayer.models import Case, Dataset, FieldEvaluation
+from assayer.models import Case, Dataset
 from assayer.registries import Registry
 from assayer.runner import Runner
 
@@ -29,11 +28,6 @@ def _exact(trajectory, case):
 
 
 EXACT = Metric(name="exact", level="trajectory", fn=_exact, requires=("expected_output",))
-
-
-def _legacy(values, scores=None):
-    scores = scores or [0.0] * len(values)
-    return [FieldEvaluation("f", "m", None, v, s, None) for v, s in zip(values, scores)]
 
 
 RUNS = {
@@ -61,63 +55,48 @@ class TestGroupedByCase:
     def test_agreement_rate_is_the_mean_over_cases_of_the_dominant_share(self):
         experiment = _run(_registry().get("agreement_rate"))
 
-        expected = statistics.mean(
-            legacy.compute_agreement_rate(_legacy(v))[0] for v in RUNS.values()
-        )
-        assert _value(experiment, "agreement_rate") == pytest.approx(expected)
-        assert expected == pytest.approx((0.75 + 0.25 + 1.0) / 3)
+        assert _value(experiment, "agreement_rate") == pytest.approx((0.75 + 0.25 + 1.0) / 3)
 
     def test_entropy_is_in_bits_scaled_by_the_most_the_repetitions_allow(self):
         experiment = _run(_registry().get("entropy"))
 
-        bits = [legacy.compute_entropy(_legacy(v)) for v in RUNS.values()]
-        assert bits[1] == pytest.approx(math.log2(4))  # four distinct answers
-        assert _value(experiment, "entropy") == pytest.approx(statistics.mean(b / 2 for b in bits))
+        # a: 3 x and 1 y; b: four distinct answers (log2(4) bits); c: always the same
+        bits_a = -(0.75 * math.log2(0.75) + 0.25 * math.log2(0.25))
+        expected = statistics.mean([bits_a, math.log2(4), 0.0]) / math.log2(4)
+        assert _value(experiment, "entropy") == pytest.approx(expected)
 
     @pytest.mark.parametrize(
-        ("name", "legacy_fn"),
+        ("name", "expected"),
         [
-            ("correct_rate", legacy.compute_correct_rate),
-            ("pass_at_k", legacy.compute_pass_at_k),
-            ("recall_at_k", legacy.compute_recall_at_k),
+            ("correct_rate", (0.75 + 0.25 + 0.0) / 3),
+            ("pass_at_k", 2 / 3),
+            ("recall_at_k", 2 / 3),
         ],
     )
-    def test_reference_metrics_match_the_legacy_functions(self, name, legacy_fn):
+    def test_reference_metrics_are_the_mean_over_cases(self, name, expected):
         experiment = _run(_registry().get(name))
 
-        expected = statistics.mean(float(legacy_fn(_legacy(RUNS[k]), REFERENCES[k])) for k in RUNS)
         assert _value(experiment, name) == pytest.approx(expected)
-        assert 0 < expected < 1
 
     def test_multi_label_outputs_are_compared_as_sets(self):
         runs = {"a": [["x"], ["y"]], "b": [["x", "y"], ["y", "x"]]}
         refs = {"a": ["x", "y", "z"], "b": ["y", "x"]}
         dataset = Dataset("d", [Case(input=k, id=k, expected_output=refs[k]) for k in runs])
         registry = _registry()
-        names = ["correct_rate", "pass_at_k", "recall_at_k"]
+        expected = {"correct_rate": 0.5, "pass_at_k": 0.5, "recall_at_k": 5 / 6}
 
-        experiment = Runner(_target(runs), [registry.get(n) for n in names], repetitions=2).run(
+        experiment = Runner(_target(runs), [registry.get(n) for n in expected], repetitions=2).run(
             dataset
         )
 
-        legacy_fns = [
-            legacy.compute_correct_rate,
-            legacy.compute_pass_at_k,
-            legacy.compute_recall_at_k,
-        ]
-        for name, fn in zip(names, legacy_fns):
-            expected = statistics.mean(float(fn(_legacy(runs[k]), refs[k])) for k in runs)
-            assert _value(experiment, name) == pytest.approx(expected)
+        for name, value in expected.items():
+            assert _value(experiment, name) == pytest.approx(value)
 
     def test_score_std_is_the_spread_of_the_scores_of_a_metric_over_the_repetitions(self):
         experiment = _run(EXACT, make_score_std("exact"))
 
-        per_case = {k: [float(v == REFERENCES[k]) for v in RUNS[k]] for k in RUNS}
-        expected = statistics.mean(
-            legacy.compute_score_std(_legacy(RUNS[k], per_case[k])) for k in RUNS
-        )
-        assert _value(experiment, "score_std") == pytest.approx(expected)
-        assert expected > 0
+        # sample standard deviation of the 0/1 scores: a and b 0.5, c 0
+        assert _value(experiment, "score_std") == pytest.approx((0.5 + 0.5 + 0.0) / 3)
 
     def test_score_std_without_scores_to_take_the_spread_of_is_a_failure(self):
         experiment = _run(make_score_std("exact"))
@@ -189,7 +168,7 @@ class TestPerField:
         ).run(dataset)
 
         assert _value(experiment, "score_std", "label") == pytest.approx(
-            legacy.compute_score_std(_legacy("xxyx", [1.0, 1.0, 0.0, 1.0]))
+            0.5  # sample standard deviation of [1, 1, 0, 1]
         )
 
 

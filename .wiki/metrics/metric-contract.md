@@ -28,8 +28,8 @@ sources:
 
 A `Metric` is a named way of computing Scores for a Step, a Trajectory or an
 Experiment. Built-in and custom metrics share this one shape, so they run, skip
-and fail the same way (#25).[^metric] It sits beside the legacy `MetricRegistry`
-and `EvaluatorRegistry`, which stay until the clean break.[^glossary]
+and fail the same way (#25).[^metric] It replaced the legacy `MetricRegistry`
+and `EvaluatorRegistry`, removed in the clean break (#39).[^glossary]
 
 # Metric fields
 
@@ -63,9 +63,7 @@ a `requires` entry that names a field of no Case, Trajectory or Step. It raises
 # Registry
 
 `Registry` (`assayer.registries.Registry`) stores `Metric` objects by name. Each
-instance keeps its own metrics, with no shared state.[^registry] It imports
-`Metric` from `assayer.metrics.metric` directly: `assayer.metrics` imports the
-legacy registries, so going through its `__init__` would be circular.
+instance keeps its own metrics, with no shared state.[^registry]
 
 * `register(metric)` raises `TypeError` for a non-Metric and `KeyError` for a duplicate name.
 * `get(name)` raises `KeyError` for an unknown name.

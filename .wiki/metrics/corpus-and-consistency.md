@@ -25,7 +25,8 @@ sources:
 
 Both families are `experiment`-level [`Metric`s](metric-contract.md) (#30): each
 emits one Score for the whole Experiment (`target_id` `None`). They score the
-same as the legacy functions, which stay until the clean break.[^corpus-tests]
+same as the corpus functions (`bleu`, `accuracy`, `ner_macro_f1`, ...), which remain as
+plain functions; the legacy registries and consistency functions were removed (#39).[^corpus-tests]
 
 # Corpus metrics
 
@@ -47,7 +48,7 @@ Score is the mean over Cases.[^consistency]
 | Metric | Per Case |
 |---|---|
 | `agreement_rate` | Share of repetitions giving the most frequent answer. |
-| `entropy` | Shannon entropy in bits divided by `log2(k)`, so within [0, 1]. The one deliberate departure from the legacy value, as a Score must fit [0, 1]. |
+| `entropy` | Shannon entropy in bits divided by `log2(k)`, so within [0, 1]. The one deliberate departure from the removed legacy value, as a Score must fit [0, 1]. |
 | `correct_rate` | Share of repetitions equal to the reference (as sets for multi-label outputs). |
 | `pass_at_k` | 1 if any repetition equals the reference, else 0. |
 | `recall_at_k` | Share of the reference labels covered by the union of the repetitions. |

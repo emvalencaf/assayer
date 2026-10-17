@@ -1,6 +1,9 @@
 # Update Log
 
 ## 2026-10-17
+* **Update**: [Package organization](architecture/package-organization.md) records the MIT `LICENSE` file and its declaration in `pyproject.toml`.
+* **Update**: [Package organization](architecture/package-organization.md) records `model_step` in `runner/` and the `ner_matching` module (#39).
+* **Update**: [Package organization](architecture/package-organization.md), [Domain models](architecture/domain-models.md), [Comparison](architecture/comparison.md), [Metric contract](metrics/metric-contract.md) and [Corpus and consistency metrics](metrics/corpus-and-consistency.md) record the legacy clean break (#39): pipelines, `FieldRouter`, `ExperimentResult`, `RunResult`, `FieldEvaluation`, `Consistency*`, the evaluators package and the second registry are gone.
 * **Update**: [Package organization](architecture/package-organization.md) records the shared `lazy_exports` helper behind the lazy `LangChainJudge` and Adapters, `LLMJudgeEvaluator` requiring the `langchain` extra at construction, and the CI `scripts/check_core_only.py` check.
 * **Update**: [Package organization](architecture/package-organization.md) records the lean core, the extras and the lazy `LangChainJudge` and backend Adapters (#38).
 * **Update**: [Adapters](architecture/adapters.md) records that the Langfuse live smoke test now passes against Langfuse Cloud, deduplicates observations by id (re-exports can show one twice for a while), reads flattened `final_state.done` metadata, and matches Scores to traces and dataset runs by subject.

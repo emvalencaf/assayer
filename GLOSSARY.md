@@ -40,6 +40,18 @@ _Avoid_: Example, item, sample
 The Trajectories and Scores produced by running one target over a Dataset, with each repetition of a Case kept as its own Trajectory.
 _Avoid_: Run, evaluation run
 
+**Runner**:
+What runs a target over a Dataset, keeps each repetition of a Case as its own Trajectory, applies the metrics and returns an Experiment.
+_Avoid_: Pipeline, harness
+
+**Registry**:
+A named collection of Metrics, built-in and custom alike, that holds no global state.
+_Avoid_: Evaluator registry
+
+**Comparison**:
+The difference between two Experiments, always the second minus the first, per metric and Field and in mean tokens and cost per Case.
+_Avoid_: Diff, delta report
+
 **Metric**:
 A named way of computing Scores for a Step, a Trajectory or an Experiment, declaring the inputs it requires and whether it is deterministic or uses a Judge.
 _Avoid_: Evaluator, scorer

@@ -24,35 +24,33 @@ These standards apply to everything committed here.
 
 The `assayer/` package is split by responsibility. Each subpackage owns one
 concern, and dependencies point from the outer layers inward:
-`runner` → `evaluators`, `metrics`, `registries`, `integrations`, `adapters` → `judges` → `models`.
+`runner` → `metrics`, `registries`, `integrations`, `adapters` → `judges` → `models`.
 
 | Subpackage | Holds | Does not hold |
 |---|---|---|
-| `models/` | Plain data structures (`@dataclass`) that carry results: `TokenUsage`, `PricingConfig`, `FieldEvaluation`, `RunResult`, `ExperimentResult`, the `Consistency*` family and the vendor-neutral `Trajectory`, `Step`, `Score`, `Experiment`, `EvaluationFailure`, `Dataset` and `Case` | Logic that calls evaluators, I/O or external services |
+| `models/` | Plain data structures (`@dataclass`) that carry results: `TokenUsage`, `PricingConfig` and the vendor-neutral `Trajectory`, `Step`, `Score`, `Experiment`, `Comparison`, `EvaluationFailure`, `Dataset` and `Case` | Logic that calls metrics, I/O or external services |
 | `judges/` | The Judge Protocol and `JudgeResponse`, the versioned and hashed `Prompt`, tolerant verdict parsing (`score` + `reason`) and the ledger of Judge calls and tokens | Metrics, scoring decisions, provider clients (`LangChainJudge` is the one wrapper, behind `assayer[langchain]`) |
-| `evaluators/` | `BaseEvaluator` (ABC) and its implementations (`ner`, `hallucination`, `consistency`) | Aggregation across a dataset |
-| `metrics/` | The `Metric` contract (`level`, `requires`, `kind`) and built-in metrics, grouped by task (`agent`, `chat`, `classification`, `ner`, `consistency`, `field` for the Field comparisons, `judge` for the Judge-based ones, `retrieval` for context precision and recall, `retrieved` for reading the ranked items of the retrieval Steps; `corpus` lifts the chat, classification and NER functions to Experiment level); legacy ones are pure functions `(predictions, references) -> float` | State, network calls |
-| `registries/` | `Registry` (holds `Metric` objects) and the legacy `MetricRegistry` and `EvaluatorRegistry` | Built-in metric or evaluator definitions |
-| `runner/` | Pipelines (`EvaluationPipeline`, `HistoricalPipeline`, `ConsistencyPipeline`), `FieldRouter`, dataset loading, `Runner` (target → Experiment), the `field_map/` package (field metrics, Alignment of list Fields, Field scoring, the schema utility and YAML/JSON loading), token extraction, pricing, comparison | Metric math |
-| `alignment.py`, `path.py` (top level) | Alignment of list items and dotted-path `resolve`, pure helpers shared by `metrics/` and `runner/field_map/`; they import nothing else from `assayer` but each other | Metric or pipeline logic |
+| `metrics/` | The `Metric` contract (`level`, `requires`, `kind`) and built-in metrics, grouped by task (`agent`, `chat`, `classification`, `ner` (with `ner_matching` for entity spans), `consistency`, `field` for the Field comparisons, `judge` for the Judge-based ones, `retrieval` for context precision and recall, `retrieved` for reading the ranked items of the retrieval Steps; `corpus` lifts the chat, classification and NER functions to Experiment level); the corpus functions themselves are pure `(predictions, references) -> float` | State, network calls |
+| `registries/` | `Registry` (holds `Metric` objects) | Built-in metric definitions |
+| `runner/` | dataset loading, `Runner` (target → Experiment), `model_step` (reply → model Step), the `field_map/` package (field metrics, Alignment of list Fields, Field scoring, the schema utility and YAML/JSON loading), comparison | Metric math |
+| `alignment.py`, `path.py` (top level) | Alignment of list items and dotted-path `resolve`, pure helpers shared by `metrics/` and `runner/field_map/`; they import nothing else from `assayer` but each other | Metric or Runner logic |
 | `adapters/` | The `Adapter` Protocol, `ExportReport`/`ExportFailure`, the closed failure taxonomy (`AdapterCallError`, `AdapterConfigError`), deterministic export ids, the retry policy, `plan_export`/`run_export` (what every Adapter shares) and `InMemoryAdapter` | Backend-specific clients (those come in their own module per backend) |
 | `integrations/` | Adapters for external services (`LangSmithAdapter` in `langsmith_adapter.py`, `LangfuseAdapter` in `langfuse_adapter.py`) | Domain rules |
 
 Conventions:
 
-- **One concept per module.** One model or pipeline class per file, named after
+- **One concept per module.** One model or class per file, named after
   the class in `snake_case` (`token_usage.py` holds `TokenUsage`). Metrics are
   grouped by task, one module per task.
 - **Public API through `__init__.py`.** Each subpackage re-exports its public
   names and lists them in `__all__`. Import across subpackages from the package
-  (`from assayer.models import FieldEvaluation`), not from the inner module.
-- **Registries are instantiable.** They hold no global state. Shared defaults
-  (`default_metric_registry`, `default_evaluator_registry`) are a convenience, not
-  the only access path.
+  (`from assayer.models import Score`), not from the inner module.
+- **Registries are instantiable.** They hold no global state and there is no shared
+  default instance: build a `Registry` and fill it.
 - **Registration is explicit.** A task module exposes `register_<task>_metrics(registry)`
-  or `register_<task>_evaluators(registry)` that fills a registry passed in.
+  that fills a registry passed in.
   Importing a module never registers anything as a side effect.
-- **Extend by adding, not editing.** A new metric or evaluator is a new module or
+- **Extend by adding, not editing.** A new metric is a new module or
   function plus a registration call; core files stay untouched.
 - **Metric factories** that need configuration are named `make_<metric>` and
   return a `MetricFn` (`Callable[[list, list], float]`).
@@ -62,7 +60,7 @@ Conventions:
   into a 0.0. Public modules import with no extra, and a name that needs one (such as
   `LangChainJudge`) is loaded on first access through the module's `__getattr__`.
 
-Tests mirror the package: `tests/<subpackage>/test_<module>.py` (`tests/runner/test_pipeline.py` covers `assayer/runner/pipeline.py`).
+Tests mirror the package: `tests/<subpackage>/test_<module>.py` (`tests/runner/test_runner.py` covers `assayer/runner/runner.py`).
 
 ## Documentation
 

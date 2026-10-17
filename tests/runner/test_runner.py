@@ -267,3 +267,55 @@ class TestCaseIds:
 
         with pytest.raises(ValueError, match="c1"):
             Runner().score(dataset, ["a", "b"])
+
+
+class TestPortedFromTheLegacyPipelines:
+    """Behaviors the removed pipelines had, now held at the Runner seam."""
+
+    def test_an_empty_dataset_gives_an_empty_experiment(self):
+        experiment = Runner(_echo, [EXACT]).run(Dataset("d", []))
+
+        assert experiment.trajectories == []
+        assert experiment.scores == []
+
+    def test_several_metrics_are_all_applied(self):
+        always = Metric(name="always", level="trajectory", fn=lambda t, c: 1.0)
+        dataset = Dataset("d", [Case(input="a", id="c1", expected_output="a")])
+
+        experiment = Runner(_echo, [EXACT, always]).run(dataset)
+
+        assert sorted(s.name for s in experiment.scores) == ["always", "exact"]
+
+    def test_invalid_json_file_is_rejected(self, tmp_path):
+        path = tmp_path / "d.json"
+        path.write_text("{not json")
+
+        with pytest.raises(json.JSONDecodeError):
+            Runner(_echo, [EXACT]).run(str(path))
+
+    def test_an_empty_json_list_is_an_empty_dataset(self, tmp_path):
+        path = tmp_path / "d.json"
+        path.write_text("[]")
+
+        experiment = Runner(_echo, [EXACT]).run(str(path))
+
+        assert experiment.trajectories == []
+
+    def test_a_case_may_carry_extra_input_shapes(self):
+        dataset = Dataset("d", [Case(input={"q": "a", "n": 1}, id="c1", expected_output="x")])
+
+        experiment = Runner(lambda value: value["q"], [EXACT]).run(dataset)
+
+        assert experiment.trajectories[0].final_output == "a"
+
+    def test_usage_reported_by_the_target_is_priced(self):
+        pricing = PricingConfig(cost_per_input_token=1.0, cost_per_output_token=2.0)
+        step = Step(kind="model", usage=TokenUsage(input_tokens=3, output_tokens=2, cost_usd=None))
+        dataset = Dataset("d", [Case(input="a", id="c1", expected_output="a")])
+
+        experiment = Runner(
+            lambda value: Trajectory(steps=[step], final_output=value), [EXACT], pricing=pricing
+        ).run(dataset)
+
+        usage = experiment.trajectories[0].total_usage(experiment.pricing)
+        assert (usage.input_tokens, usage.output_tokens, usage.cost_usd) == (3, 2, 7.0)

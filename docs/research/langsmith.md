@@ -1,5 +1,9 @@
 # Research: current LangSmith data model and API
 
+> Superseded in part: `LangSmithPublisher`, described below as the current code, was
+> replaced by `LangSmithAdapter` (#36) and removed (#39). Section 3 lists the gaps the
+> Adapter closed.
+
 Issue: emvalencaf/assayer#6 (child of map #2). Researched 2026-10-16 against the
 `langsmith` Python SDK `main` branch (PyPI latest checked: 0.14.11) and the
 official LangChain docs. Sources are listed per section and at the end.
