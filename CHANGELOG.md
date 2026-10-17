@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Added
+- Research notes under `docs/research/` on agent metrics, LLM/RAG metrics, Langfuse, LangSmith, OpenTelemetry/OpenInference and library packaging.
 - Harness template: agent skills, git hooks, CI, `.wiki/` knowledge bundle and `docs/agents/`.
 - `Package organization` section in `CODE_STANDARDS.md`.
 - Test job in CI and a `dev` dependency group with `pytest`.
