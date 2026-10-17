@@ -53,12 +53,15 @@ Runner(
 A Field that is a list of objects maps to a `ListField` instead of a list of metrics (#29):
 
 ```python
-Runner(target, field_metrics={
-    "items": ListField(
-        properties={"name": [exact], "tags": ListField({"v": [exact]})},
-        align="best_match",  # or "key" (with key="id") or "positional"
-    ),
-})
+Runner(
+    target,
+    field_metrics={
+        "items": ListField(
+            properties={"name": [exact], "tags": ListField({"v": [exact]})},
+            align="best_match",  # or "key" (with key="id") or "positional"
+        ),
+    },
+)
 ```
 
 * The Alignment pairs each predicted item with an expected one. `best_match` (default) is greedy by descending similarity (the mean of the pair's property Scores; a nested list counts as its `list_f1`, through each entry's `similarity_name`), threshold 0.5, ties by position (expected index, then predicted index). `key` pairs equal `key` values; `positional` pairs equal indexes.[^alignment]
