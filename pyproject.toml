@@ -10,6 +10,7 @@ requires-python = ">=3.11"
 dependencies = [
     "bert-score",
     "langchain-core",
+    "langfuse>=5.0.2",
     "langsmith",
     "nltk",
     "numpy",

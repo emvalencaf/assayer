@@ -116,6 +116,39 @@ Cloud. Self-hosted has no enforced limits. Score text max 500 chars; BOOLEAN nee
 - Dataset REST endpoint shapes and dataset-run/run-item fields.
 - Complete list of observation types and the exact score-target options for dataset runs.
 
+## 7. Gaps resolved against `langfuse` 5.0.2 (issue #37)
+
+Verified in the installed SDK source; behaviour against a live server was not tested (no
+credentials), so the live smoke test in `tests/integrations/test_langfuse_adapter.py` is the check.
+
+- **`create_score` and `metadata`**: accepted (`metadata`, also `dataset_run_id`, `session_id`,
+  `timestamp`, `environment`), but it is queued and never raises, so a rejected score only
+  shows in the `langfuse` logger. The adapter inspects the signature and drops `metadata`
+  with a report note if a future or older SDK lacks it.
+- **Constructor**: `timeout`, `flush_at`, `flush_interval`, `tracing_enabled`, `httpx_client`,
+  `sample_rate`, `tracer_provider`, `id_generator` and `span_exporter` exist.
+  `tracing_enabled=False` makes `create_score` a no-op and `sample_rate` drops whole traces.
+- **Observation ids and times**: `start_observation` cannot set a span id or a start/end
+  time; ids come from the tracer's `IdGenerator`, which only a client built with its own
+  provider controls. The adapter therefore posts OTLP spans itself with
+  `client.api.opentelemetry.export_traces` (explicit 16-hex span ids, 32-hex trace ids,
+  nanosecond times as strings, header `x-langfuse-ingestion-version: 4`), which is
+  synchronous and so confirms delivery.
+- **Observation types**: `span`, `generation`, `embedding`, `agent`, `tool`, `chain`,
+  `retriever`, `evaluator`, `guardrail` (plus `event` through `create_event`).
+- **Dataset runs**: v5 has no dataset-run-items endpoint in `client.api`. A run is the group
+  of traces whose spans carry `langfuse.experiment.id`, `.name`, `.dataset.id`,
+  `.item.id` and `.item.root_observation_id`. The id is
+  `sha256(json(["langfuse-experiment-v1", project_id, dataset_id, run_name]))[:16]`, copied
+  from `Langfuse._create_experiment_id` (private, so a drift is possible); the project id
+  comes from `client.api.projects.get()`.
+- **Run-level scores**: `create_score(dataset_run_id=<experiment id>)`.
+- **Datasets**: `create_dataset(name=...)` upserts by name; `create_dataset_item(id=...)`
+  upserts by id. `api.datasets` has `create`, `get`, `list`; `api.dataset_items` has
+  `create`, `get`, `list`, `delete`.
+- **Errors**: REST failures raise `langfuse.api.core.api_error.ApiError` subclasses with
+  `status_code` and `headers`; transport failures raise `httpx` errors.
+
 ## Sources
 
 - https://langfuse.com/docs/observability/data-model

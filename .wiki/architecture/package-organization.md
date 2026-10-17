@@ -31,7 +31,7 @@ build on `judges` and `models`.
 | `runner/` | Evaluation, historical and consistency pipelines, field routing, pricing, and the `field_map/` package (Alignment, Field scoring, schema utility, YAML/JSON loading). |
 | `alignment.py`, `path.py` | Top-level pure helpers (Alignment of list items, dotted-path `resolve`) shared by `metrics/` and `runner/field_map/`; they import nothing else from `assayer` but each other. Still importable from `assayer.runner.field_map`. |
 | `adapters/` | The `Adapter` Protocol, `ExportReport`/`ExportFailure`, the closed failure taxonomy, deterministic export ids, the retry policy, `plan_export`/`run_export` and `InMemoryAdapter`; no backend-specific clients. See [Adapters](adapters.md). |
-| `integrations/` | Adapters for external services: `LangSmithAdapter` (see [Adapters](adapters.md)). |
+| `integrations/` | Adapters for external services: `LangSmithAdapter` and `LangfuseAdapter` (see [Adapters](adapters.md)). |
 
 # Conventions
 
