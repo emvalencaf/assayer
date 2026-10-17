@@ -1,6 +1,7 @@
 # Update Log
 
 ## 2026-10-17
+* **Update**: [Runner](architecture/runner.md) now records that `run` and `score` reject Cases with repeated ids (a position id counts); [Corpus and consistency metrics](metrics/corpus-and-consistency.md) records that a consistency metric with no Trajectories is an `EvaluationFailure`, not a 0, and that the corpus is pooled rather than averaged per Case (other changes were internal refactors).
 * **Addition**: Documented [Corpus and consistency metrics](metrics/corpus-and-consistency.md) (#30), listed in the [metrics index](metrics/index.md).
 * **Update**: [Per-Field measurement](architecture/field-measurement.md) now accepts Experiment-level metrics in `field_metrics` (not in `ListField` properties); [Metric contract](metrics/metric-contract.md) records that an Experiment-level `requires` must hold for every Case; [Runner](architecture/runner.md) and [Domain models](architecture/domain-models.md) record `Experiment.cases`; [Package organization](architecture/package-organization.md) lists the `consistency` and `corpus` modules.
 * **Update**: [Per-Field measurement](architecture/field-measurement.md) now records that Alignment `pairs` are `(expected, predicted)` tuples and that `best_match` breaks ties by expected then predicted index; field map entries expose `similarity_name` and `metrics()` (internal refactor, no scoring change).

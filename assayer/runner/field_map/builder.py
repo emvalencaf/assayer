@@ -4,13 +4,14 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 from assayer.metrics import Metric
+from assayer.metrics.metric import MetricLevel
 from assayer.runner.field_map.field_metric import FieldMetric
 from assayer.runner.field_map.list_field import ALIGNMENTS, ListField, ListSpec
 
 
 def build_field_map(
     field_metrics: Mapping[str, Sequence[Any] | ListField] | None,
-    levels: tuple[str, ...] = ("trajectory", "experiment"),
+    levels: tuple[MetricLevel, ...] = ("trajectory", "experiment"),
 ) -> list[FieldMetric | ListSpec]:
     """Validate a field map and flatten it into (Field, metric, parameters) pairs.
 

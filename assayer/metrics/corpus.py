@@ -19,7 +19,8 @@ def corpus_metric(name: str, fn: Callable[[list[Any], list[Any]], float]) -> Met
     """Lift a `(predictions, references)` function into an Experiment-level Metric.
 
     Each Trajectory is one prediction (its `final_output`) paired with the
-    `expected_output` of its Case, so a Case run k times counts k times.
+    `expected_output` of its Case, so a Case run k times counts k times (the
+    corpus is pooled, not averaged per Case).
 
     Args:
         name: Name of the metric; becomes the name of its Score.
@@ -29,12 +30,12 @@ def corpus_metric(name: str, fn: Callable[[list[Any], list[Any]], float]) -> Met
         A Metric that requires `expected_output` on every Case.
     """
 
-    def corpus(experiment: Experiment, case=None) -> float:
+    def over_experiment(experiment: Experiment, case=None) -> float:
         references = {c.id: c.expected_output for c in experiment.cases}
         predictions = [t.final_output for t in experiment.trajectories]
         return fn(predictions, [references[t.case_id] for t in experiment.trajectories])
 
-    return Metric(name=name, level="experiment", fn=corpus, requires=("expected_output",))
+    return Metric(name=name, level="experiment", fn=over_experiment, requires=("expected_output",))
 
 
 def register_corpus_metrics(registry) -> None:
@@ -49,7 +50,7 @@ def register_corpus_metrics(registry) -> None:
     Raises:
         KeyError: If one of the names is already registered.
     """
-    corpus = {
+    corpus_fns = {
         "bleu": bleu,
         "rouge_l": rouge_l,
         "bert_score": bert_score,
@@ -60,5 +61,5 @@ def register_corpus_metrics(registry) -> None:
         "f1": make_f1("macro"),
         "ner_macro_f1": ner_macro_f1,
     }
-    for name, fn in corpus.items():
+    for name, fn in corpus_fns.items():
         registry.register(corpus_metric(name, fn))

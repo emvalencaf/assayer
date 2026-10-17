@@ -23,12 +23,16 @@ def _groups(experiment: Experiment) -> list[tuple[list[Any], Any]]:
     return [(outputs[c.id], c.expected_output) for c in experiment.cases if c.id in outputs]
 
 
-def _mean_over_cases(per_case: Callable[[list[Any], Any], float]) -> Callable:
-    def metric(experiment: Experiment, case=None) -> float:
-        values = [per_case(*group) for group in _groups(experiment)]
-        return statistics.mean(values) if values else 0.0
+def _mean_over_cases(
+    per_case: Callable[[list[Any], Any], float],
+) -> Callable[[Experiment, None], float]:
+    def mean_over_cases(experiment: Experiment, case=None) -> float:
+        groups = _groups(experiment)
+        if not groups:
+            raise ValueError("no Trajectories to measure")
+        return statistics.mean(per_case(*group) for group in groups)
 
-    return metric
+    return mean_over_cases
 
 
 def _is_multilabel(outputs: list[Any]) -> bool:
@@ -59,15 +63,15 @@ def _entropy(outputs: list[Any], reference: Any) -> float:
 def _correct_rate(outputs: list[Any], reference: Any) -> float:
     """Share of the repetitions that equal the reference (as sets for multi-label)."""
     if _is_multilabel(outputs):
-        try:
-            wanted = set(reference)
-            return sum(_as_set(o) == wanted for o in outputs) / len(outputs)
-        except TypeError:
+        wanted = _as_set(reference)
+        if wanted is None:
             return 0.0
+        return sum(_as_set(o) == wanted for o in outputs) / len(outputs)
     return sum(_number_text(o) == _number_text(reference) for o in outputs) / len(outputs)
 
 
 def _as_set(output: Any) -> set | None:
+    """The labels of a multi-label output, or None when it is not a collection."""
     try:
         return set(output)
     except TypeError:
@@ -82,11 +86,8 @@ def _pass_at_k(outputs: list[Any], reference: Any) -> float:
 def _recall_at_k(outputs: list[Any], reference: Any) -> float:
     """Share of the reference labels covered by the union of the repetitions."""
     if _is_multilabel(outputs):
-        try:
-            wanted = set(reference)
-        except TypeError:
-            return 0.0
-        if not wanted:
+        wanted = _as_set(reference)
+        if not wanted:  # no reference labels, or not a collection of labels
             return 0.0
         covered = set().union(*(_as_set(o) or set() for o in outputs))
         return len(covered & wanted) / len(wanted)
@@ -145,21 +146,20 @@ def register_consistency_metrics(registry) -> None:
     Raises:
         KeyError: If one of the names is already registered.
     """
-    plain = {"agreement_rate": _agreement_rate, "entropy": _entropy}
-    referenced = {
+    without_reference = {"agreement_rate": _agreement_rate, "entropy": _entropy}
+    with_reference = {
         "correct_rate": _correct_rate,
         "pass_at_k": _pass_at_k,
         "recall_at_k": _recall_at_k,
     }
-    for name, per_case in plain.items():
-        registry.register(Metric(name=name, level="experiment", fn=_mean_over_cases(per_case)))
-    for name, per_case in referenced.items():
-        registry.register(
-            Metric(
-                name=name,
-                level="experiment",
-                fn=_mean_over_cases(per_case),
-                requires=("expected_output",),
+    for per_case_fns, requires in ((without_reference, ()), (with_reference, ("expected_output",))):
+        for name, per_case in per_case_fns.items():
+            registry.register(
+                Metric(
+                    name=name,
+                    level="experiment",
+                    fn=_mean_over_cases(per_case),
+                    requires=requires,
+                )
             )
-        )
     registry.register(make_score_std())

@@ -191,3 +191,14 @@ class TestPerField:
         assert _value(experiment, "score_std", "label") == pytest.approx(
             legacy.compute_score_std(_legacy("xxyx", [1.0, 1.0, 0.0, 1.0]))
         )
+
+
+class TestEmptyExperiment:
+    @pytest.mark.parametrize(
+        "name", ["agreement_rate", "entropy", "correct_rate", "pass_at_k", "recall_at_k"]
+    )
+    def test_nothing_to_measure_is_a_failure_not_a_zero(self, name):
+        experiment = Runner(str, [_registry().get(name)]).run(Dataset("d", []))
+
+        assert experiment.scores == []
+        assert [f.metric for f in experiment.failures] == [name]

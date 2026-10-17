@@ -5,7 +5,7 @@ description: The Experiment-level metrics that score a whole corpus of outputs (
 resource: assayer/metrics/
 tags: [metrics, experiment, corpus, consistency]
 status: draft
-generated: { by: claude-code/pre-commit, at: 2026-10-18T00:30:00Z }
+generated: { by: claude-code/pre-commit, at: 2026-10-18T01:00:00Z }
 sources:
   - id: corpus
     resource: assayer/metrics/corpus.py
@@ -34,7 +34,7 @@ same as the legacy functions, which stay until the clean break.[^corpus-tests]
 macro-averaged) and `ner_macro_f1`. `corpus_metric(name, fn)` lifts any
 `(predictions, references) -> float` function.[^corpus]
 
-* Each Trajectory is one prediction (its `final_output`) paired with the `expected_output` of its Case, so a Case run k times counts k times.
+* Each Trajectory is one prediction (its `final_output`) paired with the `expected_output` of its Case, so a Case run k times counts k times (the corpus is pooled, not averaged per Case).
 * The metric `requires` `expected_output`: a Case without it gives an `EvaluationFailure` and no Score.[^corpus-tests]
 
 # Consistency metrics
@@ -56,6 +56,7 @@ Score is the mean over Cases.[^consistency]
 * `correct_rate`, `pass_at_k` and `recall_at_k` `require` `expected_output`.
 * `make_score_std(of="metric")` names the metric to measure. Without `of`, the only trajectory-level metric that scored the output is used; with none or several, it fails with an `EvaluationFailure`. That metric must run before `score_std`.[^consistency-tests]
 * A single repetition has no disagreement: `agreement_rate` 1.0, `entropy` 0.0.
+* With nothing to measure (an Experiment with no Trajectories) a consistency metric gives an `EvaluationFailure`, never a 0.[^consistency-tests]
 
 # Per Field
 

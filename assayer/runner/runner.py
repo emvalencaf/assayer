@@ -73,18 +73,19 @@ class Runner:
             The Experiment, with the Trajectories, Scores and evaluation failures.
 
         Raises:
-            ValueError: If there is no target, or a loaded entry lacks `input` or a
-                field a metric requires.
+            ValueError: If there is no target, two Cases have the same id, or a loaded
+                entry lacks `input` or a field a metric requires.
         """
         if self.target is None:
             raise ValueError("run needs a target; use score for collected outputs")
         if not isinstance(dataset, Dataset):
             dataset = load_cases(dataset, self._all_metrics())
 
+        case_ids = _case_ids(dataset)
         experiment = Experiment(name=dataset.name, pricing=self.pricing)
         pairs: list[tuple[Trajectory, Case]] = []
         for position, case in enumerate(dataset.cases):
-            case_id = case.id if case.id is not None else str(position)
+            case_id = case_ids[position]
             experiment.cases.append(dataclasses.replace(case, id=case_id))
             for repetition in range(self.repetitions):
                 trajectory = self._execute(case, case_id, repetition)
@@ -106,8 +107,8 @@ class Runner:
             The Experiment, with the Trajectories, Scores and evaluation failures.
 
         Raises:
-            ValueError: If outputs does not have one entry per Case, or a loaded
-                entry lacks `input` or a field a metric requires.
+            ValueError: If outputs does not have one entry per Case, two Cases have the
+                same id, or a loaded entry lacks `input` or a field a metric requires.
         """
         if not isinstance(dataset, Dataset):
             dataset = load_cases(dataset, self._all_metrics())
@@ -117,10 +118,11 @@ class Runner:
                 f"for {len(dataset.cases)} Cases"
             )
 
+        case_ids = _case_ids(dataset)
         experiment = Experiment(name=dataset.name, pricing=self.pricing)
         pairs: list[tuple[Trajectory, Case]] = []
         for position, (case, output) in enumerate(zip(dataset.cases, outputs, strict=True)):
-            case_id = case.id if case.id is not None else str(position)
+            case_id = case_ids[position]
             experiment.cases.append(dataclasses.replace(case, id=case_id))
             trajectory = self._tag(output, case, case_id, 0)
             experiment.trajectories.append(trajectory)
@@ -181,3 +183,20 @@ class Runner:
             outcome = metric.evaluate(subject, case)
             experiment.scores.extend(outcome.scores)
             experiment.failures.extend(outcome.failures)
+
+
+def _case_ids(dataset: Dataset) -> list[str]:
+    """The id of each Case: its own, else its position.
+
+    Raises:
+        ValueError: If two Cases end up with the same id, which would make their
+            Trajectories and references indistinguishable.
+    """
+    ids = [
+        case.id if case.id is not None else str(position)
+        for position, case in enumerate(dataset.cases)
+    ]
+    repeated = sorted({i for i in ids if ids.count(i) > 1})
+    if repeated:
+        raise ValueError(f"Case ids must be unique; repeated: {', '.join(map(repr, repeated))}")
+    return ids

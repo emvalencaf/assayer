@@ -5,7 +5,7 @@ description: Runs a target over a Dataset of Cases and returns an Experiment wit
 resource: assayer/runner/runner.py
 tags: [runner, experiment, dataset]
 status: draft
-generated: { by: claude-code/pre-commit, at: 2026-10-18T00:30:00Z }
+generated: { by: claude-code/pre-commit, at: 2026-10-18T01:00:00Z }
 sources:
   - id: runner
     resource: assayer/runner/runner.py
@@ -28,7 +28,7 @@ sources:
   returning a `Trajectory` is kept as is. An exception becomes the `error` of a
   model Step, formatted as `ExceptionType: message` (e.g. `RuntimeError: boom`).
 * Every Trajectory gets `case_id` (the Case id, else its position) and
-  `repetition`; Steps without an id get one so Step Scores can point at them.
+  `repetition`. Case ids must be unique, a position id counting as `"0"`, `"1"`...: both `run` and `score` raise `ValueError` naming the repeated ids, before any target call; Steps without an id get one so Step Scores can point at them.
 * Metrics run at their own level, on the whole output; Scores and `EvaluationFailure`s go on the Experiment.
 * Both `run` and `score` keep the Cases (with the ids their Trajectories carry) in `Experiment.cases`, the references that [Experiment-level metrics](../metrics/corpus-and-consistency.md) compare the Trajectories to.
 * `field_metrics` scores individual output Fields by dotted path and is validated on construction; see [Per-Field measurement](field-measurement.md).
