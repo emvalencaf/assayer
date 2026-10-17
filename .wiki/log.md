@@ -1,6 +1,7 @@
 # Update Log
 
 ## 2026-10-17
+* **Update**: [Adapters](architecture/adapters.md) records that the live smoke test reads project-level `overall.f` feedback back with `list_feedback` (it is not in `feedback_stats`) and that the UI may not list it like run feedback.
 * **Update**: [Adapters](architecture/adapters.md) records what the LangSmith live smoke test checks, the `ASSAYER_SMOKE_KEEP` opt-out of cleanup, and the `scripts/validate-langsmith.sh` wizard.
 * **Update**: [Package organization](architecture/package-organization.md) and [Adapters](architecture/adapters.md) record that `LangSmithPublisher` was removed in favour of `LangSmithAdapter`.
 * **Update**: [Adapters](architecture/adapters.md) documents `LangSmithAdapter` (#36): run trees, feedback named `<metric>.<field>`, example upserts, credentials and error mapping.

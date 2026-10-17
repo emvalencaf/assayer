@@ -641,6 +641,7 @@ def test_live_smoke():
             lambda: list(client.list_runs(project_name=name)), lambda found: len(found) >= 5
         )
         assert len(runs) == 5  # the root and four Steps, once each
+        project = client.read_project(project_name=name)
         root = next(run for run in runs if run.parent_run_id is None)
         assert all(run.trace_id == root.id for run in runs)
         assert len(list(client.list_examples(dataset_name=name))) == 1
@@ -648,11 +649,12 @@ def test_live_smoke():
             lambda: list(client.list_feedback(run_ids=[root.id])), lambda found: len(found) >= 1
         )
         assert {f.key for f in feedback} == {"exact"}
-        stats = _wait_for(
-            lambda: client.read_project(project_name=name, include_stats=True),
-            lambda project: "overall.f" in (project.feedback_stats or {}),
+        # project-level feedback has no run, so it is not in the project's feedback_stats
+        overall = _wait_for(
+            lambda: list(client.list_feedback(feedback_key=["overall.f"], project_id=project.id)),
+            lambda found: len(found) >= 1,
         )
-        assert "overall.f" in stats.feedback_stats
+        assert [(f.score, f.session_id) for f in overall] == [(0.5, project.id)]
     finally:
         for cleanup in (
             ()

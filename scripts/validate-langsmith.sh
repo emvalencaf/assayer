@@ -250,7 +250,7 @@ else
   open_url "https://smith.langchain.com/"
   step "Tracing → Projects (or Datasets & Experiments): open '$SMOKE_NAME'."
   step "Check: one trace with 4 child runs (retriever, llm, tool, chain), the llm run showing 10 input / 5 output tokens."
-  step "Check: the 'exact' feedback on the trace and 'overall.f' on the experiment."
+  step "Check: the 'exact' feedback on the trace. 'overall.f' is experiment-level feedback: the API stores it, but the UI may not list it like run feedback."
   step "Datasets & Experiments → '$SMOKE_NAME': one example with case_id c1, and the experiment linked to it."
   pause "Press Enter when you have looked."
   if confirm "Did everything look right?"; then
