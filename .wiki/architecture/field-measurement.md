@@ -13,6 +13,12 @@ sources:
   - id: runner
     resource: assayer/runner/runner.py
     title: Runner
+  - id: alignment
+    resource: assayer/runner/alignment.py
+    title: Alignment strategies
+  - id: scoring
+    resource: assayer/runner/field_scoring.py
+    title: List Field scoring
   - id: tests
     resource: tests/runner/test_field_map.py
     title: Field map tests
@@ -42,6 +48,25 @@ Runner(
 * `Experiment.scores_by_field()` groups the Scores by `field`, in computed order; the whole-output Scores are under `None`. See [Domain models](domain-models.md).
 * Works in both `run` and `score`. `load_cases` also validates the Case fields that the field metrics `require`.[^runner]
 
+# List Fields
+
+A Field that is a list of objects maps to a `ListField` instead of a list of metrics (#29):
+
+```python
+Runner(target, field_metrics={
+    "items": ListField(
+        properties={"name": [exact], "tags": ListField({"v": [exact]})},
+        align="best_match",  # or "key" (with key="id") or "positional"
+    ),
+})
+```
+
+* The Alignment pairs each predicted item with an expected one. `best_match` (default) is greedy by descending similarity (the mean of the pair's property Scores; a nested list counts as its `list_f1`), threshold 0.5, ties by position. `key` pairs equal `key` values; `positional` pairs equal indexes.[^alignment]
+* Property Scores are the mean over the aligned pairs, at `items.name`; a nested `ListField` aligns inside each pair, recursively.
+* `list_precision`, `list_recall` and `list_f1` are Scores of the list Field. Both empty: 1.0 on all three; expected empty with predictions: precision 0, recall 1.0; expected non-empty and none predicted (or no list): recall 0, precision 1.0.
+* `metadata["alignment"]` holds `pairs` (`[expected, predicted]` indexes), `unmatched_expected` and `unmatched_predicted`. For a nested list the metadata is `alignments`, one entry per outer pair, tagged with `within`.[^scoring]
+* An expected value that is absent or not a list is an `EvaluationFailure` of `list_alignment`.
+
 # Validation
 
 `build_field_map` checks the map when the `Runner` is built, before any target
@@ -52,4 +77,6 @@ call.[^field-map]
 
 [^field-map]: assayer/runner/field_map.py
 [^runner]: assayer/runner/runner.py
+[^alignment]: assayer/runner/alignment.py
+[^scoring]: assayer/runner/field_scoring.py
 [^tests]: tests/runner/test_field_map.py

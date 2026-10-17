@@ -1,6 +1,7 @@
 # Update Log
 
 ## 2026-10-17
+* **Addition**: [Per-Field measurement](architecture/field-measurement.md) documents the Alignment of list Fields (#29): `ListField`, `key`/`best_match`/`positional`, and the `list_precision`/`list_recall`/`list_f1` Scores.
 * **Update**: [Per-Field measurement](architecture/field-measurement.md) now records that listing the same metric twice under one path raises `ValueError`, and that only ASCII digits index a list in a path.
 * **Addition**: Documented [Per-Field measurement](architecture/field-measurement.md) (#28): `Runner(field_metrics=...)`, dotted paths, per-pair parameters and construction-time validation; listed in the [architecture index](architecture/index.md).
 * **Update**: [Runner](architecture/runner.md), [Metric contract](metrics/metric-contract.md) (`evaluate(field, params)`) and [Domain models](architecture/domain-models.md) (`EvaluationFailure.field`, `Experiment.scores_by_field()`) now record per-Field measurement.

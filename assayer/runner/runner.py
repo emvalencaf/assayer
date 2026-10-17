@@ -1,14 +1,14 @@
 """Runs a target over a Dataset and returns an Experiment."""
 
 import copy
-import dataclasses
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from typing import Any
 
 from assayer.metrics import Metric
 from assayer.models import Case, Dataset, Experiment, PricingConfig, Step, Trajectory
 from assayer.runner.case_loader import load_cases
-from assayer.runner.field_map import build_field_map, resolve
+from assayer.runner.field_map import build_field_map, metrics_of
+from assayer.runner.field_scoring import score_field
 
 
 class Runner:
@@ -23,7 +23,8 @@ class Runner:
         field_metrics: Maps the dotted path of an output Field to the trajectory-level
             metrics that score it on its own, each a Metric or a `(Metric, params)`
             pair whose params are passed to the metric's function for that Field
-            only. The metric sees the Field's value as `final_output` and the
+            only; or a `ListField` that aligns a list of objects and scores the pairs
+            property by property. The metric sees the Field's value as `final_output` and the
             Case's as `expected_output`; its Scores carry the `field`.
         repetitions: How many times each Case is run; each repetition is kept as
             its own Trajectory.
@@ -119,23 +120,14 @@ class Runner:
         return experiment
 
     def _all_metrics(self) -> list[Metric]:
-        return [*self.metrics, *(pair.metric for pair in self._field_pairs)]
+        return [*self.metrics, *metrics_of(self._field_pairs)]
 
     def _apply_all(self, experiment: Experiment, pairs: list[tuple[Trajectory, Case]]) -> None:
         for metric in self.metrics:
             self._apply(metric, experiment, pairs)
-        for pair in self._field_pairs:
+        for entry in self._field_pairs:
             for trajectory, case in pairs:
-                outcome = pair.metric.evaluate(
-                    dataclasses.replace(
-                        trajectory, final_output=resolve(trajectory.final_output, pair.path)
-                    ),
-                    dataclasses.replace(
-                        case, expected_output=resolve(case.expected_output, pair.path)
-                    ),
-                    field=pair.path,
-                    params=pair.params,
-                )
+                outcome = score_field(entry, trajectory, case)
                 experiment.scores.extend(outcome.scores)
                 experiment.failures.extend(outcome.failures)
 
