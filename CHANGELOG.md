@@ -6,6 +6,8 @@
 - README no longer claims that results are pushed to LangSmith automatically: the `Runner` never calls `LangSmithPublisher`.
 
 ### Added
+- Vendor-neutral models `Trajectory`, `Step`, `Score`, `Experiment`, `EvaluationFailure`, `Dataset` and `Case` beside the legacy ones (#24); `PricingConfig` moved to `assayer.models` and still importable from `assayer.runner.pricing`.
+- `Experiment.total_judge_usage(pricing)` prices the Judge bucket. `TokenUsage` supports addition; `Score` requires `target_id` for step targets and rejects non-numeric values.
 - Research notes under `docs/research/` on agent metrics, LLM/RAG metrics, Langfuse, LangSmith, OpenTelemetry/OpenInference and library packaging.
 - `GLOSSARY.md` with the initial domain language: Trajectory, Score, Adapter and Judge.
 - Domain terms Step, Dataset, Case, Experiment, Field, Alignment and End state in `GLOSSARY.md`, and ADR 0001 for the own Trajectory format.

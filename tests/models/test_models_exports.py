@@ -66,6 +66,14 @@ class TestModelsExports:
             "ConsistencySummary",
             "ConsistencyRunResult",
             "ConsistencyReport",
+            "Case",
+            "Dataset",
+            "EvaluationFailure",
+            "Experiment",
+            "PricingConfig",
+            "Score",
+            "Step",
+            "Trajectory",
         }
 
         # Check that __all__ exists

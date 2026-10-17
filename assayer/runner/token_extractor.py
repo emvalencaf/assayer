@@ -7,8 +7,7 @@ pricing configuration.
 
 from typing import Any
 
-from assayer.models import TokenUsage
-from assayer.runner.pricing import PricingConfig
+from assayer.models import PricingConfig, TokenUsage
 
 
 def extract_token_usage(
