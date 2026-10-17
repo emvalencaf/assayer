@@ -167,7 +167,8 @@ def bert_score(predictions: list[str], references: list[str]) -> float:
         # Convert F1 tensor to list and compute mean
         f1_list = f1_scores.tolist()
         if f1_list:
-            return float(sum(f1_list) / len(f1_list))
+            # Baseline rescaling can overshoot [0, 1] by floating-point error
+            return min(1.0, max(0.0, float(sum(f1_list) / len(f1_list))))
         else:
             return 0.0
 

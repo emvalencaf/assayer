@@ -41,6 +41,16 @@ class TestBertScore:
             )
             assert abs(result - expected_mean) <= 0.01
 
+    def test_bert_score_clamps_rescaled_scores_to_unit_interval(self):
+        """Test that floating-point overshoot from baseline rescaling stays within [0, 1]."""
+        mock_module, _ = _make_bert_score_mock([1.000001, 1.000002])
+        with patch.dict(sys.modules, {"bert_score": mock_module}):
+            assert bert_score(["a", "b"], ["a", "b"]) == 1.0
+
+        mock_module, _ = _make_bert_score_mock([-0.2, -0.1])
+        with patch.dict(sys.modules, {"bert_score": mock_module}):
+            assert bert_score(["a", "b"], ["c", "d"]) == 0.0
+
     def test_bert_score_returns_zero_for_empty_predictions(self):
         """Test that bert_score returns 0.0 for empty predictions list."""
         references = ["Some reference text"]
