@@ -25,6 +25,9 @@ sources:
   - id: langsmith
     resource: assayer/integrations/langsmith_adapter.py
     title: LangSmithAdapter
+  - id: langsmith-export
+    resource: assayer/integrations/langsmith_export.py
+    title: One export to LangSmith
 ---
 
 # Overview
@@ -83,11 +86,11 @@ Ids are UUIDv5 hex strings derived from the Experiment name and the item's ident
 
 # LangSmithAdapter
 
-`assayer.integrations.LangSmithAdapter(client=None, *, api_key=None, dataset_name=None, name="langsmith")` exports an Experiment to LangSmith (#36) and replaces `LangSmithPublisher`.[^langsmith] The client is an injected `langsmith.Client` (left open by `close`) or one built from `api_key`, `LANGSMITH_API_KEY` or `LANGCHAIN_API_KEY`, in that order; none of them is an `AdapterConfigError`.
+`assayer.integrations.LangSmithAdapter(client=None, *, api_key=None, dataset_name=None, started_at=None, name="langsmith")` exports an Experiment to LangSmith (#36) and replaces `LangSmithPublisher`.[^langsmith] The client is an injected `langsmith.Client` (left open by `close`) or one built from `api_key`, `LANGSMITH_API_KEY` or `LANGCHAIN_API_KEY`, in that order; none of them is an `AdapterConfigError`.
 
 * **Cases** are examples of a dataset (named after the Experiment, or `dataset_name`; created when missing, reused otherwise) with the deterministic Case id as `example_id` and `case_id` in the metadata. An existing example is updated, never deleted, and `include_content=False` leaves its inputs alone.
 * **The Experiment** is a project (`create_project(upsert=True)`) whose `reference_dataset_id` is that dataset.
-* **Trajectories** are run trees: a root `chain` run with `reference_example_id` set to its Case, and one child per Step with client UUIDs, `trace_id`, `parent_run_id` and `dotted_order`. Kind maps `model` to `llm`, `tool` to `tool`, `retrieval` to `retriever` and `other` to `chain`. Model Steps carry `usage_metadata` (tokens, and `total_cost` when known) and `ls_model_name`; the root run's `assayer.usage` metadata holds the Trajectory totals. Trajectories carry no timing, so start and end times are synthetic (the Adapter's first export time plus one microsecond per Step, `assayer.synthetic_timing` in the metadata).
+* **Trajectories** are run trees: a root `chain` run with `reference_example_id` set to its Case, and one child per Step with client UUIDs, `trace_id`, `parent_run_id` and `dotted_order`. Kind maps `model` to `llm`, `tool` to `tool`, `retrieval` to `retriever` and `other` to `chain`. Model Steps carry `usage_metadata` (tokens, and `total_cost` when known) and `ls_model_name`; the root run's `assayer.usage` metadata holds the Trajectory totals. Trajectories carry no timing, so start and end times are synthetic (the Adapter's first export time, or `started_at` when given, plus one microsecond per Step; `assayer.synthetic_timing` in the metadata). Pass the same timezone-aware `started_at` to export an Experiment again from a new Adapter without changing the runs' `dotted_order`. `LangSmithExport` (`langsmith_export.py`) holds the state and calls of one export.[^langsmith-export]
 * **Scores** are feedback named `<metric>.<field>` (just `<metric>` without a Field) with the Field and the Score's metadata in `extra`, the label as `value` and the comment as `comment`. Step and Trajectory Scores attach to their run; Experiment-level Scores, and Scores that could not be linked, attach to the project (`project_id`). An existing feedback id is updated.
 * Runs are reported `queued` (the SDK buffers them; the Adapter calls `flush()` at the end of an export), Cases and Scores `confirmed`.
 * SDK errors map to the taxonomy: auth to `auth`, rate limit to `rate_limited`, connection and API errors to `transport`, not found, user and conflict errors to `validation`, anything else to `unknown`.
@@ -100,3 +103,4 @@ Tests use `create_autospec(langsmith.Client)` clients behind the conformance sui
 [^retry]: assayer/adapters/retry.py
 [^conformance]: tests/adapters/conformance.py
 [^langsmith]: assayer/integrations/langsmith_adapter.py
+[^langsmith-export]: assayer/integrations/langsmith_export.py

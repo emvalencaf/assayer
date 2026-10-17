@@ -6,6 +6,7 @@ every call is checked against the real signatures. `test_live_smoke` runs only w
 
 import datetime as dt
 import os
+import time
 import uuid
 from collections import defaultdict, deque
 from types import SimpleNamespace
@@ -326,6 +327,22 @@ class TestRunTrees:
         adapter.client.flush.assert_called_once_with()
 
 
+class TestStartedAt:
+    def test_a_new_adapter_given_the_same_started_at_reproduces_the_dotted_orders(self):
+        def export(clock_time):
+            adapter = LangSmithAdapter(
+                make_client(),
+                started_at=START,
+                clock=lambda: clock_time,
+                sleep=lambda seconds: None,
+            )
+            runner = Runner(_tool_then_model, adapter=adapter)
+            runner.export(runner.run(Dataset("d", [Case(input="a", id="c1")])))
+            return {k: v["dotted_order"] for k, v in adapter.client.backend.runs.items()}
+
+        assert export(START + dt.timedelta(days=1)) == export(START + dt.timedelta(days=2))
+
+
 class TestScores:
     def test_feedback_is_named_metric_dot_field_with_the_field_in_metadata(self, exported):
         _, backend = exported
@@ -394,7 +411,7 @@ class TestScores:
 
         (feedback,) = adapter.client.backend.feedback.values()
         assert feedback["run_id"] is None
-        assert feedback["extra"]["target"] == "step"
+        assert feedback["extra"]["assayer.target"] == "step"
 
     def test_a_repeated_export_updates_the_feedback(self, exported, adapter):
         experiment, backend = exported
@@ -510,6 +527,10 @@ class TestCredentials:
 
         assert LangSmithAdapter(client).client is client
 
+    def test_started_at_must_be_timezone_aware(self):
+        with pytest.raises(AdapterConfigError, match="timezone"):
+            LangSmithAdapter(make_client(), started_at=dt.datetime(2026, 1, 1))
+
     def test_empty_names_are_config_errors(self):
         with pytest.raises(AdapterConfigError):
             LangSmithAdapter(make_client(), name=" ")
@@ -580,21 +601,62 @@ class TestErrorMapping:
         assert len([i for i in report.confirmed if i.target_kind == "case"]) == 1
 
 
+def _wait_for(read, done, timeout=90.0):
+    """Poll `read()` until `done(result)`: runs are ingested in the background."""
+    deadline = time.monotonic() + timeout
+    while True:
+        result = read()
+        if done(result) or time.monotonic() > deadline:
+            return result
+        time.sleep(3)
+
+
 @pytest.mark.skipif(
     not (os.environ.get("LANGSMITH_API_KEY") or os.environ.get("LANGCHAIN_API_KEY")),
     reason="needs LANGSMITH_API_KEY (or LANGCHAIN_API_KEY): exports to the real LangSmith",
 )
 def test_live_smoke():
+    """Exports twice from two Adapters and reads back what LangSmith holds.
+
+    Checks that an example that exists is updated, that run trees are not duplicated, that
+    run-level and project-level feedback are accepted, and that the `dotted_order` is.
+    """
     name = f"assayer-smoke-{uuid.uuid4().hex[:8]}"
-    runner = Runner(
-        _tool_then_model,
-        [Metric(name="exact", level="trajectory", fn=lambda t, c: 1.0)],
-        adapter=LangSmithAdapter(),
-    )
+    started = dt.datetime.now(dt.UTC)
+    metric = Metric(name="exact", level="trajectory", fn=lambda t, c: 1.0)
+    runner = Runner(_tool_then_model, [metric])
     experiment = runner.run(Dataset(name, [Case(input="q", id="c1", expected_output="answer")]))
     experiment.name = name
+    experiment.scores.append(Score("overall", 0.5, target="experiment", field="f"))
+    client = langsmith.Client()
+    try:
+        for _ in range(2):  # a new Adapter each time
+            with LangSmithAdapter(client, started_at=started) as adapter:
+                report = Runner(adapter=adapter).export(experiment)
+            assert report.ok, report.failed
 
-    with runner.adapter:
-        report = runner.export(experiment)
-
-    assert report.ok, report.failed
+        runs = _wait_for(
+            lambda: list(client.list_runs(project_name=name)), lambda found: len(found) >= 5
+        )
+        assert len(runs) == 5  # the root and four Steps, once each
+        root = next(run for run in runs if run.parent_run_id is None)
+        assert all(run.trace_id == root.id for run in runs)
+        assert len(list(client.list_examples(dataset_name=name))) == 1
+        feedback = _wait_for(
+            lambda: list(client.list_feedback(run_ids=[root.id])), lambda found: len(found) >= 1
+        )
+        assert {f.key for f in feedback} == {"exact"}
+        stats = _wait_for(
+            lambda: client.read_project(project_name=name, include_stats=True),
+            lambda project: "overall.f" in (project.feedback_stats or {}),
+        )
+        assert "overall.f" in stats.feedback_stats
+    finally:
+        for cleanup in (
+            lambda: client.delete_project(project_name=name),
+            lambda: client.delete_dataset(dataset_name=name),
+        ):
+            try:
+                cleanup()
+            except langsmith.utils.LangSmithError:
+                pass

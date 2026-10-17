@@ -8,6 +8,7 @@ from assayer.adapters.errors import (
     FailureKind,
 )
 from assayer.adapters.export import (
+    Delivery,
     ExportPlan,
     PlannedItem,
     export_experiment,
@@ -30,6 +31,7 @@ __all__ = [
     "Adapter",
     "AdapterCallError",
     "AdapterConfigError",
+    "Delivery",
     "ExportFailure",
     "ExportItem",
     "ExportPlan",
