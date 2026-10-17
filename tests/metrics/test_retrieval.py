@@ -61,8 +61,12 @@ class TestById:
 
 class TestByString:
     def test_matching_ignores_case_and_whitespace_and_works_either_way(self):
-        retrieved = ["Paris   is the CAPITAL of France.", "Berlin", "capital"]
-        references = ["paris is the capital", "Madrid"]
+        retrieved = [
+            "Paris   is the CAPITAL of France, said the guide.",
+            "Berlin",
+            "Paris is the capital",  # 20 characters: a snippet of the reference below
+        ]
+        references = ["paris is the capital of france", "Madrid"]
 
         precision = _value(
             _run(make_context_precision("string"), retrieved, reference_contexts=references)
@@ -73,6 +77,15 @@ class TestByString:
 
         assert precision == pytest.approx((1 / 1 + 2 / 3) / 2)  # items 1 and 3 hold a reference
         assert recall == 0.5
+
+    def test_a_short_snippet_of_a_reference_does_not_count(self):
+        experiment = _run(
+            make_context_recall("string"),
+            ["the capital"],
+            reference_contexts=["paris is the capital of france"],
+        )
+
+        assert _value(experiment) == 0.0
 
     def test_items_may_be_mappings_with_text_or_content(self):
         retrieved = [{"content": "the moon"}, {"text": "the sun"}]

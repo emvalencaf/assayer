@@ -6,63 +6,36 @@ items of all the retrieval Steps of a Trajectory are read in order as one rankin
 """
 
 import re
-from collections.abc import Mapping
-from typing import Any, Literal
+from collections.abc import Callable
+from typing import Literal
 
 from assayer.metrics.metric import Metric
+from assayer.metrics.retrieved import RetrievedItem, retrieved_items
 from assayer.models import Case, Trajectory
 
 MatchMode = Literal["id", "string"]
 _REFERENCE_FIELD = {"id": "reference_context_ids", "string": "reference_contexts"}
-
-
-def retrieved_items(trajectory: Trajectory) -> list[tuple[str | None, str | None]]:
-    """The ranked `(id, text)` items the retrieval Steps of a Trajectory returned.
-
-    Args:
-        trajectory: The Trajectory to read.
-
-    Returns:
-        The items in order; an id or text the item does not carry is None.
-
-    Raises:
-        ValueError: If the Trajectory has no retrieval Step, or an item is neither a
-            string nor a mapping.
-    """
-    steps = [step for step in trajectory.steps if step.kind == "retrieval"]
-    if not steps:
-        raise ValueError("the Trajectory has no retrieval Step")
-    items = []
-    for step in steps:
-        output = step.output
-        for item in [] if output is None else [output] if _is_item(output) else output:
-            if isinstance(item, str):
-                items.append((None, item))
-            elif isinstance(item, Mapping):
-                text = item.get("text", item.get("content"))
-                items.append((item.get("id"), None if text is None else str(text)))
-            else:
-                raise ValueError(f"a retrieved item must be a string or a mapping, got {item!r}")
-    return items
-
-
-def _is_item(output: Any) -> bool:
-    return isinstance(output, (str, Mapping))
+_MIN_SNIPPET = 20  # characters a retrieved text needs to count by lying inside a reference
 
 
 def _normalise(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip().casefold()
 
 
-def _matches(mode: MatchMode, retrieved: tuple[str | None, str | None], reference: str) -> bool:
-    """Whether a retrieved item is the reference: same id, or one text holds the other."""
-    item_id, text = retrieved
+def _matches(mode: MatchMode, item: RetrievedItem, reference: str) -> bool:
+    """Whether a retrieved item is the reference.
+
+    By id: the ids are equal. By string: the item's text holds the reference, or is a
+    snippet of it of at least `_MIN_SNIPPET` characters, so a stray word never counts.
+    """
     if mode == "id":
-        if item_id is None:
+        if item.id is None:
             raise ValueError("a retrieved item has no id to match against reference_context_ids")
-        return item_id == reference
-    wanted, found = _normalise(reference), _normalise(text or "")
-    return bool(found) and bool(wanted) and (wanted in found or found in wanted)
+        return item.id == reference
+    wanted, found = _normalise(reference), _normalise(item.text or "")
+    if not wanted or not found:
+        return False
+    return wanted in found or (len(found) >= _MIN_SNIPPET and found in wanted)
 
 
 def _references(mode: MatchMode, case: Case) -> list[str]:
@@ -72,9 +45,43 @@ def _references(mode: MatchMode, case: Case) -> list[str]:
     return references
 
 
-def _check_mode(mode: str) -> None:
-    if mode not in _REFERENCE_FIELD:
+def _retrieval_metric(
+    name: str,
+    match: MatchMode,
+    score: Callable[[list[bool], list[bool]], float],
+) -> Metric:
+    """Build a metric from the relevance of each retrieved item and of each reference.
+
+    Args:
+        name: Name of the metric.
+        match: How items are compared to the reference.
+        score: Called with, per retrieved item in rank order, whether it is relevant, and,
+            per reference, whether it was retrieved.
+    """
+    if match not in _REFERENCE_FIELD:
         raise ValueError("match must be 'id' or 'string'")
+
+    def fn(trajectory: Trajectory, case: Case) -> float:
+        references = _references(match, case)
+        items = retrieved_items(trajectory)
+        relevant = [any(_matches(match, i, ref) for ref in references) for i in items]
+        found = [any(_matches(match, i, ref) for i in items) for ref in references]
+        return score(relevant, found)
+
+    return Metric(name=name, level="trajectory", fn=fn, requires=(_REFERENCE_FIELD[match],))
+
+
+def _average_precision(relevant: list[bool], found: list[bool]) -> float:
+    hits = precisions = 0
+    for rank, is_relevant in enumerate(relevant, 1):
+        if is_relevant:
+            hits += 1
+            precisions += hits / rank
+    return precisions / hits if hits else 0.0
+
+
+def _recall(relevant: list[bool], found: list[bool]) -> float:
+    return sum(found) / len(found)
 
 
 def make_context_precision(match: MatchMode = "id", name: str = "context_precision") -> Metric:
@@ -87,7 +94,8 @@ def make_context_precision(match: MatchMode = "id", name: str = "context_precisi
     Args:
         match: "id" compares item ids to `Case.reference_context_ids`; "string" compares
             item texts to `Case.reference_contexts`, ignoring case and whitespace, an
-            item being relevant when its text holds a reference or the reverse.
+            item being relevant when its text holds a reference or is a snippet of
+            one at least 20 characters long.
         name: Name of the metric; becomes the name of its Scores.
 
     Returns:
@@ -97,27 +105,7 @@ def make_context_precision(match: MatchMode = "id", name: str = "context_precisi
     Raises:
         ValueError: If match is not "id" or "string".
     """
-    _check_mode(match)
-
-    def context_precision(trajectory: Trajectory, case: Case) -> float:
-        references = _references(match, case)
-        relevant = [
-            any(_matches(match, item, ref) for ref in references)
-            for item in retrieved_items(trajectory)
-        ]
-        hits = precisions = 0
-        for rank, is_relevant in enumerate(relevant, 1):
-            if is_relevant:
-                hits += 1
-                precisions += hits / rank
-        return precisions / hits if hits else 0.0
-
-    return Metric(
-        name=name,
-        level="trajectory",
-        fn=context_precision,
-        requires=(_REFERENCE_FIELD[match],),
-    )
+    return _retrieval_metric(name, match, _average_precision)
 
 
 def make_context_recall(match: MatchMode = "id", name: str = "context_recall") -> Metric:
@@ -134,20 +122,7 @@ def make_context_recall(match: MatchMode = "id", name: str = "context_recall") -
     Raises:
         ValueError: If match is not "id" or "string".
     """
-    _check_mode(match)
-
-    def context_recall(trajectory: Trajectory, case: Case) -> float:
-        references = _references(match, case)
-        items = retrieved_items(trajectory)
-        found = sum(any(_matches(match, item, ref) for item in items) for ref in references)
-        return found / len(references)
-
-    return Metric(
-        name=name,
-        level="trajectory",
-        fn=context_recall,
-        requires=(_REFERENCE_FIELD[match],),
-    )
+    return _retrieval_metric(name, match, _recall)
 
 
 def register_retrieval_metrics(registry) -> None:

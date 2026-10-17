@@ -13,6 +13,9 @@ sources:
   - id: retrieval
     resource: assayer/metrics/retrieval.py
     title: make_context_precision and make_context_recall
+  - id: retrieved
+    resource: assayer/metrics/retrieved.py
+    title: retrieved_items
   - id: consistency
     resource: assayer/metrics/consistency.py
     title: make_pass_hat_k
@@ -51,7 +54,7 @@ contexts retrieved.
 | `match` | Compares | Against |
 |---|---|---|
 | `"id"` | item `id` | `Case.reference_context_ids` |
-| `"string"` | item text, ignoring case and whitespace; either text may hold the other | `Case.reference_contexts` |
+| `"string"` | item text, ignoring case and whitespace; it holds the reference, or is a snippet of it of at least 20 characters | `Case.reference_contexts` |
 
 They are deterministic. A missing or empty reference, a Trajectory without a
 retrieval Step or an item without an `id` (id variant) is an `EvaluationFailure`.

@@ -18,7 +18,7 @@ from assayer.judges import (
     verdict_schema,
 )
 from assayer.metrics.metric import Detailed, Metric, MetricLevel
-from assayer.metrics.retrieval import retrieved_items
+from assayer.metrics.retrieved import retrieved_items
 from assayer.models import Case, Step, Trajectory
 
 CRITERIA_PROMPT = Prompt(
@@ -284,7 +284,7 @@ def make_faithfulness(judge: Judge, name: str = "faithfulness") -> Metric:
     """
 
     def faithfulness(trajectory: Trajectory, case: Case | None) -> Detailed:
-        texts = [text for _, text in retrieved_items(trajectory) if text]
+        texts = [item.text for item in retrieved_items(trajectory) if item.text]
         if not texts:
             raise ValueError("no retrieved context to check the claims against")
         input_, output = _text(case.input if case else None), _text(trajectory.final_output)
