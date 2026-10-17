@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Added
+- Research notes under `docs/research/` on agent metrics, LLM/RAG metrics, Langfuse, LangSmith, OpenTelemetry/OpenInference and library packaging.
 - `GLOSSARY.md` with the initial domain language: Trajectory, Score, Adapter and Judge.
 - Harness template: agent skills, git hooks, CI, `.wiki/` knowledge bundle and `docs/agents/`.
 - `Package organization` section in `CODE_STANDARDS.md`.
