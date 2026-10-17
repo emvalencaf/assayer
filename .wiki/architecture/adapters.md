@@ -22,6 +22,15 @@ sources:
   - id: conformance
     resource: tests/adapters/conformance.py
     title: Conformance suite
+  - id: langsmith
+    resource: assayer/integrations/langsmith_adapter.py
+    title: LangSmithAdapter
+  - id: langsmith-export
+    resource: assayer/integrations/langsmith_export.py
+    title: One export to LangSmith
+  - id: validate-langsmith
+    resource: scripts/validate-langsmith.sh
+    title: LangSmith validation wizard
 ---
 
 # Overview
@@ -78,8 +87,25 @@ Ids are UUIDv5 hex strings derived from the Experiment name and the item's ident
 
 `InMemoryAdapter(name="in-memory", queue=False, sleep=...)` keeps payloads in `items`, keyed by `ExportItem`, so re-exporting overwrites. `queue=True` reports items as queued, `fail_on(kind, *errors, nth=0)` injects failures, and an empty name is an `AdapterConfigError`. It is the bar for real Adapters: `tests/adapters/conformance.py` holds `AdapterConformance`, a suite every Adapter subclasses (three hooks: `make_adapter`, `inject`, `stored`) covering idempotent re-export, stable ids across Adapters, partial and `auth` failures, retries, `include_content` (Step errors and Score comments included), unlinkable Scores noted rather than lost, an unplannable Experiment reported as a failure, and the context manager.[^conformance]
 
+# LangSmithAdapter
+
+`assayer.integrations.LangSmithAdapter(client=None, *, api_key=None, dataset_name=None, started_at=None, name="langsmith")` exports an Experiment to LangSmith (#36) and replaces the removed `LangSmithPublisher`.[^langsmith] The client is an injected `langsmith.Client` (left open by `close`) or one built from `api_key`, `LANGSMITH_API_KEY` or `LANGCHAIN_API_KEY`, in that order; none of them is an `AdapterConfigError`.
+
+* **Cases** are examples of a dataset (named after the Experiment, or `dataset_name`; created when missing, reused otherwise) with the deterministic Case id as `example_id` and `case_id` in the metadata. An existing example is updated, never deleted, and `include_content=False` leaves its inputs alone.
+* **The Experiment** is a project (`create_project(upsert=True)`) whose `reference_dataset_id` is that dataset.
+* **Trajectories** are run trees: a root `chain` run with `reference_example_id` set to its Case, and one child per Step with client UUIDs, `trace_id`, `parent_run_id` and `dotted_order`. Kind maps `model` to `llm`, `tool` to `tool`, `retrieval` to `retriever` and `other` to `chain`. Model Steps carry `usage_metadata` (tokens, and `total_cost` when known) and `ls_model_name`; the root run's `assayer.usage` metadata holds the Trajectory totals. Trajectories carry no timing, so start and end times are synthetic (the Adapter's first export time, or `started_at` when given, plus one microsecond per Step; `assayer.synthetic_timing` in the metadata). Pass the same timezone-aware `started_at` to export an Experiment again from a new Adapter without changing the runs' `dotted_order`. `LangSmithExport` (`langsmith_export.py`) holds the state and calls of one export.[^langsmith-export]
+* **Scores** are feedback named `<metric>.<field>` (just `<metric>` without a Field) with the Field and the Score's metadata in `extra`, the label as `value` and the comment as `comment`. Step and Trajectory Scores attach to their run; Experiment-level Scores, and Scores that could not be linked, attach to the project (`project_id`). An existing feedback id is updated.
+* Runs are reported `queued` (the SDK buffers them; the Adapter calls `flush()` at the end of an export), Cases and Scores `confirmed`.
+* SDK errors map to the taxonomy: auth to `auth`, rate limit to `rate_limited`, connection and API errors to `transport`, not found, user and conflict errors to `validation`, anything else to `unknown`.
+
+Tests use `create_autospec(langsmith.Client)` clients behind the conformance suite; `test_live_smoke` exports to the real LangSmith and is skipped without `LANGSMITH_API_KEY` (or `LANGCHAIN_API_KEY`). It exports twice from two Adapters and reads runs, examples and feedback back, reading the runs with the async-only `client.runs.query` (by project id, selecting `IS_ROOT`, `TRACE_ID`, `DOTTED_ORDER` and `REFERENCE_EXAMPLE_ID`) rather than `list_runs`, and checking that the single root run links to the example through `reference_example_id`, that every run shares the root's trace id and that every child's `dotted_order` extends the root's; it also checks that an existing example is updated, that run trees are not duplicated, and that run-level and project-level feedback are accepted. Project-level feedback (`overall.f`) has no run, so it is not in the project's `feedback_stats`; the test reads it back with `list_feedback` filtered by key and project id and checks its score and `session_id`. It prints the `assayer-smoke-<id>` project name and deletes the project and dataset afterwards, unless `ASSAYER_SMOKE_KEEP=1` keeps them for a look in the LangSmith UI.
+
+`scripts/validate-langsmith.sh` is a wizard (generated by the `/wizard` skill) that runs the smoke test by hand: it saves the API key (and optionally `LANGSMITH_ENDPOINT` for EU or self-hosted, and `LANGSMITH_WORKSPACE_ID` for an organization-scoped key) to `.env`, runs `test_live_smoke` with `ASSAYER_SMOKE_KEEP=1`, walks through checking the kept project in the UI (the `exact` feedback shows on the trace; `overall.f` is experiment-level feedback that the API stores but the UI may not list like run feedback), and offers to delete the project and dataset.
+
 [^adapter]: assayer/adapters/adapter.py
 [^export]: assayer/adapters/export.py
 [^ids]: assayer/adapters/ids.py
 [^retry]: assayer/adapters/retry.py
 [^conformance]: tests/adapters/conformance.py
+[^langsmith]: assayer/integrations/langsmith_adapter.py
+[^langsmith-export]: assayer/integrations/langsmith_export.py

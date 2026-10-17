@@ -1,6 +1,11 @@
 # Update Log
 
 ## 2026-10-17
+* **Update**: [Adapters](architecture/adapters.md) records that the LangSmith live smoke test reads runs with the async `client.runs.query` and checks the root's `reference_example_id`, the shared trace id and the `dotted_order` nesting.
+* **Update**: [Adapters](architecture/adapters.md) records that the live smoke test reads project-level `overall.f` feedback back with `list_feedback` (it is not in `feedback_stats`) and that the UI may not list it like run feedback.
+* **Update**: [Adapters](architecture/adapters.md) records what the LangSmith live smoke test checks, the `ASSAYER_SMOKE_KEEP` opt-out of cleanup, and the `scripts/validate-langsmith.sh` wizard.
+* **Update**: [Package organization](architecture/package-organization.md) and [Adapters](architecture/adapters.md) record that `LangSmithPublisher` was removed in favour of `LangSmithAdapter`.
+* **Update**: [Adapters](architecture/adapters.md) documents `LangSmithAdapter` (#36): run trees, feedback named `<metric>.<field>`, example upserts, credentials and error mapping.
 * **Update**: [Adapters](architecture/adapters.md) records that `plan_export` returns an `ExportPlan` with `notes` for unlinkable Scores and Trajectories, the new `export_experiment` (an unplannable Experiment is one `validation` failure of target kind `experiment`), and that `include_content=False` now also drops Step errors and Score comments.
 * **Addition**: Documented the [Adapters](architecture/adapters.md) core (#35): `Adapter` Protocol, `ExportReport`, failure taxonomy, deterministic ids, retry policy and `InMemoryAdapter`, listed in the [architecture index](architecture/index.md).
 * **Update**: [Runner](architecture/runner.md) records `Runner(adapter=...)` and `Runner.export`; [Package organization](architecture/package-organization.md) lists `adapters/`.

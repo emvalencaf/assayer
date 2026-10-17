@@ -62,7 +62,7 @@ A Python library for evaluating and observing LLM-powered applications. It
 provides a unified interface to run structured evaluations (chat turn quality,
 classification accuracy and named entity extraction) using both deterministic
 metrics and model-based judges (LLM-as-Judge). Token costs are tracked per run.
-Publishing results to an observability backend (Langfuse, LangSmith) is planned and not yet available.
+Experiments can be exported to LangSmith with `LangSmithAdapter` (Langfuse is planned).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -76,7 +76,7 @@ Publishing results to an observability backend (Langfuse, LangSmith) is planned 
 - **Token cost tracking**: input/output tokens and estimated USD cost per run, comparable across experiments
 - **Extensible**: register custom metrics and evaluator types without modifying core files
 - **Audit trail**: every evaluated field records method, expected value, obtained value, score and prompt hash
-- **Observability integrations (planned)**: Langfuse and LangSmith export through a vendor-neutral Adapter; the current `LangSmithPublisher` is not wired into the `Runner` and is being replaced
+- **Observability integrations**: `Runner(adapter=LangSmithAdapter()).export(experiment)` sends Cases, run trees and Scores to LangSmith through a vendor-neutral Adapter (Langfuse is planned)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
