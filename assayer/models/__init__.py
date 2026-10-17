@@ -19,7 +19,7 @@ from assayer.models.pricing_config import PricingConfig
 from assayer.models.run_result import RunResult
 from assayer.models.score import Score
 from assayer.models.step import Step
-from assayer.models.token_usage import TokenUsage
+from assayer.models.token_usage import TokenUsage, add_usage
 from assayer.models.trajectory import Trajectory
 
 __all__ = [
@@ -40,4 +40,5 @@ __all__ = [
     "Step",
     "TokenUsage",
     "Trajectory",
+    "add_usage",
 ]

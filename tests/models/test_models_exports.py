@@ -75,6 +75,7 @@ class TestModelsExports:
             "Score",
             "Step",
             "Trajectory",
+            "add_usage",
         }
 
         # Check that __all__ exists

@@ -121,6 +121,8 @@ def _score_list(
     alignment = _align(spec, expected, predicted, similarity)
 
     outcome = MetricOutcome()
+    for item in cache.values():  # every pair tried to align costs, paired or not
+        outcome.add_judge(item)
     grouped: dict[tuple[str | None, str], list[Score]] = defaultdict(list)
     for e, p in alignment.pairs:
         item = outcome_of(e, p)
@@ -154,6 +156,7 @@ def _score_item(
         result = score_field(child, item_trajectory, item_case, prefix=field)
         outcome.scores.extend(result.scores)
         outcome.failures.extend(result.failures)
+        outcome.add_judge(result)
     return outcome
 
 

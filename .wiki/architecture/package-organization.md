@@ -19,13 +19,14 @@ sources:
 
 `assayer/` is a flat package split by responsibility. Dependencies point inward:
 `runner` uses `evaluators`, `metrics`, `registries` and `integrations`, which all
-build on `models`.
+build on `judges` and `models`.
 
 | Subpackage | Role |
 |---|---|
 | `models/` | Dataclasses that carry results (`TokenUsage`, `RunResult`, `ExperimentResult`, `Consistency*`) and the vendor-neutral [domain models](domain-models.md) (`Trajectory`, `Step`, `Score`, `Experiment`, `Dataset`, `Case`, `PricingConfig`). |
+| `judges/` | The Judge Protocol and `JudgeResponse`, `Prompt` (`id@version` plus a hash), tolerant `score` + `reason` parsing and the ledger of Judge calls and tokens. See [Judge metrics](../metrics/judge-metrics.md). |
 | `evaluators/` | `BaseEvaluator` and its implementations (NER, hallucination, consistency). |
-| `metrics/` | The [`Metric` contract](../metrics/metric-contract.md) (`level`, `requires`, `kind`) and built-in metrics, one module per task (`agent`, `chat`, `classification`, `ner`, `consistency`, `field` for the Field comparisons; `corpus` lifts the chat, classification and NER functions to Experiment level, see [Corpus and consistency metrics](../metrics/corpus-and-consistency.md)); legacy ones are pure `(predictions, references) -> float` functions. |
+| `metrics/` | The [`Metric` contract](../metrics/metric-contract.md) (`level`, `requires`, `kind`) and built-in metrics, one module per task (`agent`, `chat`, `classification`, `ner`, `consistency`, `field` for the Field comparisons, `judge` for the Judge-based ones; `corpus` lifts the chat, classification and NER functions to Experiment level, see [Corpus and consistency metrics](../metrics/corpus-and-consistency.md)); legacy ones are pure `(predictions, references) -> float` functions. |
 | `registries/` | `Registry` (holds `Metric` objects) and the legacy `MetricRegistry` and `EvaluatorRegistry`, instantiable, no global state. |
 | `runner/` | Evaluation, historical and consistency pipelines, field routing, pricing, and the `field_map/` package (Alignment, Field scoring, schema utility, YAML/JSON loading). |
 | `alignment.py`, `path.py` | Top-level pure helpers (Alignment of list items, dotted-path `resolve`) shared by `metrics/` and `runner/field_map/`; they import nothing else from `assayer` but each other. Still importable from `assayer.runner.field_map`. |

@@ -5,8 +5,16 @@ import dataclasses
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from typing import Any
 
-from assayer.metrics import Metric
-from assayer.models import Case, Dataset, Experiment, PricingConfig, Step, Trajectory
+from assayer.metrics import Metric, MetricOutcome
+from assayer.models import (
+    Case,
+    Dataset,
+    Experiment,
+    PricingConfig,
+    Step,
+    Trajectory,
+    add_usage,
+)
 from assayer.runner.case_loader import load_cases
 from assayer.runner.field_map import (
     FieldMetric,
@@ -143,8 +151,7 @@ class Runner:
             else:
                 outcomes = [score_field(entry, t, c) for t, c in pairs]
             for outcome in outcomes:
-                experiment.scores.extend(outcome.scores)
-                experiment.failures.extend(outcome.failures)
+                _collect(experiment, outcome)
 
     def _execute(self, case: Case, case_id: str, repetition: int) -> Trajectory:
         assert self.target is not None  # run checks it
@@ -180,9 +187,15 @@ class Runner:
         else:  # "step", the only level left (Metric validates it)
             subjects = [(step, case) for trajectory, case in pairs for step in trajectory.steps]
         for subject, case in subjects:
-            outcome = metric.evaluate(subject, case)
-            experiment.scores.extend(outcome.scores)
-            experiment.failures.extend(outcome.failures)
+            _collect(experiment, metric.evaluate(subject, case))
+
+
+def _collect(experiment: Experiment, outcome: MetricOutcome) -> None:
+    """Add what a metric produced to the Experiment, the Judge's cost into its own bucket."""
+    experiment.scores.extend(outcome.scores)
+    experiment.failures.extend(outcome.failures)
+    experiment.judge_calls += outcome.judge_calls
+    experiment.judge_usage = add_usage(experiment.judge_usage, outcome.judge_usage)
 
 
 def _case_ids(dataset: Dataset) -> list[str]:

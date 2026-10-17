@@ -5,3 +5,4 @@
 * [Semantic similarity](semantic-similarity.md) - embedding cosine similarity metric, clamped to [0, 1].
 * [Step efficiency](step-efficiency.md) - agent metric comparing actual to expected Steps.
 * [Tool and end-state metrics](tool-and-state-metrics.md) - agent metrics for the tools called, their arguments and the final state.
+* [Judge metrics](judge-metrics.md) - the Judge Protocol, prompts, parsing, accounting and the criteria judge.

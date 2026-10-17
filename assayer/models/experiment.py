@@ -18,6 +18,7 @@ class Experiment:
         scores: Scores of Steps, Trajectories and the Experiment as a whole.
         failures: Metrics that could not be computed.
         judge_usage: Token usage of the Judge, kept apart from the target's totals.
+        judge_calls: How many calls were made to the Judge.
         cases: The Cases the target ran over, each with the id its Trajectories carry as
             `case_id`; the references that Experiment-level metrics compare them to.
         pricing: Prices of the target's model, kept so the cost can be recomputed
@@ -33,6 +34,7 @@ class Experiment:
     scores: list[Score] = field(default_factory=list)
     failures: list[EvaluationFailure] = field(default_factory=list)
     judge_usage: TokenUsage | None = None
+    judge_calls: int = 0
     pricing: PricingConfig | None = None
     cases: list[Case] = field(default_factory=list)
 
