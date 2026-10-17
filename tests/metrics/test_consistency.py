@@ -6,7 +6,7 @@ import statistics
 import pytest
 
 from assayer.evaluators import consistency_metrics as legacy
-from assayer.metrics import Metric, make_score_std, register_consistency_metrics
+from assayer.metrics import Metric, make_pass_hat_k, make_score_std, register_consistency_metrics
 from assayer.models import Case, Dataset, FieldEvaluation
 from assayer.registries import Registry
 from assayer.runner import Runner
@@ -202,3 +202,69 @@ class TestEmptyExperiment:
 
         assert experiment.scores == []
         assert [f.metric for f in experiment.failures] == [name]
+
+
+class TestPassHatK:
+    """pass^k: a Case counts only when all of its k repetitions succeed."""
+
+    def test_is_zero_when_no_case_is_solved_in_every_repetition(self):
+        experiment = _run(EXACT, make_pass_hat_k("exact"))
+
+        assert _value(experiment, "pass_hat_k") == 0.0
+
+    def test_is_the_share_of_cases_solved_every_time(self):
+        runs = {"a": ["x", "x", "x"], "b": ["x", "y", "x"], "c": ["y", "y", "y"]}
+        dataset = Dataset("d", [Case(input=k, id=k, expected_output="x") for k in runs])
+
+        experiment = Runner(_target(runs), [EXACT, make_pass_hat_k("exact")], repetitions=3).run(
+            dataset
+        )
+
+        assert _value(experiment, "pass_hat_k") == pytest.approx(1 / 3)
+        assert _value(experiment, "pass_hat_k") <= _value(
+            Runner(_target(runs), [EXACT, _registry().get("pass_at_k")], repetitions=3).run(
+                dataset
+            ),
+            "pass_at_k",
+        )
+
+    def test_the_threshold_decides_what_a_success_is(self):
+        graded = Metric(
+            name="graded",
+            level="trajectory",
+            fn=lambda t, c: {"hi": 0.9, "mid": 0.6}[t.final_output],
+        )
+        runs = {"a": ["hi", "hi"], "b": ["hi", "mid"]}
+        dataset = Dataset("d", [Case(input=k, id=k) for k in runs])
+
+        def run(threshold):
+            metric = make_pass_hat_k("graded", threshold=threshold)
+            return Runner(_target(dict(runs)), [graded, metric], repetitions=2).run(dataset)
+
+        assert _value(run(0.5), "pass_hat_k") == 1.0
+        assert _value(run(0.8), "pass_hat_k") == 0.5
+
+    def test_a_repetition_whose_metric_failed_is_a_failure_not_a_miss(self):
+        def flaky(trajectory, case):
+            if trajectory.repetition == 1:
+                raise RuntimeError("judge down")
+            return 1.0
+
+        metric = Metric(name="flaky", level="trajectory", fn=flaky)
+        dataset = Dataset("d", [Case(input="a", id="a")])
+
+        experiment = Runner(
+            _target({"a": ["x", "x"]}), [metric, make_pass_hat_k("flaky")], repetitions=2
+        ).run(dataset)
+
+        assert [s.name for s in experiment.scores] == ["flaky"]
+        assert [f.metric for f in experiment.failures] == ["flaky", "pass_hat_k"]
+
+    def test_the_threshold_must_be_a_unit_value(self):
+        with pytest.raises(ValueError):
+            make_pass_hat_k(threshold=1.5)
+
+    def test_without_scores_to_measure_it_is_a_failure(self):
+        experiment = _run(make_pass_hat_k("exact"))
+
+        assert [f.metric for f in experiment.failures] == ["pass_hat_k"]

@@ -1,6 +1,7 @@
 # Update Log
 
 ## 2026-10-17
+* **Addition**: Documented [goal success, faithfulness, context precision and recall, and pass^k](metrics/rag-and-pass-hat-k.md) (#34), listed in the [metrics index](metrics/index.md).
 * **Addition**: Documented [Judge metrics](metrics/judge-metrics.md) (Judge Protocol, prompts, parsing, accounting, `make_criteria_judge`).
 * **Update**: [Package organization](architecture/package-organization.md) now lists `judges/`.
 * **Update**: [Tool and end-state metrics](metrics/tool-and-state-metrics.md) records that `end_state_match` pairs leaves by a tuple path, so a key with a dot or a key `"0"` no longer collides with a nested path or a list index (the Score `field` is still the dotted path). Alignment and dotted-path `resolve` gained unit tests only.

@@ -6,3 +6,4 @@
 * [Step efficiency](step-efficiency.md) - agent metric comparing actual to expected Steps.
 * [Tool and end-state metrics](tool-and-state-metrics.md) - agent metrics for the tools called, their arguments and the final state.
 * [Judge metrics](judge-metrics.md) - the Judge Protocol, prompts, parsing, accounting and the criteria judge.
+* [Retrieval and pass^k metrics](rag-and-pass-hat-k.md) - goal success, faithfulness, context precision and recall, and pass^k.
