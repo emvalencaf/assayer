@@ -24,6 +24,15 @@ class FieldMetric:
     metric: Metric
     params: dict[str, Any] = field(default_factory=dict)
 
+    @property
+    def similarity_name(self) -> str:
+        """Name of the Score that stands for this entry when items are compared."""
+        return self.metric.name
+
+    def metrics(self) -> list[Metric]:
+        """The metrics this entry applies."""
+        return [self.metric]
+
 
 @dataclass(frozen=True)
 class ListField:
@@ -59,6 +68,15 @@ class ListSpec:
     key: str | None
     threshold: float
     properties: list["FieldMetric | ListSpec"]
+
+    @property
+    def similarity_name(self) -> str:
+        """Name of the Score that stands for this entry when items are compared."""
+        return "list_f1"
+
+    def metrics(self) -> list[Metric]:
+        """The metrics this entry applies, nested properties included."""
+        return metrics_of(self.properties)
 
 
 def build_field_map(
@@ -139,13 +157,7 @@ def _build_list(path: str, spec: ListField) -> ListSpec:
 
 def metrics_of(entries: Sequence[FieldMetric | ListSpec]) -> list[Metric]:
     """List every metric used by a built field map, nested properties included."""
-    metrics: list[Metric] = []
-    for entry in entries:
-        if isinstance(entry, ListSpec):
-            metrics.extend(metrics_of(entry.properties))
-        else:
-            metrics.append(entry.metric)
-    return metrics
+    return [metric for entry in entries for metric in entry.metrics()]
 
 
 def resolve(value: Any, path: str) -> Any:

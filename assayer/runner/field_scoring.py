@@ -36,11 +36,22 @@ def score_field(
     expected = resolve(case.expected_output, entry.path)
     if isinstance(entry, ListSpec):
         return _score_list(entry, trajectory, case, field, predicted, expected)
+    item_trajectory, item_case = _cut(trajectory, case, predicted, expected)
     return entry.metric.evaluate(
-        dataclasses.replace(trajectory, final_output=predicted),
-        dataclasses.replace(case, expected_output=expected),
+        item_trajectory,
+        item_case,
         field=field,
         params=entry.params,
+    )
+
+
+def _cut(
+    trajectory: Trajectory, case: Case, predicted: Any, expected: Any
+) -> tuple[Trajectory, Case]:
+    """Narrow a Trajectory and its Case down to one Field's (or item's) values."""
+    return (
+        dataclasses.replace(trajectory, final_output=predicted),
+        dataclasses.replace(case, expected_output=expected),
     )
 
 
@@ -68,7 +79,9 @@ def _score_list(
 
     def outcome_of(e: int, p: int) -> MetricOutcome:
         if (e, p) not in cache:
-            cache[e, p] = _score_item(spec, trajectory, case, field, predicted[p], expected[e])
+            cache[e, p] = _score_item(
+                spec.properties, trajectory, case, field, predicted[p], expected[e]
+            )
         return cache[e, p]
 
     def similarity(e: int, p: int) -> float:
@@ -97,12 +110,16 @@ def _align(spec: ListSpec, expected: list, predicted: list, similarity) -> Align
 
 
 def _score_item(
-    spec: ListSpec, trajectory: Trajectory, case: Case, field: str, predicted: Any, expected: Any
+    properties: list[FieldMetric | ListSpec],
+    trajectory: Trajectory,
+    case: Case,
+    field: str,
+    predicted: Any,
+    expected: Any,
 ) -> MetricOutcome:
-    item_trajectory = dataclasses.replace(trajectory, final_output=predicted)
-    item_case = dataclasses.replace(case, expected_output=expected)
+    item_trajectory, item_case = _cut(trajectory, case, predicted, expected)
     outcome = MetricOutcome()
-    for child in spec.properties:
+    for child in properties:
         result = score_field(child, item_trajectory, item_case, prefix=field)
         outcome.scores.extend(result.scores)
         outcome.failures.extend(result.failures)

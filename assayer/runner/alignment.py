@@ -12,12 +12,12 @@ class Alignment:
     """Which predicted item answers which expected one.
 
     Args:
-        pairs: `[expected_index, predicted_index]`, ordered by expected index.
+        pairs: `(expected_index, predicted_index)`, ordered by expected index.
         unmatched_expected: Indexes of expected items nothing was paired with (missing).
         unmatched_predicted: Indexes of predicted items nothing was paired with (extra).
     """
 
-    pairs: list[list[int]]
+    pairs: list[tuple[int, int]]
     unmatched_expected: list[int]
     unmatched_predicted: list[int]
 
@@ -35,7 +35,7 @@ def _build(pairs: list[tuple[int, int]], n_expected: int, n_predicted: int) -> A
     paired_e = {e for e, _ in pairs}
     paired_p = {p for _, p in pairs}
     return Alignment(
-        [[e, p] for e, p in pairs],
+        pairs,
         [i for i in range(n_expected) if i not in paired_e],
         [i for i in range(n_predicted) if i not in paired_p],
     )
@@ -80,13 +80,14 @@ def align_best_match(
         threshold: Pairs with a lower similarity are never made.
     """
     candidates = sorted(
-        (-similarity(e, p), e, p) for e in range(n_expected) for p in range(n_predicted)
+        ((e, p, similarity(e, p)) for e in range(n_expected) for p in range(n_predicted)),
+        key=lambda c: (-c[2], c[0], c[1]),
     )
     pairs: list[tuple[int, int]] = []
     used_e: set[int] = set()
     used_p: set[int] = set()
-    for negative, e, p in candidates:
-        if -negative < threshold:
+    for e, p, score in candidates:
+        if score < threshold:
             break
         if e not in used_e and p not in used_p:
             pairs.append((e, p))
