@@ -5,7 +5,7 @@ description: The public Metric dataclass, its MetricOutcome result and the Regis
 resource: assayer/metrics/metric.py
 tags: [metrics, contract, registry]
 status: draft
-generated: { by: claude-code/pre-commit, at: 2026-10-17T23:30:00Z }
+generated: { by: claude-code/pre-commit, at: 2026-10-18T00:30:00Z }
 sources:
   - id: metric
     resource: assayer/metrics/metric.py
@@ -53,6 +53,7 @@ a `requires` entry that names a field of no Case, Trajectory or Step. It raises
 * `field` is the dotted path of the output Field the subject and case were cut down to; it is recorded on the Score or `EvaluationFailure`. `params` are passed to `fn` as keyword arguments. See [Per-Field measurement](../architecture/field-measurement.md).
 
 * Each `requires` name is looked up on the Case first, then on the subject. If any is `None`, no Score is emitted and one `EvaluationFailure` ("missing required input: ...") is returned. A missing input is never scored as 0.
+* For an `experiment` metric the subject is an Experiment holding many Cases and Trajectories, so the input must be present on all of them (Case fields on `Experiment.cases`, the others on its Trajectories); an Experiment with none is missing it. See [Corpus and consistency metrics](corpus-and-consistency.md).
 * A missing answer is different: the metric itself scores it 0 (an empty `final_output` against an expected one).
 * If `fn` raises, the exception message becomes an `EvaluationFailure`.
 * Resolving the `target_id` and checking `requires` run inside the same guard as `fn`, so a wrong subject (for example `None` for a `step` metric) becomes an `EvaluationFailure` instead of an exception.[^contract-tests]

@@ -5,7 +5,7 @@ description: The Trajectory, Step, Score, Experiment, EvaluationFailure, Dataset
 resource: assayer/models/__init__.py
 tags: [architecture, models, domain]
 status: draft
-generated: { by: claude-code/pre-commit, at: 2026-10-17T23:30:00Z }
+generated: { by: claude-code/pre-commit, at: 2026-10-18T00:30:00Z }
 sources:
   - id: models-init
     resource: assayer/models/__init__.py
@@ -32,7 +32,7 @@ terms in `GLOSSARY.md` (#24).[^glossary]
 | `Trajectory` | Ordered record of what an agent did for one input: `steps`, `session_id`, `final_output`, `final_state`, `case_id`, `repetition` (default 0). May be empty. |
 | `Step` | One unit of work in a Trajectory, with `kind` (`model`, `tool`, `retrieval` or `other`), `id`, `parent_id`, `name`, `model`, `input`, `output`, `error`, `usage`. |
 | `Score` | One named result in [0, 1] of a metric, with optional `field`, `label`, `comment`, `metadata`, `target` (`ScoreTarget`) and `target_id`. |
-| `Experiment` | Trajectories, Scores and failures from running one target over a Dataset, plus `judge_usage` and `pricing` (the target's `PricingConfig`, optional). |
+| `Experiment` | Trajectories, Scores and failures from running one target over a Dataset, plus `judge_usage`, `pricing` (the target's `PricingConfig`, optional) and `cases` (the Cases it ran over, with the ids the Trajectories carry as `case_id`). |
 | `EvaluationFailure` | A metric that could not be computed, kept as data (`metric`, `error`, `target_id`, optional `field`) instead of raised. |
 | `Dataset` | A named list of Cases. |
 | `Case` | One input with optional references (`expected_output`, `expected_tool_calls`, `expected_steps`, `expected_outcome`, `expected_state`, `reference_contexts`, `reference_context_ids`). |

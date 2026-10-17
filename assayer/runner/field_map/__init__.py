@@ -5,7 +5,7 @@ from .builder import build_field_map, metrics_of
 from .field_metric import FieldMetric
 from .list_field import ALIGNMENTS, Align, ListField, ListSpec
 from .path import resolve
-from .scoring import score_field
+from .scoring import score_experiment_field, score_field
 
 __all__ = [
     "ALIGNMENTS",
@@ -17,5 +17,6 @@ __all__ = [
     "build_field_map",
     "metrics_of",
     "resolve",
+    "score_experiment_field",
     "score_field",
 ]

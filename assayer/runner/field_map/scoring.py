@@ -5,7 +5,7 @@ from collections import defaultdict
 from typing import Any
 
 from assayer.metrics import MetricOutcome
-from assayer.models import Case, EvaluationFailure, Score, Trajectory
+from assayer.models import Case, EvaluationFailure, Experiment, Score, Trajectory
 from assayer.runner.field_map.alignment import (
     Alignment,
     align_best_match,
@@ -45,6 +45,35 @@ def score_field(
         field=field,
         params=entry.params,
     )
+
+
+def score_experiment_field(entry: FieldMetric, experiment: Experiment) -> MetricOutcome:
+    """Score one Field over a whole Experiment with an Experiment-level metric.
+
+    The metric sees an Experiment cut down to the Field: each Trajectory's
+    `final_output` and each Case's `expected_output` are the Field's values, and
+    only the Scores already computed for that Field remain.
+
+    Args:
+        entry: An Experiment-level metric for a Field.
+        experiment: The Experiment holding the Trajectories, Cases and Scores.
+
+    Returns:
+        The Score or evaluation failure, with `field` set to the path.
+    """
+    view = dataclasses.replace(
+        experiment,
+        trajectories=[
+            dataclasses.replace(t, final_output=resolve(t.final_output, entry.path))
+            for t in experiment.trajectories
+        ],
+        cases=[
+            dataclasses.replace(c, expected_output=resolve(c.expected_output, entry.path))
+            for c in experiment.cases
+        ],
+        scores=[s for s in experiment.scores if s.field == entry.path],
+    )
+    return entry.metric.evaluate(view, field=entry.path, params=entry.params)
 
 
 def _cut(

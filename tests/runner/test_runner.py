@@ -244,3 +244,26 @@ class TestPricing:
         )
 
         assert experiment.total_judge_usage().cost_usd is None
+
+
+class TestCaseIds:
+    def test_duplicate_case_ids_are_rejected_before_any_target_call(self):
+        calls = []
+        dataset = Dataset("d", [Case(input="a", id="c1"), Case(input="b", id="c1")])
+
+        with pytest.raises(ValueError, match="c1"):
+            Runner(calls.append).run(dataset)
+
+        assert calls == []
+
+    def test_a_position_id_cannot_collide_with_an_explicit_one(self):
+        dataset = Dataset("d", [Case(input="a"), Case(input="b", id="0")])
+
+        with pytest.raises(ValueError, match="'0'"):
+            Runner(_echo).run(dataset)
+
+    def test_score_rejects_duplicate_case_ids_too(self):
+        dataset = Dataset("d", [Case(input="a", id="c1"), Case(input="b", id="c1")])
+
+        with pytest.raises(ValueError, match="c1"):
+            Runner().score(dataset, ["a", "b"])

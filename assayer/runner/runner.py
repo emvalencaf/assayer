@@ -1,13 +1,20 @@
 """Runs a target over a Dataset and returns an Experiment."""
 
 import copy
+import dataclasses
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from typing import Any
 
 from assayer.metrics import Metric
 from assayer.models import Case, Dataset, Experiment, PricingConfig, Step, Trajectory
 from assayer.runner.case_loader import load_cases
-from assayer.runner.field_map import build_field_map, metrics_of, score_field
+from assayer.runner.field_map import (
+    FieldMetric,
+    build_field_map,
+    metrics_of,
+    score_experiment_field,
+    score_field,
+)
 
 
 class Runner:
@@ -19,10 +26,12 @@ class Runner:
             the `error` of a model Step instead of aborting the Experiment. Only
             `run` needs it; `score` works on outputs collected beforehand.
         metrics: The metrics to apply, at their own level, to the whole output.
-        field_metrics: Maps the dotted path of an output Field to the trajectory-level
-            metrics that score it on its own, each a Metric or a `(Metric, params)`
-            pair whose params are passed to the metric's function for that Field
-            only; or a `ListField` that aligns a list of objects and scores the pairs
+        field_metrics: Maps the dotted path of an output Field to the trajectory- or
+            Experiment-level metrics that score it on its own (an Experiment-level one,
+            such as a corpus metric, sees that Field of every Trajectory and Case, and runs
+            after the whole-output metrics and the entries listed before it), each a Metric
+            or a `(Metric, params)` pair whose params are passed to the metric's function
+            for that Field only; or a `ListField` that aligns a list of objects and scores the pairs
             property by property. The metric sees the Field's value as `final_output` and the
             Case's as `expected_output`; its Scores carry the `field`.
         repetitions: How many times each Case is run; each repetition is kept as
@@ -64,18 +73,20 @@ class Runner:
             The Experiment, with the Trajectories, Scores and evaluation failures.
 
         Raises:
-            ValueError: If there is no target, or a loaded entry lacks `input` or a
-                field a metric requires.
+            ValueError: If there is no target, two Cases have the same id, or a loaded
+                entry lacks `input` or a field a metric requires.
         """
         if self.target is None:
             raise ValueError("run needs a target; use score for collected outputs")
         if not isinstance(dataset, Dataset):
             dataset = load_cases(dataset, self._all_metrics())
 
+        case_ids = _case_ids(dataset)
         experiment = Experiment(name=dataset.name, pricing=self.pricing)
         pairs: list[tuple[Trajectory, Case]] = []
         for position, case in enumerate(dataset.cases):
-            case_id = case.id if case.id is not None else str(position)
+            case_id = case_ids[position]
+            experiment.cases.append(dataclasses.replace(case, id=case_id))
             for repetition in range(self.repetitions):
                 trajectory = self._execute(case, case_id, repetition)
                 experiment.trajectories.append(trajectory)
@@ -96,8 +107,8 @@ class Runner:
             The Experiment, with the Trajectories, Scores and evaluation failures.
 
         Raises:
-            ValueError: If outputs does not have one entry per Case, or a loaded
-                entry lacks `input` or a field a metric requires.
+            ValueError: If outputs does not have one entry per Case, two Cases have the
+                same id, or a loaded entry lacks `input` or a field a metric requires.
         """
         if not isinstance(dataset, Dataset):
             dataset = load_cases(dataset, self._all_metrics())
@@ -107,10 +118,12 @@ class Runner:
                 f"for {len(dataset.cases)} Cases"
             )
 
+        case_ids = _case_ids(dataset)
         experiment = Experiment(name=dataset.name, pricing=self.pricing)
         pairs: list[tuple[Trajectory, Case]] = []
         for position, (case, output) in enumerate(zip(dataset.cases, outputs, strict=True)):
-            case_id = case.id if case.id is not None else str(position)
+            case_id = case_ids[position]
+            experiment.cases.append(dataclasses.replace(case, id=case_id))
             trajectory = self._tag(output, case, case_id, 0)
             experiment.trajectories.append(trajectory)
             pairs.append((trajectory, case))
@@ -125,8 +138,11 @@ class Runner:
         for metric in self.metrics:
             self._apply(metric, experiment, pairs)
         for entry in self._field_pairs:
-            for trajectory, case in pairs:
-                outcome = score_field(entry, trajectory, case)
+            if isinstance(entry, FieldMetric) and entry.metric.level == "experiment":
+                outcomes = [score_experiment_field(entry, experiment)]
+            else:
+                outcomes = [score_field(entry, t, c) for t, c in pairs]
+            for outcome in outcomes:
                 experiment.scores.extend(outcome.scores)
                 experiment.failures.extend(outcome.failures)
 
@@ -167,3 +183,20 @@ class Runner:
             outcome = metric.evaluate(subject, case)
             experiment.scores.extend(outcome.scores)
             experiment.failures.extend(outcome.failures)
+
+
+def _case_ids(dataset: Dataset) -> list[str]:
+    """The id of each Case: its own, else its position.
+
+    Raises:
+        ValueError: If two Cases end up with the same id, which would make their
+            Trajectories and references indistinguishable.
+    """
+    ids = [
+        case.id if case.id is not None else str(position)
+        for position, case in enumerate(dataset.cases)
+    ]
+    repeated = sorted({i for i in ids if ids.count(i) > 1})
+    if repeated:
+        raise ValueError(f"Case ids must be unique; repeated: {', '.join(map(repr, repeated))}")
+    return ids
