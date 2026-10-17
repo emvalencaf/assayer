@@ -51,6 +51,24 @@ class TestSemanticSimilarity:
             # Verify the custom model was used
             mock_transformer.assert_called_once_with(custom_model)
 
+    def test_clamps_floating_point_overshoot_to_one(self):
+        """Test that identical float32 embeddings never score above 1.0."""
+        vector = np.array(
+            [0.1257302, -0.1321049, 0.6404227, 0.1049001, -0.5356694, 0.3615951, 1.304, 0.9470809],
+            dtype=np.float32,
+        )
+        raw = np.dot(vector, vector) / (np.linalg.norm(vector) * np.linalg.norm(vector))
+        assert raw > 1.0
+
+        with patch("assayer.metrics.chat.SentenceTransformer") as mock_transformer:
+            mock_encoder = Mock()
+            mock_encoder.encode.return_value = np.array([vector])
+            mock_transformer.return_value = mock_encoder
+
+            result = make_semantic_similarity()(["same text"], ["same text"])
+
+        assert result == 1.0
+
     def test_returns_cosine_similarity_in_range(self):
         """Test that returned metric function returns cosine similarity in [0, 1] for non-empty inputs."""
         with patch("assayer.metrics.chat.SentenceTransformer") as mock_transformer:

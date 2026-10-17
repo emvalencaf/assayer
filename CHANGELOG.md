@@ -7,6 +7,9 @@
 - `Package organization` section in `CODE_STANDARDS.md`.
 - Test job in CI and a `dev` dependency group with `pytest`.
 
+### Fixed
+- `semantic_similarity` clamps float overshoot to the documented [0, 1] range.
+
 ### Changed
 - README follows the Best-README-Template structure.
 - `register_chat_metrics` moved to `assayer/metrics/chat.py`; `assayer.metrics` now re-exports the chat, classification and NER metrics with `__all__`.
