@@ -738,8 +738,11 @@ def test_live_smoke():
                         limit=100,
                     ).data
                 ),
-                lambda found: len(found) >= 5,
+                lambda found: len({o.id for o in found}) >= 5,
             )
+            # Langfuse merges rows with the same id in the background, so a re-export can show
+            # the same observation twice for a while; what matters is that no new id appears
+            observations = list({o.id: o for o in observations}.values())
             assert len(observations) == 5, "root and four Steps, once each, after two exports"
             by_name = {o.name: o for o in observations}
             assert {o.type for o in observations} == {"SPAN", "RETRIEVER", "GENERATION", "TOOL"}
@@ -753,7 +756,8 @@ def test_live_smoke():
             assert by_name["gpt-x"].model == "gpt-x"
             assert by_name["calc"].level == "ERROR"
             assert "answer" in str(root.metadata.get("final_output"))
-            assert "done" in str(root.metadata.get("final_state"))
+            # Langfuse flattens JSON metadata into dotted keys
+            assert root.metadata.get("final_state.done") is True
             assert root.session_id == "s1"
 
         runs = _wait_for(
@@ -767,16 +771,24 @@ def test_live_smoke():
         assert sorted(r.experiment_name for r in runs) == [f"{name}/rep-0", f"{name}/rep-1"]
         assert {r.experiment_item_id for r in runs} == {case_id}
 
-        scores = _wait_for(
-            lambda: client.api.scores.get_many(name="exact", from_timestamp=window).data,
-            lambda found: len(found) >= 2,
-        )
-        assert len([s for s in scores if s.trace_id in traces]) == 2
+        def read_scores(name):
+            return client.api.scores.get_many(
+                name=name, from_timestamp=window, fields="details,subject"
+            ).data
+
+        def mine(read, owned):
+            return lambda: [s for s in read() if (s.subject.kind, s.subject.id) in owned]
+
+        owned = {("trace", t) for t in traces}
+        scores = _wait_for(mine(lambda: read_scores("exact"), owned), lambda found: len(found) >= 2)
+        assert {(s.subject.kind, s.subject.id) for s in scores} == owned
+        assert all(s.data_type == "NUMERIC" and s.metadata["assayer.target"] for s in scores)
+        owned = {("experiment", r.experiment_id) for r in runs}
         run_scores = _wait_for(
-            lambda: client.api.scores.get_many(name="overall.f", from_timestamp=window).data,
-            lambda found: len(found) >= 2,
+            mine(lambda: read_scores("overall.f"), owned), lambda found: len(found) >= 2
         )
-        assert len(run_scores) == 2, "the Experiment-level Score reaches each dataset run"
+        # the ids the adapter derived for the runs are the ones the server derived
+        assert {(s.subject.kind, s.subject.id) for s in run_scores} == owned
     finally:
         if not os.environ.get("ASSAYER_SMOKE_KEEP"):
             try:

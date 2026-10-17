@@ -118,8 +118,15 @@ Cloud. Self-hosted has no enforced limits. Score text max 500 chars; BOOLEAN nee
 
 ## 7. Gaps resolved against `langfuse` 5.0.2 (issue #37)
 
-Verified in the installed SDK source; behaviour against a live server was not tested (no
-credentials), so the live smoke test in `tests/integrations/test_langfuse_adapter.py` is the check.
+Verified in the installed SDK source, then against Langfuse Cloud (2026-10-17) by
+`test_live_smoke` in `tests/integrations/test_langfuse_adapter.py`, which passes. Confirmed live:
+OTLP JSON spans with hex ids and nanosecond times as strings are accepted with the
+`x-langfuse-ingestion-version: 4` header; spans carrying `langfuse.experiment.*` become dataset
+runs; the run id derivation below matches the server's (run-level scores resolve to the
+server's experiment ids); trace- and run-level scores and their `metadata` arrive. Two
+behaviours to know: a re-export can show the same observation twice for a while (the same ids,
+merged by the server in the background), and Langfuse flattens JSON metadata into dotted keys
+(`final_state.done`).
 
 - **`create_score` and `metadata`**: accepted (`metadata`, also `dataset_run_id`, `session_id`,
   `timestamp`, `environment`), but it is queued and never raises, so a rejected score only

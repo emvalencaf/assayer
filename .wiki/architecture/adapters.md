@@ -5,7 +5,7 @@ description: The vendor-neutral boundary that exports an Experiment to an observ
 resource: assayer/adapters/__init__.py
 tags: [adapters, export, observability]
 status: draft
-generated: { by: claude-code/pre-commit, at: 2026-10-17T23:30:00Z }
+generated: { by: claude-code/pre-commit, at: 2026-10-17T23:59:00Z }
 sources:
   - id: adapter
     resource: assayer/adapters/adapter.py
@@ -129,14 +129,14 @@ Tests use `create_autospec(langsmith.Client)` clients behind the conformance sui
 * Scores go through the SDK's background queue, which swallows errors, so they are `queued`; the Adapter calls `flush()` at the end of an export and notes a failed flush rather than raising it. A delivery failure only shows in the `langfuse` logger.
 * Errors: `ApiError` 401/403 map to `auth`, 429 to `rate_limited` (honoring `Retry-After`), 408, 5xx and `httpx` transport errors to `transport`, other 4xx to `validation`, anything else to `unknown`.
 
-`LangfuseExport` (`langfuse_export.py`) holds the state of one export.[^langfuse-export] The SDK gaps found while planning are resolved in section 7 of `docs/research/langfuse.md`.[^langfuse-research] Tests use `create_autospec(Langfuse)` behind an in-memory backend and the conformance suite; `test_live_smoke` exports twice from two Adapters to the real Langfuse and is skipped without `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY`.[^langfuse-test] It was not run against a live server when written.
+`LangfuseExport` (`langfuse_export.py`) holds the state of one export.[^langfuse-export] The SDK gaps found while planning are resolved in section 7 of `docs/research/langfuse.md`.[^langfuse-research] Tests use `create_autospec(Langfuse)` behind an in-memory backend and the conformance suite; `test_live_smoke` exports twice from two Adapters to the real Langfuse and is skipped without `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY`.[^langfuse-test] It passed against Langfuse Cloud on 2026-10-17: OTLP JSON spans with hex ids and nanosecond string times are accepted with the ingestion-version header, the `langfuse.experiment.*` spans become dataset runs, the run id derivation matches the server's, and trace- and run-level Scores arrive with their `metadata`.[^langfuse-research]
 
 The live smoke test reads back, polling for up to 120 s because Langfuse ingests in the background:
 
 * the dataset item, whose id is the `case_id`, with its input and `expected_output`;
-* per trace (id from `trajectory_id`), exactly 5 observations after two exports (root plus four Steps, no duplicates) of types `SPAN`, `RETRIEVER`, `GENERATION` and `TOOL`, with the expected parents, the generation's model and `usage_details` (10 input, 5 output), level `ERROR` on the failed tool, `final_output` and `final_state` in the root's metadata and the `session_id`;
+* per trace (id from `trajectory_id`), exactly 5 distinct observation ids after two exports (root plus four Steps; the test deduplicates by id, because Langfuse merges rows with the same id in the background, so a re-export can show the same observation twice for a while) of types `SPAN`, `RETRIEVER`, `GENERATION` and `TOOL`, with the expected parents, the generation's model and `usage_details` (10 input, 5 output), level `ERROR` on the failed tool, `final_output` and `final_state` in the root's metadata (Langfuse flattens JSON metadata into dotted keys, so the test reads `final_state.done`) and the `session_id`;
 * the dataset runs (`experiments.list_items`), named `<experiment>/rep-0` and `/rep-1` and pointing at the item, which confirms the run id derivation matches the server;
-* the trajectory Score `exact` (one per trace) and the Experiment-level `overall.f` (one per dataset run).
+* the trajectory Score `exact` (one per trace, `NUMERIC`, with `assayer.target` in its metadata) and the Experiment-level `overall.f` (one per dataset run), read with `fields="details,subject"` and matched by subject: the `exact` Scores must sit on exactly the test's traces, and the `overall.f` Scores on exactly the experiment ids the Adapter derived for the runs.
 
 Cleanup is in a `finally`: the dataset item is deleted unless `ASSAYER_SMOKE_KEEP=1`, tolerating an `ApiError`. The public API cannot delete a dataset or traces, so they stay and are removed by hand.
 
