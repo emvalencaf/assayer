@@ -28,7 +28,7 @@ from langfuse.api import (
 )
 from langfuse.api.core.api_error import ApiError
 
-from assayer.adapters import AdapterCallError, AdapterConfigError
+from assayer.adapters import AdapterCallError, AdapterConfigError, trajectory_id
 from assayer.integrations.langfuse_adapter import LangfuseAdapter
 from assayer.metrics.metric import Detailed, Metric
 from assayer.models import Case, Dataset, PricingConfig, Score, Step, TokenUsage, Trajectory
@@ -683,6 +683,16 @@ class TestConfig:
         client.shutdown.assert_not_called()
 
 
+def _wait_for(read, done, timeout=120.0):
+    """Poll `read()` until `done(result)`: Langfuse ingests in the background."""
+    deadline = time.monotonic() + timeout
+    while True:
+        result = read()
+        if done(result) or time.monotonic() > deadline:
+            return result
+        time.sleep(5)
+
+
 @pytest.mark.skipif(
     not (os.environ.get("LANGFUSE_PUBLIC_KEY") and os.environ.get("LANGFUSE_SECRET_KEY")),
     reason="needs LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY: exports to the real Langfuse",
@@ -690,31 +700,86 @@ class TestConfig:
 def test_live_smoke():
     """Exports twice from two Adapters and reads back what Langfuse holds.
 
-    Checks that the dataset item is the Case, that the OTLP spans are accepted, that a
-    re-export does not duplicate observations and that each repetition is a dataset run.
-    Set ASSAYER_SMOKE_KEEP=1 to keep the dataset for a look in the Langfuse UI.
+    Each assert answers a premise the in-memory fake cannot confirm: the dataset item is the
+    Case, the OTLP spans are accepted with the right types, parents, usage and metadata, a
+    re-export does not duplicate observations, each repetition is a dataset run, and trace-,
+    observation- and run-level scores arrive. Set ASSAYER_SMOKE_KEEP=1 to keep the dataset for
+    a look in the Langfuse UI.
     """
     name = f"assayer-smoke-{uuid.uuid4().hex[:8]}"
+    case_id = f"{name}-c1"
     print(f"assayer smoke dataset: {name}")
     started = dt.datetime.now(dt.UTC)
     metric = Metric(name="exact", level="trajectory", fn=lambda t, c: 1.0)
     runner = Runner(_tool_then_model, [metric], repetitions=2)
-    experiment = runner.run(Dataset(name, [Case(input="q", id=f"{name}-c1", expected_output="a")]))
+    experiment = runner.run(Dataset(name, [Case(input="q", id=case_id, expected_output="answer")]))
     experiment.name = name
     experiment.scores.append(Score("overall", 0.5, target="experiment", field="f"))
     client = Langfuse()
-    for _ in range(2):  # a new Adapter each time
-        with LangfuseAdapter(client, started_at=started) as adapter:
-            report = Runner(adapter=adapter).export(experiment)
-        assert report.ok, report.failed
+    try:
+        for _ in range(2):  # a new Adapter each time
+            with LangfuseAdapter(client, started_at=started) as adapter:
+                report = Runner(adapter=adapter).export(experiment)
+            assert report.ok, report.failed
+        window = started - dt.timedelta(minutes=5)
 
-    deadline = time.monotonic() + 120
-    while True:
-        items = client.api.experiments.list_items(from_start_time=started, experiment_name=None)
-        found = [i for i in items.data if getattr(i, "dataset_id", None)]
-        if len(found) >= 2 or time.monotonic() > deadline:
-            break
-        time.sleep(5)
-    assert len(found) == 2  # one item per repetition, not duplicated by the second export
-    if not os.environ.get("ASSAYER_SMOKE_KEEP"):
-        client.api.dataset_items.delete(f"{name}-c1")
+        item = client.api.dataset_items.get(case_id)
+        assert item.id == case_id, "dataset item id must be the case_id"
+        assert item.input == "q" and item.expected_output == "answer"
+
+        traces = {trajectory_id(name, t.case_id, t.repetition) for t in experiment.trajectories}
+        for trace_id in sorted(traces):
+            observations = _wait_for(
+                lambda trace_id=trace_id: (
+                    client.api.observations.get_many(
+                        trace_id=trace_id,
+                        fields="core,basic,io,metadata,model,usage",
+                        from_start_time=window,
+                        limit=100,
+                    ).data
+                ),
+                lambda found: len(found) >= 5,
+            )
+            assert len(observations) == 5, "root and four Steps, once each, after two exports"
+            by_name = {o.name: o for o in observations}
+            assert {o.type for o in observations} == {"SPAN", "RETRIEVER", "GENERATION", "TOOL"}
+            assert by_name["search"].type == "RETRIEVER" and by_name["calc"].type == "TOOL"
+            root = by_name[name]
+            assert root.parent_observation_id is None
+            assert by_name["search"].parent_observation_id == root.id
+            assert by_name["gpt-x"].parent_observation_id == by_name["search"].id
+            assert (by_name["gpt-x"].usage_details or {}).get("input") == 10
+            assert (by_name["gpt-x"].usage_details or {}).get("output") == 5
+            assert by_name["gpt-x"].model == "gpt-x"
+            assert by_name["calc"].level == "ERROR"
+            assert "answer" in str(root.metadata.get("final_output"))
+            assert "done" in str(root.metadata.get("final_state"))
+            assert root.session_id == "s1"
+
+        runs = _wait_for(
+            lambda: (
+                client.api.experiments.list_items(
+                    from_start_time=window, dataset_id=item.dataset_id
+                ).data
+            ),
+            lambda found: len(found) >= 2,
+        )
+        assert sorted(r.experiment_name for r in runs) == [f"{name}/rep-0", f"{name}/rep-1"]
+        assert {r.experiment_item_id for r in runs} == {case_id}
+
+        scores = _wait_for(
+            lambda: client.api.scores.get_many(name="exact", from_timestamp=window).data,
+            lambda found: len(found) >= 2,
+        )
+        assert len([s for s in scores if s.trace_id in traces]) == 2
+        run_scores = _wait_for(
+            lambda: client.api.scores.get_many(name="overall.f", from_timestamp=window).data,
+            lambda found: len(found) >= 2,
+        )
+        assert len(run_scores) == 2, "the Experiment-level Score reaches each dataset run"
+    finally:
+        if not os.environ.get("ASSAYER_SMOKE_KEEP"):
+            try:
+                client.api.dataset_items.delete(case_id)
+            except ApiError:
+                pass
