@@ -86,7 +86,7 @@ Ids are UUIDv5 hex strings derived from the Experiment name and the item's ident
 
 # LangSmithAdapter
 
-`assayer.integrations.LangSmithAdapter(client=None, *, api_key=None, dataset_name=None, started_at=None, name="langsmith")` exports an Experiment to LangSmith (#36) and replaces `LangSmithPublisher`.[^langsmith] The client is an injected `langsmith.Client` (left open by `close`) or one built from `api_key`, `LANGSMITH_API_KEY` or `LANGCHAIN_API_KEY`, in that order; none of them is an `AdapterConfigError`.
+`assayer.integrations.LangSmithAdapter(client=None, *, api_key=None, dataset_name=None, started_at=None, name="langsmith")` exports an Experiment to LangSmith (#36) and replaces the removed `LangSmithPublisher`.[^langsmith] The client is an injected `langsmith.Client` (left open by `close`) or one built from `api_key`, `LANGSMITH_API_KEY` or `LANGCHAIN_API_KEY`, in that order; none of them is an `AdapterConfigError`.
 
 * **Cases** are examples of a dataset (named after the Experiment, or `dataset_name`; created when missing, reused otherwise) with the deterministic Case id as `example_id` and `case_id` in the metadata. An existing example is updated, never deleted, and `include_content=False` leaves its inputs alone.
 * **The Experiment** is a project (`create_project(upsert=True)`) whose `reference_dataset_id` is that dataset.

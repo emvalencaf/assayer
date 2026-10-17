@@ -76,7 +76,7 @@ Experiments can be exported to LangSmith with `LangSmithAdapter` (Langfuse is pl
 - **Token cost tracking**: input/output tokens and estimated USD cost per run, comparable across experiments
 - **Extensible**: register custom metrics and evaluator types without modifying core files
 - **Audit trail**: every evaluated field records method, expected value, obtained value, score and prompt hash
-- **Observability integrations**: `Runner(adapter=LangSmithAdapter()).export(experiment)` sends Cases, run trees and Scores to LangSmith through a vendor-neutral Adapter (Langfuse is planned); the legacy `LangSmithPublisher` is not wired into the `Runner` and is being replaced
+- **Observability integrations**: `Runner(adapter=LangSmithAdapter()).export(experiment)` sends Cases, run trees and Scores to LangSmith through a vendor-neutral Adapter (Langfuse is planned)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

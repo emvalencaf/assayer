@@ -1,6 +1,7 @@
 # Update Log
 
 ## 2026-10-17
+* **Update**: [Package organization](architecture/package-organization.md) and [Adapters](architecture/adapters.md) record that `LangSmithPublisher` was removed in favour of `LangSmithAdapter`.
 * **Update**: [Adapters](architecture/adapters.md) documents `LangSmithAdapter` (#36): run trees, feedback named `<metric>.<field>`, example upserts, credentials and error mapping.
 * **Update**: [Adapters](architecture/adapters.md) records that `plan_export` returns an `ExportPlan` with `notes` for unlinkable Scores and Trajectories, the new `export_experiment` (an unplannable Experiment is one `validation` failure of target kind `experiment`), and that `include_content=False` now also drops Step errors and Score comments.
 * **Addition**: Documented the [Adapters](architecture/adapters.md) core (#35): `Adapter` Protocol, `ExportReport`, failure taxonomy, deterministic ids, retry policy and `InMemoryAdapter`, listed in the [architecture index](architecture/index.md).
