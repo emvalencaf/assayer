@@ -1,6 +1,7 @@
 # Update Log
 
 ## 2026-10-17
+* **Update**: [Tool and end-state metrics](metrics/tool-and-state-metrics.md) records that `end_state_match` pairs leaves by a tuple path, so a key with a dot or a key `"0"` no longer collides with a nested path or a list index (the Score `field` is still the dotted path). Alignment and dotted-path `resolve` gained unit tests only.
 * **Addition**: Documented the [tool and end-state metrics](metrics/tool-and-state-metrics.md) (#32): `tool_correctness`, `tool_argument_match` and `end_state_match`, listed in the [metrics index](metrics/index.md).
 * **Update**: [Metric contract](metrics/metric-contract.md) records that `fn` may return `Detailed` or `None`; [Package organization](architecture/package-organization.md) lists the top-level `alignment.py` and `path.py` (moved out of `runner/field_map/`), and [Per-Field measurement](architecture/field-measurement.md) points at the new Alignment path.
 * **Update**: [Per-Field measurement](architecture/field-measurement.md) documents the schema utility and YAML/JSON field-map loading (#31), with the new field-level metrics `exact_match`, `normalized_exact_match`, `numeric_tolerance` and `list_f1`.

@@ -285,3 +285,21 @@ class TestEndStateMatchEmptyState:
         outcome = _metric("end_state_match").evaluate(trajectory, case)
 
         assert [(s.field, s.value) for s in outcome.scores] == [(None, 1.0)]
+
+
+class TestEndStateMatchPaths:
+    def test_a_key_with_a_dot_does_not_collide_with_a_nested_path(self):
+        trajectory = Trajectory(final_state={"a": {"b": 1}}, case_id="c1")
+        case = Case(input="q", expected_state={"a.b": 1})
+
+        outcome = _metric("end_state_match").evaluate(trajectory, case)
+
+        assert outcome.scores[0].value == 0.0
+
+    def test_a_key_zero_does_not_collide_with_a_list_index(self):
+        trajectory = Trajectory(final_state={"a": ["x"]}, case_id="c1")
+        case = Case(input="q", expected_state={"a": {"0": "x"}})
+
+        outcome = _metric("end_state_match").evaluate(trajectory, case)
+
+        assert outcome.scores[0].value == 0.0

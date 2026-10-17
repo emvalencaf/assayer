@@ -90,9 +90,11 @@ def tool_correctness(trajectory: Trajectory, case: Case, ordered: bool = False) 
     return _f1(matched, len(called), len(expected))
 
 
-def _leaves(value: Any, path: str = "") -> dict[str, Any]:
-    """Flatten nested dictionaries and lists into `{dotted path: leaf}`.
+def _leaves(value: Any, path: tuple = ()) -> dict[tuple, Any]:
+    """Flatten nested dictionaries and lists into `{path: leaf}`.
 
+    A path is a tuple of dictionary keys and list indexes, so that a key containing a
+    dot, or a key "0" next to an index 0, never collides with another path.
     A nested empty container is a leaf, so that emptying it is not mistaken for nothing.
     """
     if isinstance(value, Mapping) and value:
@@ -103,13 +105,13 @@ def _leaves(value: Any, path: str = "") -> dict[str, Any]:
         return {path: value}
     else:
         return {}  # an empty state as a whole has no leaves to expect
-    leaves: dict[str, Any] = {}
+    leaves: dict[tuple, Any] = {}
     for key, child in items:
-        leaves.update(_leaves(child, f"{path}.{key}" if path else str(key)))
+        leaves.update(_leaves(child, (*path, key)))
     return leaves
 
 
-def _compare_leaves(expected: Any, actual: Any, strict: bool = False) -> dict[str, float]:
+def _compare_leaves(expected: Any, actual: Any, strict: bool = False) -> dict[tuple, float]:
     """Score each leaf by exact equality, pairing expected and actual leaves by path.
 
     Returns:
@@ -199,7 +201,12 @@ def end_state_match(trajectory: Trajectory, case: Case, strict: bool = False) ->
         raise ValueError("missing required input: final_state")
     leaves = _compare_leaves(case.expected_state, trajectory.final_state, strict)
     details = [
-        Score(name="end_state_match", value=value, field=path, target_id=trajectory.case_id)
+        Score(
+            name="end_state_match",
+            value=value,
+            field=".".join(map(str, path)),
+            target_id=trajectory.case_id,
+        )
         for path, value in leaves.items()
         if path
     ]

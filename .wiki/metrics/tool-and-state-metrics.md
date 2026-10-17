@@ -5,7 +5,7 @@ description: Deterministic agent metrics scoring the tools a Trajectory called, 
 resource: assayer/metrics/agent.py
 tags: [metrics, agent, trajectory, tools, state]
 status: draft
-generated: { by: claude-code/pre-commit, at: 2026-10-18T12:00:00Z }
+generated: { by: claude-code/pre-commit, at: 2026-10-18T12:30:00Z }
 sources:
   - id: agent-metrics
     resource: assayer/metrics/agent.py
@@ -60,7 +60,8 @@ Compares `final_state` with `expected_state` leaf by leaf at dotted paths, with
 exact equality, whatever path the agent took. A tool that was called but changed
 nothing leaves its leaf wrong.
 
-* The Trajectory value is the mean over the leaves, plus one Score per leaf with `field` set to its path.
+* The Trajectory value is the mean over the leaves, plus one Score per leaf with `field` set to its dotted path.
+* Leaves are paired internally by a tuple of keys and indexes, and the dotted string is built only for the Score `field`. So a key containing a dot (`{"a.b": 1}`) never collides with a nested path (`{"a": {"b": 1}}`), nor a key `"0"` with the list index 0; each leaf is missing on the other side and scores 0.0.[^agent-tests]
 * Lists are compared by index; an emptied container is a leaf and so differs from a full one.
 * A missing leaf scores 0.0. The expected state is a subset by default; `strict=True` also scores each extra leaf 0.0.
 * An `expected_state` with no `final_state` is an `EvaluationFailure`; a Case without `expected_state` is skipped (no Score, no failure).[^agent-tests]
