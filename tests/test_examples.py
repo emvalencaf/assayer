@@ -1,5 +1,6 @@
 """The examples and the offline README snippets run against the current API."""
 
+import os
 import re
 import runpy
 from pathlib import Path
@@ -46,3 +47,21 @@ def test_offline_readme_snippet_runs(first_line, tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
 
     exec(compile(_readme_snippets()[first_line], "README.md", "exec"), {"__name__": "__main__"})
+
+
+def test_semantic_readme_snippet_runs_with_network():
+    """Downloads a Hugging Face model on first use; opt in with ASSAYER_NETWORK_TESTS=1."""
+    if not os.environ.get("ASSAYER_NETWORK_TESTS"):
+        pytest.skip("set ASSAYER_NETWORK_TESTS=1 to download the model")
+    pytest.importorskip("sentence_transformers")
+
+    exec(
+        compile(
+            _readme_snippets()[
+                "from assayer.metrics import corpus_metric, make_semantic_similarity"
+            ],
+            "README.md",
+            "exec",
+        ),
+        {"__name__": "__main__"},
+    )

@@ -37,7 +37,8 @@ from assayer.metrics.judge import (
     make_goal_success,
 )
 from assayer.metrics.metric import Detailed, Metric, MetricOutcome
-from assayer.metrics.ner import EntitySpan, NERMatcher, NERMatchResult, ner_macro_f1
+from assayer.metrics.ner import ner_macro_f1
+from assayer.metrics.ner_matching import EntitySpan, NERMatcher, NERMatchResult
 from assayer.metrics.retrieval import (
     make_context_precision,
     make_context_recall,

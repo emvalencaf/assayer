@@ -334,7 +334,7 @@ Using something whose extra is missing raises an `ImportError` naming `assayer[<
 
 ### Token cost tracking
 
-A Step reports its tokens in `Step.usage`; `Runner(pricing=PricingConfig(...))` keeps the
+A Step reports its tokens in `Step.usage`; `model_step(reply, model=...)` (`assayer.runner`) builds a model Step from a LangChain-style reply, reading its `usage_metadata`; `Runner(pricing=PricingConfig(...))` keeps the
 target's prices on the `Experiment`, and `Trajectory.total_usage()` and
 `Experiment.total_usage()` sum tokens and cost. `compare(a, b)` (`assayer.runner`)
 returns a `Comparison` with the delta per (metric, Field) and the mean token and cost

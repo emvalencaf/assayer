@@ -10,6 +10,7 @@ from .field_map import (
     parse_field_map,
     schema_to_field_map,
 )
+from .model_step import model_step
 from .runner import Runner
 
 __all__ = [
@@ -20,6 +21,7 @@ __all__ = [
     "compare",
     "load_cases",
     "load_field_map",
+    "model_step",
     "parse_field_map",
     "schema_to_field_map",
 ]
