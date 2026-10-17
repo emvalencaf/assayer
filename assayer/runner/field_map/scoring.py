@@ -6,13 +6,15 @@ from typing import Any
 
 from assayer.metrics import MetricOutcome
 from assayer.models import Case, EvaluationFailure, Score, Trajectory
-from assayer.runner.alignment import (
+from assayer.runner.field_map.alignment import (
     Alignment,
     align_best_match,
     align_by_key,
     align_positional,
 )
-from assayer.runner.field_map import FieldMetric, ListSpec, resolve
+from assayer.runner.field_map.field_metric import FieldMetric
+from assayer.runner.field_map.list_field import ListSpec
+from assayer.runner.field_map.path import resolve
 
 LIST_SCORES = ("list_precision", "list_recall", "list_f1")
 

@@ -7,8 +7,7 @@ from typing import Any
 from assayer.metrics import Metric
 from assayer.models import Case, Dataset, Experiment, PricingConfig, Step, Trajectory
 from assayer.runner.case_loader import load_cases
-from assayer.runner.field_map import build_field_map, metrics_of
-from assayer.runner.field_scoring import score_field
+from assayer.runner.field_map import build_field_map, metrics_of, score_field
 
 
 class Runner:

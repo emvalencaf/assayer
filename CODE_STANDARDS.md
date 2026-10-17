@@ -32,7 +32,7 @@ concern, and dependencies point from the outer layers inward:
 | `evaluators/` | `BaseEvaluator` (ABC) and its implementations (`ner`, `hallucination`, `consistency`) | Aggregation across a dataset |
 | `metrics/` | The `Metric` contract (`level`, `requires`, `kind`) and built-in metrics, grouped by task (`agent`, `chat`, `classification`, `ner`); legacy ones are pure functions `(predictions, references) -> float` | State, network calls |
 | `registries/` | `Registry` (holds `Metric` objects) and the legacy `MetricRegistry` and `EvaluatorRegistry` | Built-in metric or evaluator definitions |
-| `runner/` | Pipelines (`EvaluationPipeline`, `HistoricalPipeline`, `ConsistencyPipeline`), `FieldRouter`, dataset loading, `Runner` (target → Experiment), the `field_map/` package with its Alignment of list Fields and Field scoring, token extraction, pricing, comparison | Metric math |
+| `runner/` | Pipelines (`EvaluationPipeline`, `HistoricalPipeline`, `ConsistencyPipeline`), `FieldRouter`, dataset loading, `Runner` (target → Experiment), the `field_map/` package (field metrics, Alignment of list Fields, Field scoring), token extraction, pricing, comparison | Metric math |
 | `integrations/` | Adapters for external services (`langsmith`) | Domain rules |
 
 Conventions:
