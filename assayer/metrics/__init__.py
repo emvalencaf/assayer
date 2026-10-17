@@ -1,30 +1,33 @@
 """Metric implementations for evaluating model outputs."""
 
-from assayer.registries.metric_registry import MetricRegistry
-from assayer.metrics.chat import bleu, rouge_l, bert_score, make_semantic_similarity
+from assayer.metrics.chat import (
+    bert_score,
+    bleu,
+    make_semantic_similarity,
+    register_chat_metrics,
+    rouge_l,
+)
+from assayer.metrics.classification import (
+    accuracy,
+    make_f1,
+    make_precision,
+    make_recall,
+    register_classification_metrics,
+)
+from assayer.metrics.ner import ner_macro_f1, register_ner_evaluators, register_ner_metrics
 
-
-def register_chat_metrics(registry: MetricRegistry) -> None:
-    """Register all built-in chat metrics in the provided MetricRegistry.
-
-    Registers the four core chat quality metrics: BLEU, ROUGE-L, BERTScore,
-    and semantic similarity (using default model) for evaluating conversational
-    model outputs against reference responses.
-
-    Args:
-        registry: The MetricRegistry instance to register metrics into.
-
-    Returns:
-        None
-
-    Raises:
-        KeyError: If any metric name is already registered in the registry.
-    """
-    # Register the individual metric functions
-    registry.register("bleu", bleu)
-    registry.register("rouge_l", rouge_l)
-    registry.register("bert_score", bert_score)
-
-    # Register semantic similarity using the default model
-    semantic_similarity_fn = make_semantic_similarity()
-    registry.register("semantic_similarity", semantic_similarity_fn)
+__all__ = [
+    "accuracy",
+    "bert_score",
+    "bleu",
+    "make_f1",
+    "make_precision",
+    "make_recall",
+    "make_semantic_similarity",
+    "ner_macro_f1",
+    "register_chat_metrics",
+    "register_classification_metrics",
+    "register_ner_evaluators",
+    "register_ner_metrics",
+    "rouge_l",
+]

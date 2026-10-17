@@ -5,7 +5,6 @@ from typing import get_type_hints
 
 import pytest
 
-from assayer.models.consistency_field_evaluation import ConsistencyFieldEvaluation
 from assayer.models.consistency_run_result import ConsistencyRunResult
 from assayer.models.consistency_summary import ConsistencySummary
 
@@ -41,17 +40,13 @@ class TestConsistencyReportIsDataclass:
         """ConsistencyReport must be decorated with @dataclass."""
         from assayer.models.consistency_report import ConsistencyReport
 
-        assert dataclasses.is_dataclass(ConsistencyReport), (
-            "ConsistencyReport must be a @dataclass"
-        )
+        assert dataclasses.is_dataclass(ConsistencyReport), "ConsistencyReport must be a @dataclass"
 
     def test_class_is_a_class_not_an_instance(self):
         """dataclasses.is_dataclass returns True for the class itself, not only instances."""
         from assayer.models.consistency_report import ConsistencyReport
 
-        assert isinstance(ConsistencyReport, type), (
-            "ConsistencyReport must be a class"
-        )
+        assert isinstance(ConsistencyReport, type), "ConsistencyReport must be a class"
 
 
 class TestConsistencyReportFields:
@@ -78,9 +73,7 @@ class TestConsistencyReportFields:
         from assayer.models.consistency_report import ConsistencyReport
 
         field_names = {f.name for f in dataclasses.fields(ConsistencyReport)}
-        assert "per_field" in field_names, (
-            "Field 'per_field' is missing from ConsistencyReport"
-        )
+        assert "per_field" in field_names, "Field 'per_field' is missing from ConsistencyReport"
 
     def test_has_runs_field(self):
         """ConsistencyReport must have a field named 'runs'."""
@@ -94,9 +87,7 @@ class TestConsistencyReportFields:
         from assayer.models.consistency_report import ConsistencyReport
 
         hints = get_type_hints(ConsistencyReport)
-        assert "experiment_name" in hints, (
-            "Field 'experiment_name' must have a type hint"
-        )
+        assert "experiment_name" in hints, "Field 'experiment_name' must have a type hint"
         assert hints["experiment_name"] is str, (
             f"Field 'experiment_name' must be annotated as str, got {hints['experiment_name']}"
         )
@@ -107,9 +98,7 @@ class TestConsistencyReportFields:
 
         hints = get_type_hints(ConsistencyReport)
         assert "k" in hints, "Field 'k' must have a type hint"
-        assert hints["k"] is int, (
-            f"Field 'k' must be annotated as int, got {hints['k']}"
-        )
+        assert hints["k"] is int, f"Field 'k' must be annotated as int, got {hints['k']}"
 
     def test_per_field_type_hint(self):
         """The 'per_field' field must be annotated as dict[str, ConsistencySummary]."""
@@ -119,16 +108,10 @@ class TestConsistencyReportFields:
         assert "per_field" in hints, "Field 'per_field' must have a type hint"
         hint = hints["per_field"]
         origin = getattr(hint, "__origin__", None)
-        assert origin is dict, (
-            f"'per_field' must be annotated as dict[...], got {hint}"
-        )
+        assert origin is dict, f"'per_field' must be annotated as dict[...], got {hint}"
         args = getattr(hint, "__args__", ())
-        assert len(args) == 2, (
-            f"'per_field' dict must have two type parameters, got {hint}"
-        )
-        assert args[0] is str, (
-            f"'per_field' key type must be str, got {args[0]}"
-        )
+        assert len(args) == 2, f"'per_field' dict must have two type parameters, got {hint}"
+        assert args[0] is str, f"'per_field' key type must be str, got {args[0]}"
         assert args[1] is ConsistencySummary, (
             f"'per_field' value type must be ConsistencySummary, got {args[1]}"
         )
@@ -141,13 +124,9 @@ class TestConsistencyReportFields:
         assert "runs" in hints, "Field 'runs' must have a type hint"
         hint = hints["runs"]
         origin = getattr(hint, "__origin__", None)
-        assert origin is list, (
-            f"'runs' must be annotated as list[...], got {hint}"
-        )
+        assert origin is list, f"'runs' must be annotated as list[...], got {hint}"
         args = getattr(hint, "__args__", ())
-        assert len(args) == 1, (
-            f"'runs' list must have one type parameter, got {hint}"
-        )
+        assert len(args) == 1, f"'runs' list must have one type parameter, got {hint}"
         assert args[0] is ConsistencyRunResult, (
             f"'runs' element type must be ConsistencyRunResult, got {args[0]}"
         )
@@ -383,9 +362,7 @@ class TestConsistencyReportDocstring:
         """ConsistencyReport must have a non-empty docstring."""
         from assayer.models.consistency_report import ConsistencyReport
 
-        assert ConsistencyReport.__doc__ is not None, (
-            "ConsistencyReport must have a docstring"
-        )
+        assert ConsistencyReport.__doc__ is not None, "ConsistencyReport must have a docstring"
         assert ConsistencyReport.__doc__.strip() != "", (
             "ConsistencyReport docstring must not be empty"
         )
@@ -395,18 +372,14 @@ class TestConsistencyReportDocstring:
         from assayer.models.consistency_report import ConsistencyReport
 
         doc = ConsistencyReport.__doc__ or ""
-        assert "Args:" in doc, (
-            "ConsistencyReport docstring must include an 'Args:' section"
-        )
+        assert "Args:" in doc, "ConsistencyReport docstring must include an 'Args:' section"
 
     def test_docstring_contains_raises_section(self):
         """The docstring must contain a 'Raises:' section (Google style)."""
         from assayer.models.consistency_report import ConsistencyReport
 
         doc = ConsistencyReport.__doc__ or ""
-        assert "Raises:" in doc, (
-            "ConsistencyReport docstring must include a 'Raises:' section"
-        )
+        assert "Raises:" in doc, "ConsistencyReport docstring must include a 'Raises:' section"
 
     def test_docstring_documents_experiment_name_field(self):
         """The docstring Args section must mention 'experiment_name'."""
@@ -422,27 +395,21 @@ class TestConsistencyReportDocstring:
         from assayer.models.consistency_report import ConsistencyReport
 
         doc = ConsistencyReport.__doc__ or ""
-        assert "k" in doc, (
-            "ConsistencyReport docstring must document the 'k' field"
-        )
+        assert "k" in doc, "ConsistencyReport docstring must document the 'k' field"
 
     def test_docstring_documents_per_field_field(self):
         """The docstring Args section must mention 'per_field'."""
         from assayer.models.consistency_report import ConsistencyReport
 
         doc = ConsistencyReport.__doc__ or ""
-        assert "per_field" in doc, (
-            "ConsistencyReport docstring must document the 'per_field' field"
-        )
+        assert "per_field" in doc, "ConsistencyReport docstring must document the 'per_field' field"
 
     def test_docstring_documents_runs_field(self):
         """The docstring Args section must mention 'runs'."""
         from assayer.models.consistency_report import ConsistencyReport
 
         doc = ConsistencyReport.__doc__ or ""
-        assert "runs" in doc, (
-            "ConsistencyReport docstring must document the 'runs' field"
-        )
+        assert "runs" in doc, "ConsistencyReport docstring must document the 'runs' field"
 
     def test_docstring_has_description_before_args(self):
         """The docstring must have descriptive text before the Args section."""
@@ -480,9 +447,7 @@ class TestConsistencyReportPublicExports:
         """ConsistencyRunResult must be listed in assayer.models.__all__."""
         import assayer.models as models_module
 
-        assert hasattr(models_module, "__all__"), (
-            "assayer.models must define __all__"
-        )
+        assert hasattr(models_module, "__all__"), "assayer.models must define __all__"
         assert "ConsistencyRunResult" in models_module.__all__, (
             "ConsistencyRunResult must be listed in assayer.models.__all__"
         )
@@ -491,9 +456,7 @@ class TestConsistencyReportPublicExports:
         """ConsistencyReport must be listed in assayer.models.__all__."""
         import assayer.models as models_module
 
-        assert hasattr(models_module, "__all__"), (
-            "assayer.models must define __all__"
-        )
+        assert hasattr(models_module, "__all__"), "assayer.models must define __all__"
         assert "ConsistencyReport" in models_module.__all__, (
             "ConsistencyReport must be listed in assayer.models.__all__"
         )

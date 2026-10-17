@@ -1,7 +1,8 @@
 """ConsistencyPipeline for evaluating LLM consistency across multiple runs."""
 
 import statistics
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from assayer.evaluators.consistency import ConsistencyEvaluator
 from assayer.models.consistency_field_evaluation import ConsistencyFieldEvaluation

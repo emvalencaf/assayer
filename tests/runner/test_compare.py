@@ -5,7 +5,8 @@ that compute metric deltas and token cost differences between experiments.
 """
 
 import pytest
-from assayer.models import ExperimentResult, RunResult, TokenUsage, FieldEvaluation
+
+from assayer.models import ExperimentResult, RunResult, TokenUsage
 from assayer.runner.compare import compare_experiments
 
 
@@ -14,16 +15,8 @@ class TestCompareExperiments:
 
     def test_returns_expected_structure(self):
         """Test that compare_experiments returns a dict with required keys."""
-        baseline = ExperimentResult(
-            experiment_name="baseline",
-            runs=[],
-            metrics={}
-        )
-        candidate = ExperimentResult(
-            experiment_name="candidate",
-            runs=[],
-            metrics={}
-        )
+        baseline = ExperimentResult(experiment_name="baseline", runs=[], metrics={})
+        candidate = ExperimentResult(experiment_name="candidate", runs=[], metrics={})
 
         result = compare_experiments(baseline, candidate)
 
@@ -42,14 +35,12 @@ class TestCompareExperiments:
     def test_metric_deltas_for_shared_metrics(self):
         """Test metric_deltas calculation for metrics present in both experiments."""
         baseline = ExperimentResult(
-            experiment_name="baseline",
-            runs=[],
-            metrics={"f1": 0.8, "bleu": 0.6, "accuracy": 0.75}
+            experiment_name="baseline", runs=[], metrics={"f1": 0.8, "bleu": 0.6, "accuracy": 0.75}
         )
         candidate = ExperimentResult(
             experiment_name="candidate",
             runs=[],
-            metrics={"f1": 0.85, "bleu": 0.55, "accuracy": 0.80}
+            metrics={"f1": 0.85, "bleu": 0.55, "accuracy": 0.80},
         )
 
         result = compare_experiments(baseline, candidate)
@@ -62,14 +53,10 @@ class TestCompareExperiments:
     def test_metric_deltas_for_missing_metrics(self):
         """Test metric_deltas returns None for metrics present in only one experiment."""
         baseline = ExperimentResult(
-            experiment_name="baseline",
-            runs=[],
-            metrics={"f1": 0.8, "rouge": 0.7}
+            experiment_name="baseline", runs=[], metrics={"f1": 0.8, "rouge": 0.7}
         )
         candidate = ExperimentResult(
-            experiment_name="candidate",
-            runs=[],
-            metrics={"f1": 0.85, "bleu": 0.6}
+            experiment_name="candidate", runs=[], metrics={"f1": 0.85, "bleu": 0.6}
         )
 
         result = compare_experiments(baseline, candidate)
@@ -77,7 +64,7 @@ class TestCompareExperiments:
 
         assert metric_deltas["f1"] == pytest.approx(0.05)  # shared metric
         assert metric_deltas["rouge"] is None  # only in baseline
-        assert metric_deltas["bleu"] is None   # only in candidate
+        assert metric_deltas["bleu"] is None  # only in candidate
 
     def test_token_cost_delta_with_pricing(self):
         """Test avg_token_cost_delta calculation when both experiments have pricing."""
@@ -85,25 +72,25 @@ class TestCompareExperiments:
             RunResult(
                 input="test1",
                 output="output1",
-                token_usage=TokenUsage(input_tokens=100, output_tokens=50, cost_usd=0.01)
+                token_usage=TokenUsage(input_tokens=100, output_tokens=50, cost_usd=0.01),
             ),
             RunResult(
                 input="test2",
                 output="output2",
-                token_usage=TokenUsage(input_tokens=120, output_tokens=60, cost_usd=0.012)
-            )
+                token_usage=TokenUsage(input_tokens=120, output_tokens=60, cost_usd=0.012),
+            ),
         ]
         candidate_runs = [
             RunResult(
                 input="test1",
                 output="output1",
-                token_usage=TokenUsage(input_tokens=110, output_tokens=45, cost_usd=0.011)
+                token_usage=TokenUsage(input_tokens=110, output_tokens=45, cost_usd=0.011),
             ),
             RunResult(
                 input="test2",
                 output="output2",
-                token_usage=TokenUsage(input_tokens=130, output_tokens=55, cost_usd=0.013)
-            )
+                token_usage=TokenUsage(input_tokens=130, output_tokens=55, cost_usd=0.013),
+            ),
         ]
 
         baseline = ExperimentResult("baseline", runs=baseline_runs, metrics={})
@@ -124,14 +111,14 @@ class TestCompareExperiments:
             RunResult(
                 input="test",
                 output="output",
-                token_usage=TokenUsage(input_tokens=100, output_tokens=50, cost_usd=0.01)
+                token_usage=TokenUsage(input_tokens=100, output_tokens=50, cost_usd=0.01),
             )
         ]
         candidate_runs = [
             RunResult(
                 input="test",
                 output="output",
-                token_usage=TokenUsage(input_tokens=110, output_tokens=45, cost_usd=None)
+                token_usage=TokenUsage(input_tokens=110, output_tokens=45, cost_usd=None),
             )
         ]
 
@@ -151,14 +138,14 @@ class TestCompareExperiments:
             RunResult(
                 input="test",
                 output="output",
-                token_usage=TokenUsage(input_tokens=100, output_tokens=50, cost_usd=None)
+                token_usage=TokenUsage(input_tokens=100, output_tokens=50, cost_usd=None),
             )
         ]
         candidate_runs = [
             RunResult(
                 input="test",
                 output="output",
-                token_usage=TokenUsage(input_tokens=110, output_tokens=45, cost_usd=None)
+                token_usage=TokenUsage(input_tokens=110, output_tokens=45, cost_usd=None),
             )
         ]
 
@@ -191,7 +178,7 @@ class TestCompareExperiments:
             RunResult(
                 input="test",
                 output="output",
-                token_usage=TokenUsage(input_tokens=100, output_tokens=50, cost_usd=0.01)
+                token_usage=TokenUsage(input_tokens=100, output_tokens=50, cost_usd=0.01),
             )
         ]
         candidate = ExperimentResult("candidate", runs=candidate_runs, metrics={})
@@ -210,19 +197,19 @@ class TestCompareExperiments:
             RunResult(
                 input="test1",
                 output="output1",
-                token_usage=TokenUsage(input_tokens=100, output_tokens=50, cost_usd=0.01)
+                token_usage=TokenUsage(input_tokens=100, output_tokens=50, cost_usd=0.01),
             ),
             RunResult(
                 input="test2",
                 output="output2",
-                token_usage=TokenUsage(input_tokens=120, output_tokens=60, cost_usd=None)
-            )
+                token_usage=TokenUsage(input_tokens=120, output_tokens=60, cost_usd=None),
+            ),
         ]
         candidate_runs = [
             RunResult(
                 input="test1",
                 output="output1",
-                token_usage=TokenUsage(input_tokens=110, output_tokens=45, cost_usd=0.011)
+                token_usage=TokenUsage(input_tokens=110, output_tokens=45, cost_usd=0.011),
             )
         ]
 
@@ -254,14 +241,10 @@ class TestCompareExperiments:
     def test_all_metrics_from_both_experiments_included(self):
         """Test that metric_deltas includes all metrics from both experiments."""
         baseline = ExperimentResult(
-            experiment_name="baseline",
-            runs=[],
-            metrics={"metric_a": 0.1, "metric_b": 0.2}
+            experiment_name="baseline", runs=[], metrics={"metric_a": 0.1, "metric_b": 0.2}
         )
         candidate = ExperimentResult(
-            experiment_name="candidate",
-            runs=[],
-            metrics={"metric_b": 0.25, "metric_c": 0.3}
+            experiment_name="candidate", runs=[], metrics={"metric_b": 0.25, "metric_c": 0.3}
         )
 
         result = compare_experiments(baseline, candidate)
@@ -293,26 +276,24 @@ class TestCompareExperiments:
 
         assert metric_deltas["error_rate"] == pytest.approx(-0.1)
 
-    @pytest.mark.parametrize("baseline_cost,candidate_cost,expected", [
-        (None, None, None),
-        (0.01, None, None),
-        (None, 0.02, None),
-        (0.01, 0.02, 0.01)
-    ])
+    @pytest.mark.parametrize(
+        "baseline_cost,candidate_cost,expected",
+        [(None, None, None), (0.01, None, None), (None, 0.02, None), (0.01, 0.02, 0.01)],
+    )
     def test_cost_delta_combinations(self, baseline_cost, candidate_cost, expected):
         """Test various combinations of cost values."""
         baseline_runs = [
             RunResult(
                 input="test",
                 output="output",
-                token_usage=TokenUsage(input_tokens=100, output_tokens=50, cost_usd=baseline_cost)
+                token_usage=TokenUsage(input_tokens=100, output_tokens=50, cost_usd=baseline_cost),
             )
         ]
         candidate_runs = [
             RunResult(
                 input="test",
                 output="output",
-                token_usage=TokenUsage(input_tokens=100, output_tokens=50, cost_usd=candidate_cost)
+                token_usage=TokenUsage(input_tokens=100, output_tokens=50, cost_usd=candidate_cost),
             )
         ]
 

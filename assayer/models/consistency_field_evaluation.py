@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import Union
 
 from assayer.models.field_evaluation import FieldEvaluation
 
@@ -20,7 +19,8 @@ class ConsistencyFieldEvaluation:
             Range: [0.0, 1.0].
         dominant_label: Most frequent label across runs. None when labels are
             unavailable (e.g., numeric-only evaluators).
-        entropy: Information entropy of the label distribution. Range: [0.0, log₂(n_distinct_labels)].
+        entropy: Information entropy of the label distribution.
+            Range: [0.0, log₂(n_distinct_labels)].
             Must be >= 0.0.
         score_std: Standard deviation of scores across runs. Range: [0.0, ∞).
             Will be 0.0 when n == 1.
@@ -36,10 +36,10 @@ class ConsistencyFieldEvaluation:
             outside [0.0, 1.0].
     """
 
-    group_key: Union[str, None]
+    group_key: str | None
     n: int
     agreement_rate: float
-    dominant_label: Union[str, None]
+    dominant_label: str | None
     entropy: float
     score_std: float
     correct_rate: float

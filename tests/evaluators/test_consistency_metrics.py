@@ -1,10 +1,10 @@
 """Tests for consistency metrics functions."""
 
 import math
-import pytest
 
-from assayer.models import FieldEvaluation
 from assayer.evaluators.consistency_metrics import compute_agreement_rate, compute_entropy
+from assayer.models import FieldEvaluation
+
 # compute_score_std is not implemented yet - will be added when TASK-002 is completed
 # compute_correct_rate and compute_pass_at_k will be tested even though not implemented yet
 
@@ -232,7 +232,7 @@ class TestComputeScoreStd:
 
         # Expected sample standard deviation: sqrt(((0.5-0.7)^2 + (0.9-0.7)^2) / (2-1))
         # = sqrt((0.04 + 0.04) / 1) = sqrt(0.08) ≈ 0.2828
-        expected_std = ((0.5 - 0.7)**2 + (0.9 - 0.7)**2)**0.5
+        expected_std = ((0.5 - 0.7) ** 2 + (0.9 - 0.7) ** 2) ** 0.5
         assert abs(std_dev - expected_std) < 1e-10
         assert std_dev > 0.0
 
@@ -252,7 +252,7 @@ class TestComputeScoreStd:
         # Calculate expected sample standard deviation manually
         scores = [0.1, 0.5, 0.9, 0.7]
         mean = sum(scores) / len(scores)  # 0.55
-        variance = sum((s - mean)**2 for s in scores) / (len(scores) - 1)  # sample variance
+        variance = sum((s - mean) ** 2 for s in scores) / (len(scores) - 1)  # sample variance
         expected_std = variance**0.5
 
         assert abs(std_dev - expected_std) < 1e-10
@@ -271,7 +271,7 @@ class TestComputeScoreStd:
 
         # Expected sample standard deviation: sqrt(((0.0-0.5)^2 + (1.0-0.5)^2) / (2-1))
         # = sqrt((0.25 + 0.25) / 1) = sqrt(0.5) ≈ 0.7071
-        expected_std = ((0.0 - 0.5)**2 + (1.0 - 0.5)**2)**0.5
+        expected_std = ((0.0 - 0.5) ** 2 + (1.0 - 0.5) ** 2) ** 0.5
         assert abs(std_dev - expected_std) < 1e-10
         assert std_dev > 0.0
 
@@ -292,7 +292,7 @@ class TestComputeScoreStd:
         # Calculate expected sample standard deviation
         scores = [0.8, 0.8, 0.8, 0.8, 0.2]
         mean = sum(scores) / len(scores)  # 0.72
-        variance = sum((s - mean)**2 for s in scores) / (len(scores) - 1)  # sample variance
+        variance = sum((s - mean) ** 2 for s in scores) / (len(scores) - 1)  # sample variance
         expected_std = variance**0.5
 
         assert abs(std_dev - expected_std) < 1e-10
@@ -313,7 +313,7 @@ class TestComputeScoreStd:
         # Sample std dev (ddof=1): sqrt(sum((x-mean)^2) / (n-1))
         scores = [0.2, 0.4, 0.6]
         mean = sum(scores) / len(scores)  # 0.4
-        sample_variance = sum((s - mean)**2 for s in scores) / (len(scores) - 1)  # ddof=1
+        sample_variance = sum((s - mean) ** 2 for s in scores) / (len(scores) - 1)  # ddof=1
         expected_sample_std = sample_variance**0.5
 
         # Population std dev (ddof=0) would be different:
@@ -322,7 +322,7 @@ class TestComputeScoreStd:
 
         assert abs(std_dev - expected_sample_std) < 1e-10
         # Verify it's not using population std dev
-        population_variance = sum((s - mean)**2 for s in scores) / len(scores)
+        population_variance = sum((s - mean) ** 2 for s in scores) / len(scores)
         expected_population_std = population_variance**0.5
         assert abs(std_dev - expected_population_std) > 1e-10  # Should be different
 
@@ -382,8 +382,12 @@ class TestComputeCorrectRate:
 
         results = [
             FieldEvaluation("field", "method", "expected", ["A", "B"], 0.8, None),
-            FieldEvaluation("field", "method", "expected", ["B", "A"], 0.9, None),  # order shouldn't matter
-            FieldEvaluation("field", "method", "expected", {"A", "B"}, 0.7, None),  # set vs list shouldn't matter
+            FieldEvaluation(
+                "field", "method", "expected", ["B", "A"], 0.9, None
+            ),  # order shouldn't matter
+            FieldEvaluation(
+                "field", "method", "expected", {"A", "B"}, 0.7, None
+            ),  # set vs list shouldn't matter
         ]
         reference = ["A", "B"]
 
@@ -397,8 +401,10 @@ class TestComputeCorrectRate:
 
         results = [
             FieldEvaluation("field", "method", "expected", ["A", "B"], 0.8, None),  # exact match
-            FieldEvaluation("field", "method", "expected", ["A"], 0.9, None),       # subset, no match
-            FieldEvaluation("field", "method", "expected", ["A", "B", "C"], 0.7, None),  # superset, no match
+            FieldEvaluation("field", "method", "expected", ["A"], 0.9, None),  # subset, no match
+            FieldEvaluation(
+                "field", "method", "expected", ["A", "B", "C"], 0.7, None
+            ),  # superset, no match
             FieldEvaluation("field", "method", "expected", {"B", "A"}, 0.6, None),  # exact match
         ]
         reference = ["A", "B"]
@@ -412,7 +418,7 @@ class TestComputeCorrectRate:
         from assayer.evaluators.consistency_metrics import compute_correct_rate
 
         results = [
-            FieldEvaluation("field", "method", "expected", ["A"], 0.8, None),       # subset
+            FieldEvaluation("field", "method", "expected", ["A"], 0.8, None),  # subset
             FieldEvaluation("field", "method", "expected", ["A", "B", "C"], 0.9, None),  # superset
             FieldEvaluation("field", "method", "expected", ["C", "D"], 0.7, None),  # different set
         ]
@@ -490,9 +496,11 @@ class TestComputeCorrectRate:
         from assayer.evaluators.consistency_metrics import compute_correct_rate
 
         results = [
-            FieldEvaluation("field", "method", "expected", "A", 0.8, None),     # string
-            FieldEvaluation("field", "method", "expected", ["A"], 0.9, None),   # list - triggers multi-label mode
-            FieldEvaluation("field", "method", "expected", "A", 0.7, None),     # string
+            FieldEvaluation("field", "method", "expected", "A", 0.8, None),  # string
+            FieldEvaluation(
+                "field", "method", "expected", ["A"], 0.9, None
+            ),  # list - triggers multi-label mode
+            FieldEvaluation("field", "method", "expected", "A", 0.7, None),  # string
         ]
         reference = ["A"]
 
@@ -514,9 +522,9 @@ class TestComputeCorrectRate:
         from assayer.evaluators.consistency_metrics import compute_correct_rate
 
         results = [
-            FieldEvaluation("field", "method", "expected", 42, 0.8, None),     # integer
-            FieldEvaluation("field", "method", "expected", "42", 0.9, None),   # string
-            FieldEvaluation("field", "method", "expected", 42.0, 0.7, None),   # float
+            FieldEvaluation("field", "method", "expected", 42, 0.8, None),  # integer
+            FieldEvaluation("field", "method", "expected", "42", 0.9, None),  # string
+            FieldEvaluation("field", "method", "expected", 42.0, 0.7, None),  # float
         ]
         reference = "42"
 
@@ -541,7 +549,7 @@ class TestComputeCorrectRate:
         # set([]) == set(set()) == set([]) = {} (empty set)
         # set(["A"]) != set([])
         # So 2 out of 3 match
-        assert correct_rate == 2/3
+        assert correct_rate == 2 / 3
 
 
 class TestComputePassAtK:
@@ -553,7 +561,9 @@ class TestComputePassAtK:
 
         results = [
             FieldEvaluation("field", "method", "expected", "wrong", 0.8, None),
-            FieldEvaluation("field", "method", "expected", "correct", 0.9, None),  # this one matches
+            FieldEvaluation(
+                "field", "method", "expected", "correct", 0.9, None
+            ),  # this one matches
             FieldEvaluation("field", "method", "expected", "wrong_again", 0.7, None),
         ]
         reference = "correct"
@@ -608,9 +618,11 @@ class TestComputePassAtK:
         from assayer.evaluators.consistency_metrics import compute_pass_at_k
 
         results = [
-            FieldEvaluation("field", "method", "expected", ["A"], 0.8, None),        # subset, no match
-            FieldEvaluation("field", "method", "expected", ["A", "B"], 0.9, None),   # exact match
-            FieldEvaluation("field", "method", "expected", ["A", "B", "C"], 0.7, None),  # superset, no match
+            FieldEvaluation("field", "method", "expected", ["A"], 0.8, None),  # subset, no match
+            FieldEvaluation("field", "method", "expected", ["A", "B"], 0.9, None),  # exact match
+            FieldEvaluation(
+                "field", "method", "expected", ["A", "B", "C"], 0.7, None
+            ),  # superset, no match
         ]
         reference = ["B", "A"]  # order shouldn't matter
 
@@ -623,9 +635,9 @@ class TestComputePassAtK:
         from assayer.evaluators.consistency_metrics import compute_pass_at_k
 
         results = [
-            FieldEvaluation("field", "method", "expected", ["A"], 0.8, None),        # subset
+            FieldEvaluation("field", "method", "expected", ["A"], 0.8, None),  # subset
             FieldEvaluation("field", "method", "expected", ["A", "B", "C"], 0.9, None),  # superset
-            FieldEvaluation("field", "method", "expected", ["C", "D"], 0.7, None),   # different
+            FieldEvaluation("field", "method", "expected", ["C", "D"], 0.7, None),  # different
         ]
         reference = ["A", "B"]
 
@@ -661,7 +673,7 @@ class TestComputePassAtK:
 
     def test_is_equivalent_to_correct_rate_greater_than_zero(self):
         """Test that pass@k is equivalent to correct_rate > 0.0."""
-        from assayer.evaluators.consistency_metrics import compute_pass_at_k, compute_correct_rate
+        from assayer.evaluators.consistency_metrics import compute_correct_rate, compute_pass_at_k
 
         # Test case where some match
         results_some_match = [
@@ -717,7 +729,9 @@ class TestComputeRecallAtK:
         results = [
             FieldEvaluation("field", "method", "expected", ["A"], 0.8, None),
             FieldEvaluation("field", "method", "expected", ["B"], 0.9, None),
-            FieldEvaluation("field", "method", "expected", ["A", "B"], 0.7, None),  # doesn't add new labels
+            FieldEvaluation(
+                "field", "method", "expected", ["A", "B"], 0.7, None
+            ),  # doesn't add new labels
         ]
         reference = ["A", "B", "C", "D"]
 
@@ -767,7 +781,9 @@ class TestComputeRecallAtK:
 
         results = [
             FieldEvaluation("field", "method", "expected", "wrong", 0.8, None),
-            FieldEvaluation("field", "method", "expected", "correct", 0.9, None),  # this one matches
+            FieldEvaluation(
+                "field", "method", "expected", "correct", 0.9, None
+            ),  # this one matches
             FieldEvaluation("field", "method", "expected", "wrong_again", 0.7, None),
         ]
         reference = "correct"
@@ -801,7 +817,7 @@ class TestComputeRecallAtK:
 
     def test_single_label_equivalent_to_pass_at_k_when_true(self):
         """Test that single-label recall@k returns 1.0 when pass@k is True."""
-        from assayer.evaluators.consistency_metrics import compute_recall_at_k, compute_pass_at_k
+        from assayer.evaluators.consistency_metrics import compute_pass_at_k, compute_recall_at_k
 
         results = [
             FieldEvaluation("field", "method", "expected", "wrong", 0.8, None),
@@ -818,7 +834,7 @@ class TestComputeRecallAtK:
 
     def test_single_label_equivalent_to_pass_at_k_when_false(self):
         """Test that single-label recall@k returns 0.0 when pass@k is False."""
-        from assayer.evaluators.consistency_metrics import compute_recall_at_k, compute_pass_at_k
+        from assayer.evaluators.consistency_metrics import compute_pass_at_k, compute_recall_at_k
 
         results = [
             FieldEvaluation("field", "method", "expected", "wrong", 0.8, None),
@@ -861,7 +877,9 @@ class TestComputeRecallAtK:
         results = [
             FieldEvaluation("field", "method", "expected", ["A", "B"], 0.8, None),  # list
             FieldEvaluation("field", "method", "expected", {"C", "D"}, 0.9, None),  # set
-            FieldEvaluation("field", "method", "expected", ["B", "E"], 0.7, None),  # list with duplicate
+            FieldEvaluation(
+                "field", "method", "expected", ["B", "E"], 0.7, None
+            ),  # list with duplicate
         ]
         reference = ["A", "B", "C", "D", "E", "F"]
 
@@ -870,7 +888,7 @@ class TestComputeRecallAtK:
         # union_predicted = {A, B} ∪ {C, D} ∪ {B, E} = {A, B, C, D, E}
         # intersection with reference = {A, B, C, D, E}
         # recall = 5/6 ≈ 0.8333
-        expected_recall = 5/6
+        expected_recall = 5 / 6
         assert abs(recall - expected_recall) < 1e-10
 
     def test_single_label_string_conversion(self):
@@ -878,9 +896,9 @@ class TestComputeRecallAtK:
         from assayer.evaluators.consistency_metrics import compute_recall_at_k
 
         results = [
-            FieldEvaluation("field", "method", "expected", 42, 0.8, None),      # int
-            FieldEvaluation("field", "method", "expected", "wrong", 0.9, None), # string
-            FieldEvaluation("field", "method", "expected", 42.0, 0.7, None),   # float
+            FieldEvaluation("field", "method", "expected", 42, 0.8, None),  # int
+            FieldEvaluation("field", "method", "expected", "wrong", 0.9, None),  # string
+            FieldEvaluation("field", "method", "expected", 42.0, 0.7, None),  # float
         ]
         reference = "42"
 
@@ -898,9 +916,11 @@ class TestComputeRecallAtK:
         from assayer.evaluators.consistency_metrics import compute_recall_at_k
 
         results = [
-            FieldEvaluation("field", "method", "expected", "A", 0.8, None),     # string
-            FieldEvaluation("field", "method", "expected", ["A"], 0.9, None),   # list triggers multi-label
-            FieldEvaluation("field", "method", "expected", "B", 0.7, None),     # string
+            FieldEvaluation("field", "method", "expected", "A", 0.8, None),  # string
+            FieldEvaluation(
+                "field", "method", "expected", ["A"], 0.9, None
+            ),  # list triggers multi-label
+            FieldEvaluation("field", "method", "expected", "B", 0.7, None),  # string
         ]
         reference = ["A", "B"]
 
@@ -917,9 +937,9 @@ class TestComputeRecallAtK:
         from assayer.evaluators.consistency_metrics import compute_recall_at_k
 
         results = [
-            FieldEvaluation("field", "method", "expected", [], 0.8, None),      # empty list
-            FieldEvaluation("field", "method", "expected", set(), 0.9, None),   # empty set
-            FieldEvaluation("field", "method", "expected", ["A"], 0.7, None),   # non-empty
+            FieldEvaluation("field", "method", "expected", [], 0.8, None),  # empty list
+            FieldEvaluation("field", "method", "expected", set(), 0.9, None),  # empty set
+            FieldEvaluation("field", "method", "expected", ["A"], 0.7, None),  # non-empty
         ]
         reference = ["A", "B"]
 
@@ -984,8 +1004,12 @@ class TestComputeRecallAtK:
 
         results = [
             FieldEvaluation("field", "method", "expected", ["A", "B"], 0.8, None),
-            FieldEvaluation("field", "method", "expected", ["A", "C"], 0.9, None),  # A appears again
-            FieldEvaluation("field", "method", "expected", ["B", "D"], 0.7, None),  # B appears again
+            FieldEvaluation(
+                "field", "method", "expected", ["A", "C"], 0.9, None
+            ),  # A appears again
+            FieldEvaluation(
+                "field", "method", "expected", ["B", "D"], 0.7, None
+            ),  # B appears again
         ]
         reference = ["A", "B", "C", "D", "E"]
 

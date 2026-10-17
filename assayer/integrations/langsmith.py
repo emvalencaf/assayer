@@ -7,8 +7,9 @@ field-level audit records to LangSmith for tracking and visualization.
 
 import json
 import os
-import langsmith
 from typing import TYPE_CHECKING
+
+import langsmith
 
 if TYPE_CHECKING:
     from assayer.models import ExperimentResult
@@ -56,7 +57,7 @@ class LangSmithPublisher:
             metadata = {
                 "input_tokens": run_result.token_usage.input_tokens,
                 "output_tokens": run_result.token_usage.output_tokens,
-                "cost_usd": run_result.token_usage.cost_usd  # Include even if None
+                "cost_usd": run_result.token_usage.cost_usd,  # Include even if None
             }
 
             # Create the run record - any SDK exceptions will propagate
@@ -64,7 +65,7 @@ class LangSmithPublisher:
                 name=result.experiment_name,
                 inputs=run_result.input,
                 outputs=run_result.output,
-                metadata=metadata
+                metadata=metadata,
             )
 
             # Create feedback entries for each field evaluation
@@ -73,7 +74,9 @@ class LangSmithPublisher:
                 feedback_metadata = dict(field_evaluation.metadata)
                 if field_evaluation.prompt_hash is not None:
                     feedback_metadata["prompt_hash"] = field_evaluation.prompt_hash
-                elif "prompt_hash" in feedback_metadata and feedback_metadata["prompt_hash"] is None:
+                elif (
+                    "prompt_hash" in feedback_metadata and feedback_metadata["prompt_hash"] is None
+                ):
                     # Remove prompt_hash key if it exists and is None
                     del feedback_metadata["prompt_hash"]
 
@@ -82,7 +85,7 @@ class LangSmithPublisher:
                     run_id=run.id,
                     key=f"{field_evaluation.field_name}/{field_evaluation.evaluator_method}",
                     score=field_evaluation.score,
-                    comment=json.dumps(feedback_metadata)
+                    comment=json.dumps(feedback_metadata),
                 )
 
 
@@ -100,7 +103,7 @@ def make_langsmith_publisher() -> LangSmithPublisher:
     """
     api_key = os.environ.get("LANGCHAIN_API_KEY")
     if not api_key:
-        raise EnvironmentError("LANGCHAIN_API_KEY environment variable is not set")
+        raise OSError("LANGCHAIN_API_KEY environment variable is not set")
 
     client = langsmith.Client()
     return LangSmithPublisher(client)

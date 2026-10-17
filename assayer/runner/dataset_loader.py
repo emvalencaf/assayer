@@ -1,10 +1,9 @@
 """Dataset loading utilities for evaluation pipelines."""
 
 import json
-from typing import Union
 
 
-def load_dataset(source: Union[list[dict], str]) -> list[dict]:
+def load_dataset(source: list[dict] | str) -> list[dict]:
     """Load and validate a dataset from a list of dictionaries or JSON file.
 
     This function accepts either a list of dictionaries directly or a path to a
@@ -29,12 +28,12 @@ def load_dataset(source: Union[list[dict], str]) -> list[dict]:
     # If source is a string, treat it as a file path
     if isinstance(source, str):
         try:
-            with open(source, 'r', encoding='utf-8') as f:
+            with open(source, encoding="utf-8") as f:
                 data = json.load(f)
         except FileNotFoundError:
-            raise FileNotFoundError(f"Dataset file not found: {source}")
+            raise FileNotFoundError(f"Dataset file not found: {source}") from None
         except json.JSONDecodeError as e:
-            raise json.JSONDecodeError(f"Invalid JSON in file: {source}", e.doc, e.pos)
+            raise json.JSONDecodeError(f"Invalid JSON in file: {source}", e.doc, e.pos) from e
 
         # Ensure the loaded data is a list
         if not isinstance(data, list):

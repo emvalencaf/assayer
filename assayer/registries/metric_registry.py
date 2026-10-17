@@ -4,7 +4,8 @@ This module provides the MetricRegistry class for managing metric functions
 in an isolated, instance-based registry system.
 """
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 
 class MetricRegistry:

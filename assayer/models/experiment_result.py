@@ -1,4 +1,3 @@
-
 from dataclasses import dataclass, field
 
 from assayer.models.run_result import RunResult

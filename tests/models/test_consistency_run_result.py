@@ -1,7 +1,6 @@
 """Tests for ConsistencyRunResult dataclass (SPEC-001-TASK-001)."""
 
 import dataclasses
-import inspect
 from typing import Any, get_type_hints
 
 import pytest
@@ -46,9 +45,7 @@ class TestConsistencyRunResultIsDataclass:
         """dataclasses.is_dataclass returns True for the class itself, not only instances."""
         from assayer.models.consistency_run_result import ConsistencyRunResult
 
-        assert isinstance(ConsistencyRunResult, type), (
-            "ConsistencyRunResult must be a class"
-        )
+        assert isinstance(ConsistencyRunResult, type), "ConsistencyRunResult must be a class"
 
 
 class TestConsistencyRunResultFields:
@@ -91,16 +88,12 @@ class TestConsistencyRunResultFields:
         hint = hints["per_field_evaluations"]
         # The origin must be dict
         origin = getattr(hint, "__origin__", None)
-        assert origin is dict, (
-            f"'per_field_evaluations' must be annotated as dict[...], got {hint}"
-        )
+        assert origin is dict, f"'per_field_evaluations' must be annotated as dict[...], got {hint}"
         args = getattr(hint, "__args__", ())
         assert len(args) == 2, (
             f"'per_field_evaluations' dict must have two type parameters, got {hint}"
         )
-        assert args[0] is str, (
-            f"'per_field_evaluations' key type must be str, got {args[0]}"
-        )
+        assert args[0] is str, f"'per_field_evaluations' key type must be str, got {args[0]}"
         assert args[1] is ConsistencyFieldEvaluation, (
             f"'per_field_evaluations' value type must be ConsistencyFieldEvaluation, got {args[1]}"
         )
@@ -219,18 +212,14 @@ class TestConsistencyRunResultDocstring:
         from assayer.models.consistency_run_result import ConsistencyRunResult
 
         doc = ConsistencyRunResult.__doc__ or ""
-        assert "Args:" in doc, (
-            "ConsistencyRunResult docstring must include an 'Args:' section"
-        )
+        assert "Args:" in doc, "ConsistencyRunResult docstring must include an 'Args:' section"
 
     def test_docstring_documents_input_field(self):
         """The docstring Args section must mention the 'input' field."""
         from assayer.models.consistency_run_result import ConsistencyRunResult
 
         doc = ConsistencyRunResult.__doc__ or ""
-        assert "input" in doc, (
-            "ConsistencyRunResult docstring must document the 'input' field"
-        )
+        assert "input" in doc, "ConsistencyRunResult docstring must document the 'input' field"
 
     def test_docstring_documents_per_field_evaluations_field(self):
         """The docstring Args section must mention the 'per_field_evaluations' field."""

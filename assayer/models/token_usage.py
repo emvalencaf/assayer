@@ -1,6 +1,4 @@
 from dataclasses import dataclass
-from typing import Union
-
 
 
 @dataclass
@@ -22,7 +20,7 @@ class TokenUsage:
 
     input_tokens: int
     output_tokens: int
-    cost_usd: Union[float, None]
+    cost_usd: float | None
 
     def __post_init__(self) -> None:
         """Validate field values after dataclass initialization.

@@ -8,6 +8,7 @@ also monkey-patches the ExperimentResult.compare method when imported.
 """
 
 from typing import Any
+
 from assayer.models import ExperimentResult, RunResult
 
 
@@ -74,7 +75,9 @@ def compare_experiments(
 
     # Compute deltas, handling None values gracefully
     input_delta = (c_input - b_input) if (b_input is not None and c_input is not None) else None
-    output_delta = (c_output - b_output) if (b_output is not None and c_output is not None) else None
+    output_delta = (
+        (c_output - b_output) if (b_output is not None and c_output is not None) else None
+    )
     cost_delta = (c_cost - b_cost) if (b_cost is not None and c_cost is not None) else None
 
     return {

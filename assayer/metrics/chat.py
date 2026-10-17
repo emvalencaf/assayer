@@ -4,11 +4,14 @@ This module provides reference-quality implementations of BLEU, ROUGE-L, BERTSco
 and semantic similarity metrics for measuring generation quality against ground-truth responses.
 """
 
-from typing import List, Callable
+from collections.abc import Callable
+
 import nltk.translate.bleu_score
+import numpy as np
 from nltk.translate.bleu_score import SmoothingFunction
 from rouge_score import rouge_scorer
-import numpy as np
+
+from assayer.registries.metric_registry import MetricRegistry
 
 # Type alias for metric functions
 MetricFn = Callable[[list[str], list[str]], float]
@@ -57,7 +60,7 @@ def bleu(predictions: list[str], references: list[str]) -> float:
             list_of_references,
             predictions_tokenized,
             weights=weights,
-            smoothing_function=sf.method2  # method2 performs better for short texts
+            smoothing_function=sf.method2,  # method2 performs better for short texts
         )
 
         # Ensure we have a numeric score
@@ -67,10 +70,15 @@ def bleu(predictions: list[str], references: list[str]) -> float:
             # If score is not numeric (shouldn't happen with real NLTK), handle gracefully
             score_float = 0.0
 
-        # Handle the case where BLEU returns suboptimal scores for perfect matches due to lack of n-grams
+        # Handle the case where BLEU returns suboptimal scores for perfect matches
+        # due to lack of n-grams
         # Check for perfect matches after calling NLTK to allow test verification
-        if all(pred_tokens == ref_tokens[0]
-               for pred_tokens, ref_tokens in zip(predictions_tokenized, list_of_references)):
+        if all(
+            pred_tokens == ref_tokens[0]
+            for pred_tokens, ref_tokens in zip(
+                predictions_tokenized, list_of_references, strict=False
+            )
+        ):
             return 1.0
 
         return score_float
@@ -104,9 +112,9 @@ def rouge_l(predictions: list[str], references: list[str]) -> float:
 
         # Compute scores for each prediction-reference pair
         scores = []
-        for pred, ref in zip(predictions, references):
+        for pred, ref in zip(predictions, references, strict=False):
             # Check if this is a mock by looking at the scorer type
-            if hasattr(scorer, '_mock_name'):
+            if hasattr(scorer, "_mock_name"):
                 # This is a mock, use the calling pattern the test expects
                 result = scorer.score((ref, pred))
             else:
@@ -159,7 +167,8 @@ def bert_score(predictions: list[str], references: list[str]) -> float:
         # Convert F1 tensor to list and compute mean
         f1_list = f1_scores.tolist()
         if f1_list:
-            return float(sum(f1_list) / len(f1_list))
+            # Baseline rescaling can overshoot [0, 1] by floating-point error
+            return min(1.0, max(0.0, float(sum(f1_list) / len(f1_list))))
         else:
             return 0.0
 
@@ -169,7 +178,7 @@ def bert_score(predictions: list[str], references: list[str]) -> float:
 
 
 def make_semantic_similarity(
-    model_name: str = "sentence-transformers/all-MiniLM-L6-v2"
+    model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
 ) -> MetricFn:
     """Create a semantic similarity metric function using sentence transformers.
 
@@ -187,6 +196,7 @@ def make_semantic_similarity(
     Raises:
         None. The returned metric function handles all errors gracefully by returning 0.0.
     """
+
     def semantic_similarity_metric(predictions: list[str], references: list[str]) -> float:
         """Compute mean cosine similarity between predictions and references.
 
@@ -211,8 +221,11 @@ def make_semantic_similarity(
         try:
             # Use module-level import for testing compatibility, import dynamically if needed
             if SentenceTransformer is None:
-                from sentence_transformers import SentenceTransformer as ST
-                encoder = ST(model_name)
+                from sentence_transformers import (
+                    SentenceTransformer as _SentenceTransformer,
+                )
+
+                encoder = _SentenceTransformer(model_name)
             else:
                 encoder = SentenceTransformer(model_name)
 
@@ -259,3 +272,29 @@ def make_semantic_similarity(
             return 0.0
 
     return semantic_similarity_metric
+
+
+def register_chat_metrics(registry: MetricRegistry) -> None:
+    """Register all built-in chat metrics in the provided MetricRegistry.
+
+    Registers the four core chat quality metrics: BLEU, ROUGE-L, BERTScore,
+    and semantic similarity (using default model) for evaluating conversational
+    model outputs against reference responses.
+
+    Args:
+        registry: The MetricRegistry instance to register metrics into.
+
+    Returns:
+        None
+
+    Raises:
+        KeyError: If any metric name is already registered in the registry.
+    """
+    # Register the individual metric functions
+    registry.register("bleu", bleu)
+    registry.register("rouge_l", rouge_l)
+    registry.register("bert_score", bert_score)
+
+    # Register semantic similarity using the default model
+    semantic_similarity_fn = make_semantic_similarity()
+    registry.register("semantic_similarity", semantic_similarity_fn)

@@ -21,10 +21,10 @@ from assayer.evaluators.base import BaseEvaluator
 from assayer.models import FieldEvaluation
 from assayer.registries.evaluator_registry import EvaluatorRegistry
 
-
 # ---------------------------------------------------------------------------
 # Helpers / fixtures
 # ---------------------------------------------------------------------------
+
 
 class _StubEvaluator(BaseEvaluator):
     """Minimal evaluator used only for registry population."""
@@ -54,8 +54,10 @@ def evaluator_registry() -> EvaluatorRegistry:
 @pytest.fixture()
 def target_fn():
     """Return a simple callable target function."""
+
     def fn(input_: Any) -> str:
         return "result"
+
     return fn
 
 
@@ -82,6 +84,7 @@ def minimal_pipeline(target_fn, minimal_dataset, evaluator_registry):
 # 1. Import / existence
 # ---------------------------------------------------------------------------
 
+
 class TestConsistencyPipelineImport:
     """ConsistencyPipeline exists and is importable."""
 
@@ -99,6 +102,7 @@ class TestConsistencyPipelineImport:
 # ---------------------------------------------------------------------------
 # 2. Constructor signature
 # ---------------------------------------------------------------------------
+
 
 class TestConsistencyPipelineSignature:
     """Constructor has the expected parameters."""
@@ -167,6 +171,7 @@ class TestConsistencyPipelineSignature:
 # ---------------------------------------------------------------------------
 # 3. Instance attribute storage
 # ---------------------------------------------------------------------------
+
 
 class TestConsistencyPipelineAttributes:
     """Constructor stores all parameters as instance attributes."""
@@ -277,14 +282,15 @@ class TestConsistencyPipelineAttributes:
 # 4. ConsistencyEvaluator instantiation per field
 # ---------------------------------------------------------------------------
 
+
 class TestConsistencyEvaluatorInstantiation:
     """One ConsistencyEvaluator is created per field_evaluators entry."""
 
     def test_single_field_creates_one_consistency_evaluator(
         self, target_fn, minimal_dataset, evaluator_registry
     ):
-        from assayer.runner.consistency_pipeline import ConsistencyPipeline
         from assayer.evaluators.consistency import ConsistencyEvaluator
+        from assayer.runner.consistency_pipeline import ConsistencyPipeline
 
         pipeline = ConsistencyPipeline(
             target_fn=target_fn,
@@ -298,8 +304,8 @@ class TestConsistencyEvaluatorInstantiation:
     def test_two_fields_create_two_consistency_evaluators(
         self, target_fn, minimal_dataset, evaluator_registry
     ):
-        from assayer.runner.consistency_pipeline import ConsistencyPipeline
         from assayer.evaluators.consistency import ConsistencyEvaluator
+        from assayer.runner.consistency_pipeline import ConsistencyPipeline
 
         pipeline = ConsistencyPipeline(
             target_fn=target_fn,
@@ -389,6 +395,7 @@ class TestConsistencyEvaluatorInstantiation:
 # 5. Fail-fast validation (KeyError on unregistered evaluator)
 # ---------------------------------------------------------------------------
 
+
 class TestConsistencyPipelineFailFast:
     """Constructor raises KeyError for unregistered evaluator names."""
 
@@ -440,6 +447,7 @@ class TestConsistencyPipelineFailFast:
 # 6. Placeholder run() method
 # ---------------------------------------------------------------------------
 
+
 class TestConsistencyPipelineRunPlaceholder:
     """run() raises NotImplementedError."""
 
@@ -454,6 +462,7 @@ class TestConsistencyPipelineRunPlaceholder:
 # ---------------------------------------------------------------------------
 # 7. Google-style docstrings
 # ---------------------------------------------------------------------------
+
 
 class TestConsistencyPipelineDocstrings:
     """Class and __init__ have Google-style docstrings."""
@@ -492,6 +501,7 @@ class TestConsistencyPipelineDocstrings:
 # 8. Type hints
 # ---------------------------------------------------------------------------
 
+
 class TestConsistencyPipelineTypeHints:
     """All parameters and return type have type hints."""
 
@@ -499,9 +509,7 @@ class TestConsistencyPipelineTypeHints:
         from assayer.runner.consistency_pipeline import ConsistencyPipeline
 
         hints = get_type_hints(ConsistencyPipeline.__init__)
-        params = list(
-            inspect.signature(ConsistencyPipeline.__init__).parameters.keys()
-        )
+        params = list(inspect.signature(ConsistencyPipeline.__init__).parameters.keys())
         # Exclude 'self' from annotation check
         for param in params:
             if param == "self":
@@ -559,6 +567,7 @@ def run_pipeline(evaluator_registry, target_fn):
     The helper patches load_dataset and mock-injects evaluate_live results so
     that production code is not called.
     """
+
     def _build_and_run(
         dataset: list[dict],
         field_evaluators_map: dict[str, str],
@@ -584,7 +593,9 @@ def run_pipeline(evaluator_registry, target_fn):
             results_for_field = field_eval_results[field_name]
             counter = {"n": 0}
 
-            def _side_effect(_target_fn, _input, _reference, _results=results_for_field, _c=counter):
+            def _side_effect(
+                _target_fn, _input, _reference, _results=results_for_field, _c=counter
+            ):
                 idx = _c["n"]
                 _c["n"] += 1
                 return _results[idx]
@@ -595,13 +606,16 @@ def run_pipeline(evaluator_registry, target_fn):
         # We patch both the source module and the pipeline module (in case the
         # implementation imports it either way). Using create=True so the patch
         # works even before the implementation adds the import.
-        with patch(
-            "assayer.runner.dataset_loader.load_dataset",
-            side_effect=lambda src: src,
-        ), patch(
-            "assayer.runner.consistency_pipeline.load_dataset",
-            side_effect=lambda src: src,
-            create=True,
+        with (
+            patch(
+                "assayer.runner.dataset_loader.load_dataset",
+                side_effect=lambda src: src,
+            ),
+            patch(
+                "assayer.runner.consistency_pipeline.load_dataset",
+                side_effect=lambda src: src,
+                create=True,
+            ),
         ):
             report = pipeline.run()
 
@@ -1086,6 +1100,7 @@ class TestRunDocstringAndTypeHints:
 # ---------------------------------------------------------------------------
 # SPEC-003-TASK-003: Public export from assayer.runner
 # ---------------------------------------------------------------------------
+
 
 class TestConsistencyPipelinePublicExport:
     """ConsistencyPipeline is exported from the assayer.runner package."""

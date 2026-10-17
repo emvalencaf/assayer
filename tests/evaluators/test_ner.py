@@ -1,7 +1,8 @@
 """Tests for NER evaluator components."""
 
+from dataclasses import FrozenInstanceError
+
 import pytest
-from dataclasses import dataclass, FrozenInstanceError
 
 # Import the EntitySpan when implemented
 # from assayer.evaluators.ner import EntitySpan
@@ -14,12 +15,7 @@ class TestEntitySpan:
         """Test EntitySpan creation with valid inputs."""
         from assayer.evaluators.ner import EntitySpan
 
-        span = EntitySpan(
-            text="John Doe",
-            entity_type="PERSON",
-            start=0,
-            end=8
-        )
+        span = EntitySpan(text="John Doe", entity_type="PERSON", start=0, end=8)
 
         assert span.text == "John Doe"
         assert span.entity_type == "PERSON"
@@ -135,7 +131,9 @@ class TestEntitySpan:
         assert span.end == 1
 
         # Large values should work
-        large_span = EntitySpan(text="Very long entity name", entity_type="LONG_TYPE", start=1000, end=2000)
+        large_span = EntitySpan(
+            text="Very long entity name", entity_type="LONG_TYPE", start=1000, end=2000
+        )
         assert large_span.start == 1000
         assert large_span.end == 2000
 
@@ -144,7 +142,9 @@ class TestEntitySpan:
         from assayer.evaluators.ner import EntitySpan
 
         span1 = EntitySpan(text="John", entity_type="PERSON", start=0, end=4)
-        span2 = EntitySpan(text="John", entity_type="ORG", start=0, end=4)  # Same text, different type
+        span2 = EntitySpan(
+            text="John", entity_type="ORG", start=0, end=4
+        )  # Same text, different type
 
         assert span1 != span2
         assert hash(span1) != hash(span2)
@@ -154,7 +154,9 @@ class TestEntitySpan:
         from assayer.evaluators.ner import EntitySpan
 
         span1 = EntitySpan(text="Apple", entity_type="ORG", start=0, end=5)
-        span2 = EntitySpan(text="Apple", entity_type="ORG", start=10, end=15)  # Same text and type, different position
+        span2 = EntitySpan(
+            text="Apple", entity_type="ORG", start=10, end=15
+        )  # Same text and type, different position
 
         assert span1 != span2
         assert hash(span1) != hash(span2)
@@ -237,7 +239,7 @@ class TestNERMatchResult:
             per_type_precision=per_type_precision,
             per_type_recall=per_type_recall,
             per_type_f1=per_type_f1,
-            macro_f1=macro_f1
+            macro_f1=macro_f1,
         )
 
         assert result.per_type_precision == per_type_precision
@@ -263,11 +265,13 @@ class TestNERMatcher:
         ]
 
         reference = [
-            EntitySpan(text="John", entity_type="PERSON", start=0, end=4),     # TP for PERSON
-            EntitySpan(text="Apple", entity_type="ORG", start=10, end=15),    # TP for ORG
+            EntitySpan(text="John", entity_type="PERSON", start=0, end=4),  # TP for PERSON
+            EntitySpan(text="Apple", entity_type="ORG", start=10, end=15),  # TP for ORG
             EntitySpan(text="Mary", entity_type="PERSON", start=20, end=24),  # TP for PERSON
-            EntitySpan(text="Google", entity_type="ORG", start=40, end=46),   # FN for ORG (missed)
-            EntitySpan(text="Alice", entity_type="PERSON", start=60, end=65), # FN for PERSON (missed)
+            EntitySpan(text="Google", entity_type="ORG", start=40, end=46),  # FN for ORG (missed)
+            EntitySpan(
+                text="Alice", entity_type="PERSON", start=60, end=65
+            ),  # FN for PERSON (missed)
         ]
 
         # Expected calculations:
@@ -306,7 +310,9 @@ class TestNERMatcher:
 
         reference = [
             EntitySpan(text="John", entity_type="PERSON", start=0, end=4),  # Perfect PERSON
-            EntitySpan(text="Google", entity_type="ORG", start=20, end=26),  # Missed ORG, wrong prediction
+            EntitySpan(
+                text="Google", entity_type="ORG", start=20, end=26
+            ),  # Missed ORG, wrong prediction
         ]
 
         # Expected:
@@ -493,31 +499,27 @@ class TestNERMatcher:
         # Complex fixture with careful calculation
         predicted = [
             # PERSON entities - 2 correct, 1 wrong
-            EntitySpan(text="John Doe", entity_type="PERSON", start=0, end=8),      # TP
+            EntitySpan(text="John Doe", entity_type="PERSON", start=0, end=8),  # TP
             EntitySpan(text="Jane Smith", entity_type="PERSON", start=15, end=25),  # TP
-            EntitySpan(text="Fake Person", entity_type="PERSON", start=50, end=61), # FP
-
+            EntitySpan(text="Fake Person", entity_type="PERSON", start=50, end=61),  # FP
             # ORG entities - 1 correct, 1 wrong
-            EntitySpan(text="Apple Inc", entity_type="ORG", start=30, end=39),      # TP
-            EntitySpan(text="Fake Corp", entity_type="ORG", start=70, end=79),      # FP
-
+            EntitySpan(text="Apple Inc", entity_type="ORG", start=30, end=39),  # TP
+            EntitySpan(text="Fake Corp", entity_type="ORG", start=70, end=79),  # FP
             # LOCATION entities - 1 correct
             EntitySpan(text="New York", entity_type="LOCATION", start=90, end=98),  # TP
         ]
 
         reference = [
             # PERSON entities - 3 total (2 found, 1 missed)
-            EntitySpan(text="John Doe", entity_type="PERSON", start=0, end=8),      # TP
+            EntitySpan(text="John Doe", entity_type="PERSON", start=0, end=8),  # TP
             EntitySpan(text="Jane Smith", entity_type="PERSON", start=15, end=25),  # TP
-            EntitySpan(text="Bob Johnson", entity_type="PERSON", start=100, end=111), # FN
-
+            EntitySpan(text="Bob Johnson", entity_type="PERSON", start=100, end=111),  # FN
             # ORG entities - 2 total (1 found, 1 missed)
-            EntitySpan(text="Apple Inc", entity_type="ORG", start=30, end=39),      # TP
-            EntitySpan(text="Google LLC", entity_type="ORG", start=120, end=130),   # FN
-
+            EntitySpan(text="Apple Inc", entity_type="ORG", start=30, end=39),  # TP
+            EntitySpan(text="Google LLC", entity_type="ORG", start=120, end=130),  # FN
             # LOCATION entities - 2 total (1 found, 1 missed)
             EntitySpan(text="New York", entity_type="LOCATION", start=90, end=98),  # TP
-            EntitySpan(text="California", entity_type="LOCATION", start=140, end=150), # FN
+            EntitySpan(text="California", entity_type="LOCATION", start=140, end=150),  # FN
         ]
 
         # Expected calculations:
@@ -615,12 +617,12 @@ class TestNEREvaluator:
         evaluator = NEREvaluator(field_name=field_name)
 
         # Should inherit from BaseEvaluator and store field_name
-        assert hasattr(evaluator, 'field_name')
+        assert hasattr(evaluator, "field_name")
         assert evaluator.field_name == field_name
 
     def test_ner_evaluator_evaluate_returns_field_evaluation(self):
         """AC-NER-007: NEREvaluator.evaluate() returns a FieldEvaluation with required fields."""
-        from assayer.evaluators.ner import NEREvaluator, EntitySpan
+        from assayer.evaluators.ner import EntitySpan, NEREvaluator
 
         # Create test data
         predicted_spans = [
@@ -639,6 +641,7 @@ class TestNEREvaluator:
 
         # Should return a FieldEvaluation object
         from assayer.models import FieldEvaluation
+
         assert isinstance(result, FieldEvaluation)
 
         # Check all required FieldEvaluation fields
@@ -652,7 +655,7 @@ class TestNEREvaluator:
 
     def test_ner_evaluator_metadata_contains_required_fields(self):
         """AC-NER-007: metadata contains per_type_f1, per_type_precision, per_type_recall, macro_f1."""
-        from assayer.evaluators.ner import NEREvaluator, EntitySpan
+        from assayer.evaluators.ner import EntitySpan, NEREvaluator
 
         # Create test data with known results
         predicted_spans = [
@@ -686,7 +689,7 @@ class TestNEREvaluator:
 
     def test_ner_evaluator_prompt_hash_is_none(self):
         """Test that prompt_hash is None for non-LLM evaluator."""
-        from assayer.evaluators.ner import NEREvaluator, EntitySpan
+        from assayer.evaluators.ner import EntitySpan, NEREvaluator
 
         predicted_spans = [EntitySpan(text="test", entity_type="TEST", start=0, end=4)]
         reference_spans = [EntitySpan(text="test", entity_type="TEST", start=0, end=4)]
@@ -698,7 +701,7 @@ class TestNEREvaluator:
 
     def test_ner_evaluator_score_equals_macro_f1(self):
         """Test that the score field equals the macro_f1 value."""
-        from assayer.evaluators.ner import NEREvaluator, EntitySpan
+        from assayer.evaluators.ner import EntitySpan, NEREvaluator
 
         # Perfect match case
         predicted_spans = [
@@ -729,7 +732,7 @@ class TestNEREvaluator:
 
     def test_ner_evaluator_perfect_predictions_f1_equals_one(self):
         """Edge case: all predictions correct, no false positives or negatives → F1 = 1.0."""
-        from assayer.evaluators.ner import NEREvaluator, EntitySpan
+        from assayer.evaluators.ner import EntitySpan, NEREvaluator
 
         entities = [
             EntitySpan(text="John", entity_type="PERSON", start=0, end=4),
@@ -749,7 +752,7 @@ class TestNEREvaluator:
 
     def test_ner_evaluator_type_in_predictions_only(self):
         """Edge case: entity type appears in predictions only → precision = 0, F1 = 0."""
-        from assayer.evaluators.ner import NEREvaluator, EntitySpan
+        from assayer.evaluators.ner import EntitySpan, NEREvaluator
 
         predicted_spans = [
             EntitySpan(text="FakeEntity", entity_type="FAKE_TYPE", start=0, end=10),
@@ -776,7 +779,7 @@ class TestNEREvaluator:
 
     def test_ner_evaluator_type_in_reference_only(self):
         """Edge case: entity type appears in references only → recall = 0, F1 = 0."""
-        from assayer.evaluators.ner import NEREvaluator, EntitySpan
+        from assayer.evaluators.ner import EntitySpan, NEREvaluator
 
         predicted_spans = []  # No predictions
         reference_spans = [
@@ -795,7 +798,7 @@ class TestNEREvaluator:
 
     def test_ner_evaluator_with_kwargs(self):
         """Test that NEREvaluator.evaluate() accepts **kwargs without error."""
-        from assayer.evaluators.ner import NEREvaluator, EntitySpan
+        from assayer.evaluators.ner import EntitySpan, NEREvaluator
 
         predicted_spans = [EntitySpan(text="test", entity_type="TEST", start=0, end=4)]
         reference_spans = [EntitySpan(text="test", entity_type="TEST", start=0, end=4)]
@@ -804,10 +807,7 @@ class TestNEREvaluator:
 
         # Should accept additional kwargs without error
         result = evaluator.evaluate(
-            predicted_spans,
-            reference_spans,
-            unused_param="unused_value",
-            another_param=42
+            predicted_spans, reference_spans, unused_param="unused_value", another_param=42
         )
 
         # Should still work correctly
@@ -815,19 +815,19 @@ class TestNEREvaluator:
 
     def test_ner_evaluator_complex_metadata_structure(self):
         """Test that metadata structure matches design specification exactly."""
-        from assayer.evaluators.ner import NEREvaluator, EntitySpan
+        from assayer.evaluators.ner import EntitySpan, NEREvaluator
 
         # Create a scenario with known calculations
         predicted_spans = [
-            EntitySpan(text="John", entity_type="PERSON", start=0, end=4),      # TP
-            EntitySpan(text="Apple", entity_type="ORG", start=10, end=15),      # TP
-            EntitySpan(text="FakeOrg", entity_type="ORG", start=20, end=27),    # FP
+            EntitySpan(text="John", entity_type="PERSON", start=0, end=4),  # TP
+            EntitySpan(text="Apple", entity_type="ORG", start=10, end=15),  # TP
+            EntitySpan(text="FakeOrg", entity_type="ORG", start=20, end=27),  # FP
         ]
 
         reference_spans = [
-            EntitySpan(text="John", entity_type="PERSON", start=0, end=4),      # TP
-            EntitySpan(text="Apple", entity_type="ORG", start=10, end=15),      # TP
-            EntitySpan(text="Google", entity_type="ORG", start=30, end=36),     # FN
+            EntitySpan(text="John", entity_type="PERSON", start=0, end=4),  # TP
+            EntitySpan(text="Apple", entity_type="ORG", start=10, end=15),  # TP
+            EntitySpan(text="Google", entity_type="ORG", start=30, end=36),  # FN
         ]
 
         # Expected calculations:
@@ -859,8 +859,8 @@ class TestNEREvaluator:
 
     def test_ner_evaluator_inherits_from_base_evaluator(self):
         """Test that NEREvaluator properly inherits from BaseEvaluator."""
-        from assayer.evaluators.ner import NEREvaluator
         from assayer.evaluators.base import BaseEvaluator
+        from assayer.evaluators.ner import NEREvaluator
 
         evaluator = NEREvaluator(field_name="test")
         assert isinstance(evaluator, BaseEvaluator)
@@ -874,20 +874,21 @@ class TestNEREvaluator:
 
         # Test that field_name is stored (implementation detail may vary)
         # The actual storage mechanism depends on the implementation
-        assert hasattr(evaluator, 'field_name')
+        assert hasattr(evaluator, "field_name")
         assert evaluator.field_name == field_name
 
     def test_ner_evaluator_has_proper_docstring_and_type_hints(self):
         """Test that NEREvaluator has Google-style docstring and full type hints."""
-        from assayer.evaluators.ner import NEREvaluator
         import inspect
+
+        from assayer.evaluators.ner import NEREvaluator
 
         # Check that class has a docstring
         assert NEREvaluator.__doc__ is not None
         assert len(NEREvaluator.__doc__.strip()) > 0
 
         # Check that evaluate method has type hints
-        evaluate_method = getattr(NEREvaluator, 'evaluate')
+        evaluate_method = NEREvaluator.evaluate
         sig = inspect.signature(evaluate_method)
 
         # Check that method has type annotations (will fail if not implemented yet)
@@ -896,7 +897,7 @@ class TestNEREvaluator:
 
     def test_ner_evaluator_expected_and_obtained_values_preservation(self):
         """Test that expected_value and obtained_value are preserved correctly in FieldEvaluation."""
-        from assayer.evaluators.ner import NEREvaluator, EntitySpan
+        from assayer.evaluators.ner import EntitySpan, NEREvaluator
 
         predicted_spans = [
             EntitySpan(text="Alice", entity_type="PERSON", start=0, end=5),

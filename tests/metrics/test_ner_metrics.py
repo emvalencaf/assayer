@@ -1,20 +1,15 @@
 """Tests for NER metrics and registration functions."""
 
 import pytest
-from typing import List
 
 # Import evaluator components that are already implemented
 from assayer.evaluators.ner import EntitySpan, NERMatcher
-from assayer.registries.metric_registry import MetricRegistry
 from assayer.registries.evaluator_registry import EvaluatorRegistry
+from assayer.registries.metric_registry import MetricRegistry
 
 # Import will fail until implementation exists - that's expected for TDD
 try:
-    from assayer.metrics.ner import (
-        ner_macro_f1,
-        register_ner_metrics,
-        register_ner_evaluators
-    )
+    from assayer.metrics.ner import ner_macro_f1, register_ner_evaluators, register_ner_metrics
 except ImportError:
     ner_macro_f1 = None
     register_ner_metrics = None
@@ -30,16 +25,10 @@ class TestNerMacroF1:
             pytest.skip("ner_macro_f1 function not implemented yet")
 
         predictions = [
-            [
-                EntitySpan("John Doe", "PERSON", 0, 8),
-                EntitySpan("Apple Inc", "ORG", 20, 29)
-            ]
+            [EntitySpan("John Doe", "PERSON", 0, 8), EntitySpan("Apple Inc", "ORG", 20, 29)]
         ]
         references = [
-            [
-                EntitySpan("John Doe", "PERSON", 0, 8),
-                EntitySpan("Apple Inc", "ORG", 20, 29)
-            ]
+            [EntitySpan("John Doe", "PERSON", 0, 8), EntitySpan("Apple Inc", "ORG", 20, 29)]
         ]
 
         result = ner_macro_f1(predictions, references)
@@ -55,12 +44,12 @@ class TestNerMacroF1:
         predictions = [
             [EntitySpan("John", "PERSON", 0, 4)],
             [EntitySpan("Apple", "ORG", 10, 15)],
-            [EntitySpan("Paris", "LOC", 5, 10)]
+            [EntitySpan("Paris", "LOC", 5, 10)],
         ]
         references = [
             [EntitySpan("John", "PERSON", 0, 4)],
             [EntitySpan("Apple", "ORG", 10, 15)],
-            [EntitySpan("Paris", "LOC", 5, 10)]
+            [EntitySpan("Paris", "LOC", 5, 10)],
         ]
 
         result = ner_macro_f1(predictions, references)
@@ -82,7 +71,7 @@ class TestNerMacroF1:
             # Example 2: Missing one entity from reference
             [EntitySpan("Apple", "ORG", 0, 5)],
             # Example 3: Completely wrong prediction
-            [EntitySpan("Wrong", "PERSON", 0, 5)]
+            [EntitySpan("Wrong", "PERSON", 0, 5)],
         ]
         references = [
             # Example 1: Perfect match
@@ -90,7 +79,7 @@ class TestNerMacroF1:
             # Example 2: Has two entities, predictions only has one
             [EntitySpan("Apple", "ORG", 0, 5), EntitySpan("Google", "ORG", 10, 16)],
             # Example 3: Different entity entirely
-            [EntitySpan("Correct", "LOC", 10, 17)]
+            [EntitySpan("Correct", "LOC", 10, 17)],
         ]
 
         result = ner_macro_f1(predictions, references)
@@ -124,12 +113,12 @@ class TestNerMacroF1:
         predictions = [
             [],  # No predicted entities
             [EntitySpan("Apple", "ORG", 0, 5)],  # Has predictions
-            []   # No predicted entities
+            [],  # No predicted entities
         ]
         references = [
             [],  # No reference entities
             [],  # No reference entities
-            [EntitySpan("Paris", "LOC", 0, 5)]  # Has reference entities
+            [EntitySpan("Paris", "LOC", 0, 5)],  # Has reference entities
         ]
 
         result = ner_macro_f1(predictions, references)
@@ -147,11 +136,11 @@ class TestNerMacroF1:
 
         predictions = [
             [EntitySpan("John", "PERSON", 0, 4), EntitySpan("Apple", "ORG", 10, 15)],
-            [EntitySpan("Paris", "LOC", 0, 5)]
+            [EntitySpan("Paris", "LOC", 0, 5)],
         ]
         references = [
             [EntitySpan("John", "PERSON", 0, 4), EntitySpan("Google", "ORG", 10, 16)],
-            [EntitySpan("Paris", "LOC", 0, 5), EntitySpan("London", "LOC", 10, 16)]
+            [EntitySpan("Paris", "LOC", 0, 5), EntitySpan("London", "LOC", 10, 16)],
         ]
 
         result = ner_macro_f1(predictions, references)
@@ -176,15 +165,15 @@ class TestNerMacroF1:
                 EntitySpan("John Doe", "PERSON", 0, 8),
                 EntitySpan("Apple Inc", "ORG", 20, 29),
                 EntitySpan("New York", "LOC", 40, 48),
-                EntitySpan("Jane Smith", "PERSON", 60, 70)
+                EntitySpan("Jane Smith", "PERSON", 60, 70),
             ]
         ]
         references = [
             [
-                EntitySpan("John Doe", "PERSON", 0, 8),     # TP for PERSON
-                EntitySpan("Microsoft", "ORG", 30, 39),     # FN for ORG (different entity)
-                EntitySpan("New York", "LOC", 40, 48),      # TP for LOC
-                EntitySpan("Jane Smith", "PERSON", 60, 70)  # TP for PERSON
+                EntitySpan("John Doe", "PERSON", 0, 8),  # TP for PERSON
+                EntitySpan("Microsoft", "ORG", 30, 39),  # FN for ORG (different entity)
+                EntitySpan("New York", "LOC", 40, 48),  # TP for LOC
+                EntitySpan("Jane Smith", "PERSON", 60, 70),  # TP for PERSON
             ]
         ]
 
@@ -203,10 +192,7 @@ class TestNerMacroF1:
         if ner_macro_f1 is None:
             pytest.skip("ner_macro_f1 function not implemented yet")
 
-        predictions = [
-            [EntitySpan("John", "PERSON", 0, 4)],
-            [EntitySpan("Apple", "ORG", 0, 5)]
-        ]
+        predictions = [[EntitySpan("John", "PERSON", 0, 4)], [EntitySpan("Apple", "ORG", 0, 5)]]
         references = [
             [EntitySpan("John", "PERSON", 0, 4)]
             # Missing second reference
@@ -247,12 +233,8 @@ class TestRegisterNerMetrics:
         metric_fn = registry.get("ner_macro_f1")
 
         # Test the retrieved function with a simple case
-        predictions = [
-            [EntitySpan("John", "PERSON", 0, 4)]
-        ]
-        references = [
-            [EntitySpan("John", "PERSON", 0, 4)]
-        ]
+        predictions = [[EntitySpan("John", "PERSON", 0, 4)]]
+        references = [[EntitySpan("John", "PERSON", 0, 4)]]
 
         result = metric_fn(predictions, references)
         assert abs(result - 1.0) <= 0.001

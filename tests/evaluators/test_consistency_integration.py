@@ -5,13 +5,12 @@ successfully wrap various built-in evaluator types and produce valid results.
 Tests use real or mocked evaluators to avoid external dependencies.
 """
 
-import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from assayer.evaluators.base import BaseEvaluator
 from assayer.evaluators.consistency import ConsistencyEvaluator
 from assayer.evaluators.hallucination import FaithfulnessEvaluator, LLMJudgeEvaluator
-from assayer.evaluators.ner import NEREvaluator, EntitySpan
+from assayer.evaluators.ner import EntitySpan, NEREvaluator
 from assayer.models.consistency_field_evaluation import ConsistencyFieldEvaluation
 from assayer.models.consistency_summary import ConsistencySummary
 from assayer.models.field_evaluation import FieldEvaluation
@@ -33,7 +32,7 @@ class MockClassificationEvaluator(BaseEvaluator):
             obtained_value=prediction,
             score=score,
             prompt_hash=None,
-            metadata={}
+            metadata={},
         )
 
 
@@ -42,7 +41,8 @@ class TestConsistencyEvaluatorImport:
 
     def test_consistency_evaluator_is_importable(self):
         """Test that ConsistencyEvaluator is importable from assayer.evaluators."""
-        from assayer.evaluators import ConsistencyEvaluator  # noqa: F401
+        from assayer.evaluators import ConsistencyEvaluator
+
         assert ConsistencyEvaluator is not None
 
 
@@ -53,11 +53,7 @@ class TestConsistencyEvaluatorIntegration:
         """Test ConsistencyEvaluator wrapping ClassificationEvaluator for dataset evaluation."""
         # Create mock classification evaluator
         base_evaluator = MockClassificationEvaluator()
-        consistency_evaluator = ConsistencyEvaluator(
-            evaluator=base_evaluator,
-            k=3,
-            min_k=2
-        )
+        consistency_evaluator = ConsistencyEvaluator(evaluator=base_evaluator, k=3, min_k=2)
 
         # Create test dataset with predictions and references
         dataset = [
@@ -73,7 +69,7 @@ class TestConsistencyEvaluatorIntegration:
             dataset=dataset,
             group_by="group",
             prediction_field="prediction",
-            reference_field="reference"
+            reference_field="reference",
         )
 
         # Verify result type and structure
@@ -102,38 +98,37 @@ class TestConsistencyEvaluatorIntegration:
         base_evaluator = LLMJudgeEvaluator(
             field_name="quality",
             judge_model=mock_model,
-            system_prompt="Rate this response from 0.0 to 1.0"
+            system_prompt="Rate this response from 0.0 to 1.0",
         )
 
         # Mock the evaluate method to avoid actual LLM calls
-        mock_evaluate = MagicMock(return_value=FieldEvaluation(
-            field_name="quality",
-            evaluator_method="llm_judge",
-            expected_value="Good response",
-            obtained_value="Decent response",
-            score=0.8,
-            prompt_hash="abc123",
-            metadata={}
-        ))
+        mock_evaluate = MagicMock(
+            return_value=FieldEvaluation(
+                field_name="quality",
+                evaluator_method="llm_judge",
+                expected_value="Good response",
+                obtained_value="Decent response",
+                score=0.8,
+                prompt_hash="abc123",
+                metadata={},
+            )
+        )
         base_evaluator.evaluate = mock_evaluate
 
-        consistency_evaluator = ConsistencyEvaluator(
-            evaluator=base_evaluator,
-            k=3
-        )
+        consistency_evaluator = ConsistencyEvaluator(evaluator=base_evaluator, k=3)
 
         # Create mock target function
-        mock_target_fn = MagicMock(side_effect=[
-            "Response 1",
-            "Response 2",
-            "Response 1"  # Repeat to test agreement
-        ])
+        mock_target_fn = MagicMock(
+            side_effect=[
+                "Response 1",
+                "Response 2",
+                "Response 1",  # Repeat to test agreement
+            ]
+        )
 
         # Evaluate live
         result = consistency_evaluator.evaluate_live(
-            target_fn=mock_target_fn,
-            input="Test input",
-            reference="Good response"
+            target_fn=mock_target_fn, input="Test input", reference="Good response"
         )
 
         # Verify result type and structure
@@ -159,22 +154,20 @@ class TestConsistencyEvaluatorIntegration:
         base_evaluator = NEREvaluator(field_name="entities")
 
         # Mock the evaluate method to avoid complex entity matching logic
-        mock_evaluate = MagicMock(return_value=FieldEvaluation(
-            field_name="entities",
-            evaluator_method="ner_exact_match",
-            expected_value=[EntitySpan("John", "PERSON", 0, 4)],
-            obtained_value=[EntitySpan("John", "PERSON", 0, 4)],
-            score=1.0,
-            prompt_hash=None,
-            metadata={"macro_f1": 1.0}
-        ))
+        mock_evaluate = MagicMock(
+            return_value=FieldEvaluation(
+                field_name="entities",
+                evaluator_method="ner_exact_match",
+                expected_value=[EntitySpan("John", "PERSON", 0, 4)],
+                obtained_value=[EntitySpan("John", "PERSON", 0, 4)],
+                score=1.0,
+                prompt_hash=None,
+                metadata={"macro_f1": 1.0},
+            )
+        )
         base_evaluator.evaluate = mock_evaluate
 
-        consistency_evaluator = ConsistencyEvaluator(
-            evaluator=base_evaluator,
-            k=2,
-            min_k=2
-        )
+        consistency_evaluator = ConsistencyEvaluator(evaluator=base_evaluator, k=2, min_k=2)
 
         # Create test dataset with entity predictions
         entity_ref = [EntitySpan("Alice", "PERSON", 0, 5)]
@@ -191,7 +184,7 @@ class TestConsistencyEvaluatorIntegration:
             dataset=dataset,
             group_by="group",
             prediction_field="prediction",
-            reference_field="reference"
+            reference_field="reference",
         )
 
         # Verify result type and structure
@@ -213,20 +206,15 @@ class TestConsistencyEvaluatorIntegration:
     def test_with_mocked_faithfulness_evaluator(self):
         """Test ConsistencyEvaluator wrapping mocked FaithfulnessEvaluator."""
         # Create FaithfulnessEvaluator with mocked classifier
-        mock_classifier = MagicMock(return_value=[
-            [{"label": "LABEL_0", "score": 0.2}, {"label": "LABEL_1", "score": 0.8}]
-        ])
+        mock_classifier = MagicMock(
+            return_value=[[{"label": "LABEL_0", "score": 0.2}, {"label": "LABEL_1", "score": 0.8}]]
+        )
 
         base_evaluator = FaithfulnessEvaluator(
-            field_name="faithfulness",
-            threshold=0.5,
-            classifier=mock_classifier
+            field_name="faithfulness", threshold=0.5, classifier=mock_classifier
         )
 
-        consistency_evaluator = ConsistencyEvaluator(
-            evaluator=base_evaluator,
-            k=2
-        )
+        consistency_evaluator = ConsistencyEvaluator(evaluator=base_evaluator, k=2)
 
         # Create test dataset
         dataset = [
@@ -239,7 +227,7 @@ class TestConsistencyEvaluatorIntegration:
             dataset=dataset,
             group_by="group",
             prediction_field="prediction",
-            reference_field="reference"
+            reference_field="reference",
         )
 
         # Verify result type and structure
@@ -261,15 +249,13 @@ class TestConsistencyEvaluatorIntegration:
         without modifying the original evaluator classes.
         """
         # Test with FaithfulnessEvaluator
-        mock_classifier = MagicMock(return_value=[
-            [{"label": "LABEL_1", "score": 0.9}]
-        ])
+        mock_classifier = MagicMock(return_value=[[{"label": "LABEL_1", "score": 0.9}]])
         faith_eval = FaithfulnessEvaluator("faith", classifier=mock_classifier)
         consistency_eval = ConsistencyEvaluator(faith_eval)
 
         # Verify the wrapped evaluator retains its original interface
-        assert hasattr(faith_eval, 'evaluate')
-        assert hasattr(faith_eval, 'threshold')
+        assert hasattr(faith_eval, "evaluate")
+        assert hasattr(faith_eval, "threshold")
         assert faith_eval.threshold == 0.5  # Default value should be unchanged
 
         # Test with NEREvaluator
@@ -277,8 +263,8 @@ class TestConsistencyEvaluatorIntegration:
         consistency_eval2 = ConsistencyEvaluator(ner_eval)
 
         # Verify the wrapped evaluator retains its original interface
-        assert hasattr(ner_eval, 'evaluate')
-        assert hasattr(ner_eval, 'field_name')
+        assert hasattr(ner_eval, "evaluate")
+        assert hasattr(ner_eval, "field_name")
         assert ner_eval.field_name == "entities"
 
         # Verify that ConsistencyEvaluator doesn't inherit from BaseEvaluator
