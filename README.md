@@ -272,12 +272,14 @@ from pathlib import Path
 from assayer.models import Case, Dataset
 from assayer.runner import Runner, load_field_map
 
-Path("field_map.yaml").write_text("label: [exact_match]\nscore:\n  - numeric_tolerance: {tolerance: 1}\n")
-
-dataset = Dataset(
-    "fields", [Case(input="x", id="c1", expected_output={"label": "a", "score": 5})]
+Path("field_map.yaml").write_text(
+    "label: [exact_match]\nscore:\n  - numeric_tolerance: {tolerance: 1}\n"
 )
-runner = Runner(lambda x: {"label": "a", "score": 6}, field_metrics=load_field_map("field_map.yaml"))
+
+dataset = Dataset("fields", [Case(input="x", id="c1", expected_output={"label": "a", "score": 5})])
+runner = Runner(
+    lambda x: {"label": "a", "score": 6}, field_metrics=load_field_map("field_map.yaml")
+)
 experiment = runner.run(dataset)
 print({(s.field, s.name): s.value for s in experiment.scores})
 ```
