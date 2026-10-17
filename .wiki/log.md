@@ -1,6 +1,7 @@
 # Update Log
 
 ## 2026-10-16
+* **Addition**: Documented the [semantic similarity](metrics/semantic-similarity.md) metric, now clamped to the [0, 1] range (float overshoot above 1 is capped).
 * **Addition**: Documented the [package organization](architecture/package-organization.md) conventions.
 
 ## 2026-10-11

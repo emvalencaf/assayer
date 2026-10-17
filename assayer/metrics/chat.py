@@ -257,8 +257,8 @@ def make_semantic_similarity(
                 else:
                     similarity = dot_product / (pred_norm * ref_norm)
 
-                # Ensure similarity is in [0, 1] by clamping negative values to 0
-                similarity = max(0.0, similarity)
+                # Ensure similarity is in [0, 1]: negatives clamp to 0, float overshoot to 1
+                similarity = min(1.0, max(0.0, similarity))
                 similarities.append(similarity)
 
             # Return mean similarity
