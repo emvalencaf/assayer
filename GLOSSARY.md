@@ -13,8 +13,20 @@ One unit of work inside a Trajectory: a model call, a tool call or a retrieval.
 _Avoid_: Span, observation, run
 
 **Score**:
-A single named result in the range 0 to 1 of applying a metric to one Step or one Trajectory.
+A single named result in the range 0 to 1 of applying a metric to one Step, one Trajectory or a whole Experiment (for aggregates such as pass^k), optionally for one Field of the output.
 _Avoid_: Grade, rating
+
+**Field**:
+A named part of the structured output of a target, measured on its own with its own metrics.
+_Avoid_: Column, attribute, key
+
+**End state**:
+The condition of the world an agent leaves behind after running, observed by the target and compared with the expected one, regardless of the path taken.
+_Avoid_: Final output, outcome
+
+**Alignment**:
+The pairing of each predicted item of a list Field with an expected item, so the items can be compared property by property; items left without a pair are missing or extra.
+_Avoid_: Matching, mapping
 
 **Dataset**:
 A named collection of Cases.

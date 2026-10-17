@@ -61,8 +61,8 @@
 A Python library for evaluating and observing LLM-powered applications. It
 provides a unified interface to run structured evaluations (chat turn quality,
 classification accuracy and named entity extraction) using both deterministic
-metrics and model-based judges (LLM-as-Judge). Results and token costs are
-tracked via LangSmith.
+metrics and model-based judges (LLM-as-Judge). Token costs are tracked per run.
+Publishing results to an observability backend (Langfuse, LangSmith) is planned and not yet available.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -76,7 +76,7 @@ tracked via LangSmith.
 - **Token cost tracking**: input/output tokens and estimated USD cost per run, comparable across experiments
 - **Extensible**: register custom metrics and evaluator types without modifying core files
 - **Audit trail**: every evaluated field records method, expected value, obtained value, score and prompt hash
-- **LangSmith integration**: all results pushed automatically for experiment tracking and visualization
+- **Observability integrations (planned)**: Langfuse and LangSmith export through a vendor-neutral Adapter; the current `LangSmithPublisher` is not wired into the `Runner` and is being replaced
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -84,17 +84,17 @@ tracked via LangSmith.
 
 | Abstraction | Role |
 |-------------|------|
-| `Dataset` | Collection of input/expected-output pairs (LangSmith or local JSON) |
+| `Dataset` | Collection of input/expected-output pairs (local JSON) |
 | `Evaluator` | Scores a single prediction against a reference |
 | `Metric` | Aggregates scores across a full dataset |
-| `Runner` | Orchestrates runs, applies evaluators/metrics, tracks tokens, pushes to LangSmith |
+| `Runner` | Orchestrates runs, applies evaluators/metrics, tracks tokens |
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ### Non-Goals
 
 - No model training or fine-tuning
-- No built-in UI; visualization via LangSmith
+- No built-in UI; visualization is delegated to an observability backend once the Adapters land
 - No LLM inference hosting
 - No billing; cost tracking is observational only
 
@@ -116,7 +116,6 @@ tracked via LangSmith.
 
 * Python 3.11.13+
 * [`uv`](https://docs.astral.sh/uv/) (runs the git hooks and tests)
-* A LangSmith account and API key, exported as `LANGCHAIN_API_KEY`
 
 ### Installation
 
