@@ -7,7 +7,13 @@ from assayer.adapters.errors import (
     AdapterConfigError,
     FailureKind,
 )
-from assayer.adapters.export import PlannedItem, plan_export, run_export
+from assayer.adapters.export import (
+    ExportPlan,
+    PlannedItem,
+    export_experiment,
+    plan_export,
+    run_export,
+)
 from assayer.adapters.ids import (
     case_export_id,
     score_ids,
@@ -26,12 +32,14 @@ __all__ = [
     "AdapterConfigError",
     "ExportFailure",
     "ExportItem",
+    "ExportPlan",
     "ExportReport",
     "FailureKind",
     "InMemoryAdapter",
     "PlannedItem",
     "call_with_retry",
     "case_export_id",
+    "export_experiment",
     "plan_export",
     "run_export",
     "score_ids",

@@ -5,8 +5,8 @@ from typing import Literal
 
 from assayer.adapters.errors import FAILURE_KINDS, FailureKind
 
-TargetKind = Literal["case", "trajectory", "step", "score"]
-TARGET_KINDS = ("case", "trajectory", "step", "score")
+TargetKind = Literal["experiment", "case", "trajectory", "step", "score"]
+TARGET_KINDS = ("experiment", "case", "trajectory", "step", "score")
 
 
 @dataclass(frozen=True)
@@ -22,7 +22,8 @@ class ExportFailure:
     """An item that could not be exported.
 
     Args:
-        target_kind: One of "case", "trajectory", "step" or "score".
+        target_kind: One of "experiment" (the export could not be planned), "case", "trajectory",
+            "step" or "score".
         target_id: The deterministic id of the item.
         kind: One of the closed failure taxonomy.
         message: What went wrong.

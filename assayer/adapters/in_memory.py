@@ -7,7 +7,7 @@ from types import TracebackType
 from typing import Any, Self
 
 from assayer.adapters.errors import AdapterCallError, AdapterConfigError
-from assayer.adapters.export import Delivery, PlannedItem, plan_export, run_export
+from assayer.adapters.export import Delivery, PlannedItem, export_experiment
 from assayer.adapters.report import ExportItem, ExportReport, TargetKind
 from assayer.models import Experiment
 
@@ -59,21 +59,23 @@ class InMemoryAdapter:
         Returns:
             The report; failures injected with `fail_on` appear in it, they are not raised.
         """
-        planned = plan_export(experiment, include_content=include_content)
-        position = {entry.item: 0 for entry in planned}
-        counters: dict[TargetKind, int] = defaultdict(int)
-        for entry in planned:
-            position[entry.item] = counters[entry.item.target_kind]
-            counters[entry.item.target_kind] += 1
+        position: dict[ExportItem, int] = {}
+        counts: dict[TargetKind, int] = defaultdict(int)
 
         def send(entry: PlannedItem) -> Delivery:
-            faults = self._faults[entry.item.target_kind].get(position[entry.item])
+            kind = entry.item.target_kind
+            if entry.item not in position:  # a retry sends the same item again
+                position[entry.item] = counts[kind]
+                counts[kind] += 1
+            faults = self._faults[kind].get(position[entry.item])
             if faults:
                 raise faults.popleft()
             self.items[entry.item] = entry.payload
             return "queued" if self._queue else "confirmed"
 
-        return run_export(planned, send, sleep=self._sleep)
+        return export_experiment(
+            experiment, send, include_content=include_content, sleep=self._sleep
+        )
 
     def close(self) -> None:
         """Mark the Adapter closed."""

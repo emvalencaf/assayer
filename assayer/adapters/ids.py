@@ -23,10 +23,8 @@ def trajectory_id(experiment_name: str, case_id: str | None, repetition: int) ->
 
 def step_key(trajectory: Trajectory, index: int) -> str:
     """The Step's own id, or its position when it has none."""
-    step_id = trajectory.steps[index].id
-    return (
-        step_id if step_id is not None else f"{trajectory.case_id}/{trajectory.repetition}/{index}"
-    )
+    own = trajectory.steps[index].id
+    return own if own is not None else f"{trajectory.case_id}/{trajectory.repetition}/{index}"
 
 
 def step_id(trajectory_export_id: str, key: str) -> str:

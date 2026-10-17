@@ -12,7 +12,7 @@ sources:
     title: Adapter Protocol
   - id: export
     resource: assayer/adapters/export.py
-    title: plan_export and run_export
+    title: plan_export, run_export and export_experiment
   - id: ids
     resource: assayer/adapters/ids.py
     title: Deterministic ids
@@ -48,15 +48,19 @@ sends an Experiment through it; without an adapter it raises `ValueError`. See [
 | `queued` | Items handed to an SDK that buffers them, delivery not confirmed. |
 | `failed` | `ExportFailure(target_kind, target_id, kind, message, retryable)`. |
 | `skipped` | Items not tried because an `auth` failure aborted the export. |
-| `notes` | Things dropped or degraded on purpose. |
+| `notes` | Things dropped or degraded on purpose, such as Scores and Trajectories that could not be linked. |
 
 `ok` means nothing failed and nothing was skipped. An item's failure is reported, never raised.
 
 # Export flow
 
-`plan_export(experiment, include_content=True)` lists the items in order: Cases, then each Trajectory followed by its Steps, then Scores.[^export] `run_export(planned, send, sleep=...)` sends them one by one, so an Adapter only has to say how to send one item. `send` returns `"queued"` for a buffered item, otherwise the item is confirmed; an `AdapterCallError` becomes a failure of its kind and any other exception becomes `unknown`. An `auth` failure stops the export and lists the remaining items as `skipped`.
+`plan_export(experiment, include_content=True)` returns an `ExportPlan(items, notes)`. `items` lists the `PlannedItem`s in order: Cases, then each Trajectory followed by its Steps, then Scores.[^export] `notes` lists Scores and Trajectories that could not be linked to what they refer to: a Trajectory with no `case_id` (its `case` link is empty) and a step or trajectory Score whose target is not in the Experiment (experiment-level Scores need no link).
 
-`include_content=False` leaves out Case inputs and references, Step `input` and `output`, and the Trajectory `final_output` and `final_state`; structure, usage, Scores and metadata are kept.
+`run_export(plan, send, sleep=...)` sends the items one by one and copies the plan's `notes` into the report, so an Adapter only has to say how to send one item. `send` returns `"queued"` for a buffered item, otherwise the item is confirmed; an `AdapterCallError` becomes a failure of its kind and any other exception becomes `unknown`. An `auth` failure stops the export and lists the remaining items as `skipped`.
+
+`export_experiment(experiment, send, include_content=True, sleep=...)` plans and sends in one call, and is what an Adapter's `export` should call. An Experiment that cannot be planned is not raised: the report holds one `validation` failure with `target_kind="experiment"` (the fifth target kind, next to case, trajectory, step and score) and the exception as its message.
+
+`include_content=False` leaves out Case inputs and references, Step `input`, `output` and `error`, Score `comment`, and the Trajectory `final_output` and `final_state`; structure, usage, Score values and metadata are kept.
 
 # Deterministic ids
 
@@ -72,7 +76,7 @@ Ids are UUIDv5 hex strings derived from the Experiment name and the item's ident
 
 # InMemoryAdapter and conformance
 
-`InMemoryAdapter(name="in-memory", queue=False, sleep=...)` keeps payloads in `items`, keyed by `ExportItem`, so re-exporting overwrites. `queue=True` reports items as queued, `fail_on(kind, *errors, nth=0)` injects failures, and an empty name is an `AdapterConfigError`. It is the bar for real Adapters: `tests/adapters/conformance.py` holds `AdapterConformance`, a suite every Adapter subclasses (three hooks: `make_adapter`, `inject`, `stored`) covering idempotent re-export, stable ids across Adapters, partial and `auth` failures, retries, `include_content` and the context manager.[^conformance]
+`InMemoryAdapter(name="in-memory", queue=False, sleep=...)` keeps payloads in `items`, keyed by `ExportItem`, so re-exporting overwrites. `queue=True` reports items as queued, `fail_on(kind, *errors, nth=0)` injects failures, and an empty name is an `AdapterConfigError`. It is the bar for real Adapters: `tests/adapters/conformance.py` holds `AdapterConformance`, a suite every Adapter subclasses (three hooks: `make_adapter`, `inject`, `stored`) covering idempotent re-export, stable ids across Adapters, partial and `auth` failures, retries, `include_content` (Step errors and Score comments included), unlinkable Scores noted rather than lost, an unplannable Experiment reported as a failure, and the context manager.[^conformance]
 
 [^adapter]: assayer/adapters/adapter.py
 [^export]: assayer/adapters/export.py

@@ -6,8 +6,8 @@ Subclass `AdapterConformance` and implement the three hooks; pytest collects the
 import pytest
 
 from assayer.adapters import Adapter, AdapterCallError
-from assayer.metrics.metric import Metric
-from assayer.models import Case, Dataset, Step, Trajectory
+from assayer.metrics.metric import Detailed, Metric
+from assayer.models import Case, Dataset, Score, Step, Trajectory
 from assayer.runner import Runner
 
 
@@ -183,3 +183,39 @@ class AdapterConformance:
         with self.make_adapter() as adapter:
             assert isinstance(adapter, Adapter)
             assert adapter.name
+
+    def test_without_content_step_errors_and_score_comments_are_left_out(self, adapter):
+        def target(value):
+            return Trajectory(steps=[Step(kind="tool", error="Traceback: secret-input")])
+
+        judged = Metric(
+            name="judged",
+            level="trajectory",
+            fn=lambda t, c: Detailed(1.0, comment="quotes secret"),
+        )
+        runner = Runner(target, [judged], adapter=adapter)
+        experiment = runner.run(Dataset("d", [Case(input="a", id="c1")]))
+
+        report = runner.export(experiment, include_content=False)
+
+        assert report.ok
+        assert "secret" not in repr(self.stored(adapter))
+
+    def test_scores_that_cannot_be_linked_are_noted_not_lost(self, adapter):
+        runner = Runner(_target, adapter=adapter)
+        experiment = runner.run(Dataset("d", [Case(input="a", id="c1")]))
+        experiment.scores.append(Score("orphan", 1.0, target="step", target_id="nowhere"))
+
+        report = runner.export(experiment)
+
+        assert report.ok
+        assert any("orphan" in note for note in report.notes)
+
+    def test_an_experiment_that_cannot_be_planned_is_a_failure_not_an_exception(self, adapter):
+        runner = Runner(_target, adapter=adapter)
+        experiment = runner.run(Dataset("d", [Case(input="a", id="c1")]))
+        experiment.trajectories = None
+
+        (failure,) = runner.export(experiment).failed
+
+        assert (failure.target_kind, failure.kind) == ("experiment", "validation")
