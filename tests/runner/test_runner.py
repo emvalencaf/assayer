@@ -83,7 +83,7 @@ class TestRunTarget:
             Runner(target, []).run(Dataset("d", [Case(input="a", id="c1")])).trajectories
         )
 
-        assert trajectory.steps[0].error == "boom"
+        assert trajectory.steps[0].error == "RuntimeError: boom"
         assert trajectory.final_output is None
 
     def test_experiment_is_named_after_the_dataset(self):

@@ -69,7 +69,9 @@ class Runner:
         try:
             result = self.target(case.input)
         except Exception as exc:
-            result = Trajectory(steps=[Step(kind="model", input=case.input, error=str(exc))])
+            result = Trajectory(
+                steps=[Step(kind="model", input=case.input, error=f"{type(exc).__name__}: {exc}")]
+            )
         if not isinstance(result, Trajectory):
             result = Trajectory(
                 steps=[Step(kind="model", input=case.input, output=result)],
@@ -90,7 +92,7 @@ class Runner:
             subjects = [(experiment, None)]
         elif metric.level == "trajectory":
             subjects = pairs
-        else:
+        else:  # "step", the only level left (Metric validates it)
             subjects = [(step, case) for trajectory, case in pairs for step in trajectory.steps]
         for subject, case in subjects:
             outcome = metric.evaluate(subject, case)

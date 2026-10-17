@@ -36,15 +36,17 @@ def load_cases(source: list[dict] | str, metrics: Iterable[Metric] = ()) -> Data
         name = Path(source).stem
         try:
             with open(source, encoding="utf-8") as f:
-                source = json.load(f)
+                entries = json.load(f)
         except FileNotFoundError:
             raise FileNotFoundError(f"Dataset file not found: {source}") from None
-        if not isinstance(source, list):
-            raise TypeError(f"JSON file must contain a list, got {type(source).__name__}")
+        if not isinstance(entries, list):
+            raise TypeError(f"JSON file must contain a list, got {type(entries).__name__}")
+    else:
+        entries = source
 
     required = {"input"} | {r for m in metrics for r in m.requires if r in _CASE_FIELDS}
     cases = []
-    for i, entry in enumerate(source):
+    for i, entry in enumerate(entries):
         if not isinstance(entry, dict):
             raise ValueError(f"Case {i} must be a dictionary, got {type(entry).__name__}")
         unknown = set(entry) - _CASE_FIELDS
