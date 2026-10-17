@@ -8,7 +8,6 @@ This module tests the FieldEvaluation dataclass implementation including:
 """
 
 import pytest
-from typing import Any
 
 from assayer.models import FieldEvaluation
 
@@ -35,7 +34,7 @@ class TestFieldEvaluationInstantiation:
             obtained_value=obtained_value,
             score=score,
             prompt_hash=prompt_hash,
-            metadata=metadata
+            metadata=metadata,
         )
 
         # Assert
@@ -56,7 +55,7 @@ class TestFieldEvaluationInstantiation:
             expected_value="hello world",
             obtained_value="hello universe",
             score=0.75,
-            prompt_hash="abc123def456"
+            prompt_hash="abc123def456",
         )
 
         # Assert
@@ -71,7 +70,7 @@ class TestFieldEvaluationInstantiation:
             expected_value=None,
             obtained_value="hello universe",
             score=0.75,
-            prompt_hash=None
+            prompt_hash=None,
         )
 
         # Assert
@@ -87,7 +86,7 @@ class TestFieldEvaluationInstantiation:
             expected_value="hello world",
             obtained_value="goodbye world",
             score=0.0,
-            prompt_hash="abc123"
+            prompt_hash="abc123",
         )
         assert field_eval_zero.score == 0.0
 
@@ -98,7 +97,7 @@ class TestFieldEvaluationInstantiation:
             expected_value="hello world",
             obtained_value="hello world",
             score=1.0,
-            prompt_hash="abc123"
+            prompt_hash="abc123",
         )
         assert field_eval_one.score == 1.0
 
@@ -115,7 +114,7 @@ class TestFieldEvaluationValidation:
                 expected_value="hello world",
                 obtained_value="hello universe",
                 score=0.75,
-                prompt_hash="abc123"
+                prompt_hash="abc123",
             )
 
     def test_whitespace_only_field_name_raises_value_error(self):
@@ -127,7 +126,7 @@ class TestFieldEvaluationValidation:
                 expected_value="hello world",
                 obtained_value="hello universe",
                 score=0.75,
-                prompt_hash="abc123"
+                prompt_hash="abc123",
             )
 
     def test_empty_evaluator_method_raises_value_error(self):
@@ -139,7 +138,7 @@ class TestFieldEvaluationValidation:
                 expected_value="hello world",
                 obtained_value="hello universe",
                 score=0.75,
-                prompt_hash="abc123"
+                prompt_hash="abc123",
             )
 
     def test_whitespace_only_evaluator_method_raises_value_error(self):
@@ -151,7 +150,7 @@ class TestFieldEvaluationValidation:
                 expected_value="hello world",
                 obtained_value="hello universe",
                 score=0.75,
-                prompt_hash="abc123"
+                prompt_hash="abc123",
             )
 
     def test_score_below_zero_raises_value_error(self):
@@ -163,7 +162,7 @@ class TestFieldEvaluationValidation:
                 expected_value="hello world",
                 obtained_value="hello universe",
                 score=-0.1,
-                prompt_hash="abc123"
+                prompt_hash="abc123",
             )
 
     def test_score_above_one_raises_value_error(self):
@@ -175,7 +174,7 @@ class TestFieldEvaluationValidation:
                 expected_value="hello world",
                 obtained_value="hello universe",
                 score=1.1,
-                prompt_hash="abc123"
+                prompt_hash="abc123",
             )
 
     def test_score_exactly_zero_is_valid(self):
@@ -187,7 +186,7 @@ class TestFieldEvaluationValidation:
             expected_value="hello world",
             obtained_value="goodbye world",
             score=0.0,
-            prompt_hash="abc123"
+            prompt_hash="abc123",
         )
         assert field_eval.score == 0.0
 
@@ -200,7 +199,7 @@ class TestFieldEvaluationValidation:
             expected_value="hello world",
             obtained_value="hello world",
             score=1.0,
-            prompt_hash="abc123"
+            prompt_hash="abc123",
         )
         assert field_eval.score == 1.0
 
@@ -227,7 +226,7 @@ class TestFieldEvaluationEdgeCases:
                 expected_value=expected,
                 obtained_value=obtained,
                 score=0.5,
-                prompt_hash="test_hash"
+                prompt_hash="test_hash",
             )
             assert field_eval.expected_value == expected
             assert field_eval.obtained_value == obtained
@@ -240,7 +239,7 @@ class TestFieldEvaluationEdgeCases:
             expected_value="hello world",
             obtained_value="hello universe",
             score=0.75,
-            prompt_hash="abc123"
+            prompt_hash="abc123",
         )
 
         # Metadata should start empty
@@ -258,6 +257,6 @@ class TestFieldEvaluationEdgeCases:
             expected_value="hello world",
             obtained_value="hello universe",
             score=0.0,
-            prompt_hash=None
+            prompt_hash=None,
         )
         assert field_eval.prompt_hash is None

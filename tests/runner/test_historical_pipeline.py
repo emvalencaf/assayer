@@ -21,19 +21,19 @@ Covers:
 
 import inspect
 from typing import Any, get_type_hints
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from assayer.evaluators.base import BaseEvaluator
-from assayer.models import FieldEvaluation, ExperimentResult, RunResult, TokenUsage
+from assayer.models import ExperimentResult, FieldEvaluation, RunResult, TokenUsage
 from assayer.registries.evaluator_registry import EvaluatorRegistry
 from assayer.registries.metric_registry import MetricRegistry
-
 
 # ---------------------------------------------------------------------------
 # Helpers / fixtures
 # ---------------------------------------------------------------------------
+
 
 class _StubEvaluator(BaseEvaluator):
     """Minimal evaluator used only for registry population."""
@@ -77,6 +77,7 @@ def minimal_dataset() -> list[dict]:
 # 1. Import / existence
 # ---------------------------------------------------------------------------
 
+
 class TestHistoricalPipelineImport:
     """HistoricalPipeline exists and is importable."""
 
@@ -94,6 +95,7 @@ class TestHistoricalPipelineImport:
 # ---------------------------------------------------------------------------
 # 2. Constructor signature
 # ---------------------------------------------------------------------------
+
 
 class TestHistoricalPipelineSignature:
     """Constructor has the expected parameters and no target_fn."""
@@ -143,6 +145,7 @@ class TestHistoricalPipelineSignature:
 # ---------------------------------------------------------------------------
 # 3. Successful construction and attribute storage
 # ---------------------------------------------------------------------------
+
 
 class TestHistoricalPipelineInitSuccess:
     """Valid arguments produce a properly configured instance."""
@@ -291,8 +294,8 @@ class TestHistoricalPipelineInitSuccess:
         evaluator_registry: EvaluatorRegistry,
         metric_registry: MetricRegistry,
     ):
-        from assayer.runner.historical_pipeline import HistoricalPipeline
         from assayer.runner.field_router import FieldRouter
+        from assayer.runner.historical_pipeline import HistoricalPipeline
 
         pipeline = HistoricalPipeline(
             dataset=minimal_dataset,
@@ -316,9 +319,7 @@ class TestHistoricalPipelineInitSuccess:
         from assayer.runner.historical_pipeline import HistoricalPipeline
 
         dataset_file = tmp_path / "dataset.json"
-        dataset_file.write_text(
-            json.dumps([{"input": "a", "expected_output": "b"}])
-        )
+        dataset_file.write_text(json.dumps([{"input": "a", "expected_output": "b"}]))
 
         # Should not raise; the path is stored; actual loading happens in run()
         pipeline = HistoricalPipeline(
@@ -351,6 +352,7 @@ class TestHistoricalPipelineInitSuccess:
 # ---------------------------------------------------------------------------
 # 4. Fail-fast validation — unregistered metrics
 # ---------------------------------------------------------------------------
+
 
 class TestHistoricalPipelineMetricValidation:
     """KeyError is raised immediately for unregistered metric names."""
@@ -432,6 +434,7 @@ class TestHistoricalPipelineMetricValidation:
 # ---------------------------------------------------------------------------
 # 5. Fail-fast validation — unregistered evaluators (via FieldRouter)
 # ---------------------------------------------------------------------------
+
 
 class TestHistoricalPipelineEvaluatorValidation:
     """KeyError is raised immediately for unregistered evaluator names."""
@@ -517,6 +520,7 @@ class TestHistoricalPipelineEvaluatorValidation:
 # 6. Placeholder run() method
 # ---------------------------------------------------------------------------
 
+
 class TestHistoricalPipelineRunMethod:
     """run() exists and raises NotImplementedError as a placeholder."""
 
@@ -558,6 +562,7 @@ class TestHistoricalPipelineRunMethod:
 # 7. Docstrings
 # ---------------------------------------------------------------------------
 
+
 class TestHistoricalPipelineDocstrings:
     """Class and __init__ must have Google-style docstrings."""
 
@@ -598,6 +603,7 @@ class TestHistoricalPipelineDocstrings:
 # 8. Type hints
 # ---------------------------------------------------------------------------
 
+
 class TestHistoricalPipelineTypeHints:
     """All parameters and the return type of __init__ must be annotated."""
 
@@ -632,6 +638,7 @@ class TestHistoricalPipelineTypeHints:
 # 9. run() returns ExperimentResult with correct structure (happy path)
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture()
 def dataset_with_predictions() -> list[dict]:
     """Return a two-row dataset that includes predictions."""
@@ -663,16 +670,12 @@ def pipeline_with_predictions(
 class TestHistoricalPipelineRunReturnsExperimentResult:
     """run() returns ExperimentResult with correct experiment_name, runs, and metrics."""
 
-    def test_run_returns_experiment_result_instance(
-        self, pipeline_with_predictions
-    ):
+    def test_run_returns_experiment_result_instance(self, pipeline_with_predictions):
         """run() returns an ExperimentResult object."""
         result = pipeline_with_predictions.run()
         assert isinstance(result, ExperimentResult)
 
-    def test_run_experiment_name_matches_constructor(
-        self, pipeline_with_predictions
-    ):
+    def test_run_experiment_name_matches_constructor(self, pipeline_with_predictions):
         """ExperimentResult.experiment_name equals what was passed to constructor."""
         result = pipeline_with_predictions.run()
         assert result.experiment_name == "test_experiment"
@@ -684,9 +687,7 @@ class TestHistoricalPipelineRunReturnsExperimentResult:
         result = pipeline_with_predictions.run()
         assert len(result.runs) == len(dataset_with_predictions)
 
-    def test_run_metrics_contains_registered_metric(
-        self, pipeline_with_predictions
-    ):
+    def test_run_metrics_contains_registered_metric(self, pipeline_with_predictions):
         """ExperimentResult.metrics contains the metric registered in metric_registry."""
         result = pipeline_with_predictions.run()
         assert "accuracy" in result.metrics
@@ -760,6 +761,7 @@ class TestHistoricalPipelineRunReturnsExperimentResult:
 # 10. run() RunResult contents
 # ---------------------------------------------------------------------------
 
+
 class TestHistoricalPipelineRunResultContents:
     """Each RunResult has correct input, output, token_usage, and evaluations."""
 
@@ -779,49 +781,37 @@ class TestHistoricalPipelineRunResultContents:
         for i, run in enumerate(result.runs):
             assert run.input == dataset_with_predictions[i]["input"]
 
-    def test_run_result_token_usage_input_tokens_is_zero(
-        self, pipeline_with_predictions
-    ):
+    def test_run_result_token_usage_input_tokens_is_zero(self, pipeline_with_predictions):
         """RunResult.token_usage.input_tokens is 0 for every run."""
         result = pipeline_with_predictions.run()
         for run in result.runs:
             assert run.token_usage.input_tokens == 0
 
-    def test_run_result_token_usage_output_tokens_is_zero(
-        self, pipeline_with_predictions
-    ):
+    def test_run_result_token_usage_output_tokens_is_zero(self, pipeline_with_predictions):
         """RunResult.token_usage.output_tokens is 0 for every run."""
         result = pipeline_with_predictions.run()
         for run in result.runs:
             assert run.token_usage.output_tokens == 0
 
-    def test_run_result_token_usage_cost_usd_is_none(
-        self, pipeline_with_predictions
-    ):
+    def test_run_result_token_usage_cost_usd_is_none(self, pipeline_with_predictions):
         """RunResult.token_usage.cost_usd is None for every run."""
         result = pipeline_with_predictions.run()
         for run in result.runs:
             assert run.token_usage.cost_usd is None
 
-    def test_run_result_token_usage_is_token_usage_instance(
-        self, pipeline_with_predictions
-    ):
+    def test_run_result_token_usage_is_token_usage_instance(self, pipeline_with_predictions):
         """RunResult.token_usage is a TokenUsage instance."""
         result = pipeline_with_predictions.run()
         for run in result.runs:
             assert isinstance(run.token_usage, TokenUsage)
 
-    def test_run_result_evaluations_is_a_list(
-        self, pipeline_with_predictions
-    ):
+    def test_run_result_evaluations_is_a_list(self, pipeline_with_predictions):
         """RunResult.evaluations is a list."""
         result = pipeline_with_predictions.run()
         for run in result.runs:
             assert isinstance(run.evaluations, list)
 
-    def test_all_runs_are_run_result_instances(
-        self, pipeline_with_predictions
-    ):
+    def test_all_runs_are_run_result_instances(self, pipeline_with_predictions):
         """Every item in ExperimentResult.runs is a RunResult."""
         result = pipeline_with_predictions.run()
         for run in result.runs:
@@ -831,6 +821,7 @@ class TestHistoricalPipelineRunResultContents:
 # ---------------------------------------------------------------------------
 # 11. run() raises ValueError for missing 'prediction' key
 # ---------------------------------------------------------------------------
+
 
 class TestHistoricalPipelineRunMissingPrediction:
     """run() raises ValueError with record index when 'prediction' key is absent."""
@@ -851,9 +842,7 @@ class TestHistoricalPipelineRunMissingPrediction:
             metric_registry=metric_registry,
         )
 
-    def test_missing_prediction_raises_value_error(
-        self, evaluator_registry, metric_registry
-    ):
+    def test_missing_prediction_raises_value_error(self, evaluator_registry, metric_registry):
         """run() raises ValueError when the first record is missing 'prediction'."""
         dataset = [{"input": "x", "expected_output": "y"}]
         pipeline = self._make_pipeline(dataset, evaluator_registry, metric_registry)
@@ -869,9 +858,7 @@ class TestHistoricalPipelineRunMissingPrediction:
         with pytest.raises(ValueError, match="0"):
             pipeline.run()
 
-    def test_missing_prediction_error_contains_index_one(
-        self, evaluator_registry, metric_registry
-    ):
+    def test_missing_prediction_error_contains_index_one(self, evaluator_registry, metric_registry):
         """ValueError message contains index 1 when second record is missing."""
         dataset = [
             {"input": "x", "expected_output": "y", "prediction": "p"},
@@ -881,9 +868,7 @@ class TestHistoricalPipelineRunMissingPrediction:
         with pytest.raises(ValueError, match="1"):
             pipeline.run()
 
-    def test_missing_prediction_error_message_format(
-        self, evaluator_registry, metric_registry
-    ):
+    def test_missing_prediction_error_message_format(self, evaluator_registry, metric_registry):
         """ValueError message matches the exact format from the spec."""
         dataset = [{"input": "x", "expected_output": "y"}]
         pipeline = self._make_pipeline(dataset, evaluator_registry, metric_registry)
@@ -907,6 +892,7 @@ class TestHistoricalPipelineRunMissingPrediction:
 # ---------------------------------------------------------------------------
 # 12. run() routes through FieldRouter (not calling external functions)
 # ---------------------------------------------------------------------------
+
 
 class TestHistoricalPipelineRunUsesFieldRouter:
     """run() delegates evaluation to _field_router.route(), not to any external fn."""
@@ -994,6 +980,7 @@ class TestHistoricalPipelineRunUsesFieldRouter:
 # 13. run() loads dataset via load_dataset
 # ---------------------------------------------------------------------------
 
+
 class TestHistoricalPipelineRunLoadsDataset:
     """run() calls load_dataset() to resolve the dataset source."""
 
@@ -1005,6 +992,7 @@ class TestHistoricalPipelineRunLoadsDataset:
     ):
         """run() accepts a file path string and loads records from that file."""
         import json
+
         from assayer.runner.historical_pipeline import HistoricalPipeline
 
         records = [
@@ -1054,6 +1042,7 @@ class TestHistoricalPipelineRunLoadsDataset:
 # ---------------------------------------------------------------------------
 # 14. run() aggregate metrics use metric_registry.get(name)
 # ---------------------------------------------------------------------------
+
 
 class TestHistoricalPipelineRunAggregateMetrics:
     """run() computes aggregate metrics via metric_registry.get(name)."""
@@ -1158,6 +1147,7 @@ class TestHistoricalPipelineRunAggregateMetrics:
 # 15. run() docstring and type hints
 # ---------------------------------------------------------------------------
 
+
 class TestHistoricalPipelineRunDocstringAndTypeHints:
     """run() must have a Google-style docstring and a proper return type annotation."""
 
@@ -1192,6 +1182,7 @@ class TestHistoricalPipelineRunDocstringAndTypeHints:
 # ---------------------------------------------------------------------------
 # SPEC-002-TASK-003: Export HistoricalPipeline from assayer.runner
 # ---------------------------------------------------------------------------
+
 
 class TestHistoricalPipelinePublicExport:
     """Verify HistoricalPipeline is exported from the assayer.runner package."""

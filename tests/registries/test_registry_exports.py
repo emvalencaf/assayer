@@ -4,8 +4,9 @@ This test module validates the wiring of default shared instances and package
 re-exports for AC-SPEC-015 and the associated import requirements.
 """
 
-import pytest
 from typing import Any
+
+import pytest
 
 
 def test_default_metric_registry_importable():
@@ -14,9 +15,9 @@ def test_default_metric_registry_importable():
     from assayer.registries import default_metric_registry
 
     # Should be a functional MetricRegistry instance
-    assert hasattr(default_metric_registry, 'register')
-    assert hasattr(default_metric_registry, 'get')
-    assert hasattr(default_metric_registry, 'list_metrics')
+    assert hasattr(default_metric_registry, "register")
+    assert hasattr(default_metric_registry, "get")
+    assert hasattr(default_metric_registry, "list_metrics")
 
 
 def test_default_evaluator_registry_importable():
@@ -25,9 +26,9 @@ def test_default_evaluator_registry_importable():
     from assayer.registries import default_evaluator_registry
 
     # Should be a functional EvaluatorRegistry instance
-    assert hasattr(default_evaluator_registry, 'register')
-    assert hasattr(default_evaluator_registry, 'get')
-    assert hasattr(default_evaluator_registry, 'list_evaluators')
+    assert hasattr(default_evaluator_registry, "register")
+    assert hasattr(default_evaluator_registry, "get")
+    assert hasattr(default_evaluator_registry, "list_evaluators")
 
 
 def test_metric_registry_class_importable():
@@ -40,7 +41,7 @@ def test_metric_registry_class_importable():
 
     # Should be able to instantiate
     registry = MetricRegistry()
-    assert hasattr(registry, 'register')
+    assert hasattr(registry, "register")
 
 
 def test_evaluator_registry_class_importable():
@@ -53,7 +54,7 @@ def test_evaluator_registry_class_importable():
 
     # Should be able to instantiate
     registry = EvaluatorRegistry()
-    assert hasattr(registry, 'register')
+    assert hasattr(registry, "register")
 
 
 def test_base_evaluator_importable():
@@ -89,19 +90,14 @@ def test_default_metric_registry_functional():
 def test_default_evaluator_registry_functional():
     """Test that default_evaluator_registry is functional (AC-SPEC-015)."""
     # This should fail initially when the task is not implemented
-    from assayer.registries import default_evaluator_registry
     from assayer.evaluators import BaseEvaluator
     from assayer.models import FieldEvaluation
+    from assayer.registries import default_evaluator_registry
 
     # Create a dummy evaluator class
     class DummyEvaluator(BaseEvaluator):
         def evaluate(self, prediction: Any, reference: Any, **kwargs) -> FieldEvaluation:
-            return FieldEvaluation(
-                field_name="test",
-                passed=True,
-                score=1.0,
-                details={}
-            )
+            return FieldEvaluation(field_name="test", passed=True, score=1.0, details={})
 
     # Should be able to register and retrieve entries
     default_evaluator_registry.register("test_evaluator", DummyEvaluator)
@@ -121,14 +117,16 @@ def test_registries_all_exports():
         "MetricRegistry",
         "EvaluatorRegistry",
         "default_metric_registry",
-        "default_evaluator_registry"
+        "default_evaluator_registry",
     }
 
-    assert hasattr(registries, '__all__')
+    assert hasattr(registries, "__all__")
     actual_exports = set(registries.__all__)
 
     # All four names should be present
-    assert expected_exports.issubset(actual_exports), f"Missing exports: {expected_exports - actual_exports}"
+    assert expected_exports.issubset(actual_exports), (
+        f"Missing exports: {expected_exports - actual_exports}"
+    )
 
 
 def test_evaluators_all_exports():
@@ -136,15 +134,19 @@ def test_evaluators_all_exports():
     # This should already work based on the existing code
     from assayer import evaluators
 
-    assert hasattr(evaluators, '__all__')
+    assert hasattr(evaluators, "__all__")
     assert "BaseEvaluator" in evaluators.__all__
 
 
 def test_default_instances_are_separate_from_new_instances():
     """Test that default instances don't share state with new instances."""
     # This should fail initially when the task is not implemented
-    from assayer.registries import default_metric_registry, MetricRegistry
-    from assayer.registries import default_evaluator_registry, EvaluatorRegistry
+    from assayer.registries import (
+        EvaluatorRegistry,
+        MetricRegistry,
+        default_evaluator_registry,
+        default_metric_registry,
+    )
 
     # Create new instances
     new_metric_registry = MetricRegistry()
@@ -169,17 +171,17 @@ def test_default_instances_are_separate_from_new_instances():
 def test_all_imports_work_together():
     """Test that all required imports work together in a single statement."""
     # This should fail initially when the task is not implemented
-    from assayer.registries import (
-        MetricRegistry,
-        EvaluatorRegistry,
-        default_metric_registry,
-        default_evaluator_registry
-    )
     from assayer.evaluators import BaseEvaluator
+    from assayer.registries import (
+        EvaluatorRegistry,
+        MetricRegistry,
+        default_evaluator_registry,
+        default_metric_registry,
+    )
 
     # All should be accessible
     assert isinstance(MetricRegistry, type)
     assert isinstance(EvaluatorRegistry, type)
-    assert hasattr(default_metric_registry, 'register')
-    assert hasattr(default_evaluator_registry, 'register')
+    assert hasattr(default_metric_registry, "register")
+    assert hasattr(default_evaluator_registry, "register")
     assert isinstance(BaseEvaluator, type)

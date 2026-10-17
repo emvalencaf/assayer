@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from assayer.runner.pricing import PricingConfig
 from assayer.runner.dataset_loader import load_dataset
+from assayer.runner.pricing import PricingConfig
 
 
 class TestPricingConfig:
@@ -23,7 +23,6 @@ class TestPricingConfig:
     def test_pricing_config_type_hints_exist(self):
         """Test that PricingConfig has proper type hints."""
         # This test verifies the imports work and the class exists with expected attributes
-        import inspect
 
         # Get the annotations (type hints) for PricingConfig
         annotations = PricingConfig.__annotations__
@@ -122,7 +121,7 @@ class TestLoadDataset:
             {"input": "file input 2", "expected_output": "file output 2"},
         ]
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(data, f)
             temp_path = f.name
 
@@ -139,7 +138,7 @@ class TestLoadDataset:
         """Test loading an empty JSON dataset file."""
         data = []
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(data, f)
             temp_path = f.name
 
@@ -158,7 +157,7 @@ class TestLoadDataset:
 
     def test_load_dataset_invalid_json_file(self):
         """Test loading dataset from invalid JSON file."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             f.write("invalid json content")
             temp_path = f.name
 
@@ -175,7 +174,7 @@ class TestLoadDataset:
             {"input": "test input 2"},  # missing "expected_output"
         ]
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(data, f)
             temp_path = f.name
 
@@ -192,7 +191,7 @@ class TestLoadDataset:
                 "input": "test input 1",
                 "expected_output": "test output 1",
                 "metadata": {"source": "test"},
-                "id": 123
+                "id": 123,
             },
         ]
 
@@ -230,10 +229,7 @@ class TestLoadDataset:
 
     def test_load_dataset_large_dataset(self):
         """Test loading a larger dataset (boundary condition)."""
-        data = [
-            {"input": f"input {i}", "expected_output": f"output {i}"}
-            for i in range(100)
-        ]
+        data = [{"input": f"input {i}", "expected_output": f"output {i}"} for i in range(100)]
 
         result = load_dataset(data)
 
@@ -246,7 +242,7 @@ class TestLoadDataset:
         """Test that JSON file containing non-list raises appropriate error."""
         data = {"not": "a list"}
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(data, f)
             temp_path = f.name
 

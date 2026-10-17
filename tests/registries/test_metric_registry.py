@@ -4,8 +4,9 @@ This module tests the MetricRegistry implementation according to the spec
 requirements: registration, retrieval, validation, and state isolation.
 """
 
+from typing import Any
+
 import pytest
-from typing import Any, Callable
 
 from assayer.registries.metric_registry import MetricRegistry
 
@@ -187,6 +188,7 @@ class TestMetricRegistryTypeHints:
 
     def test_properly_typed_metric_function(self):
         """Test that a properly typed metric function works correctly."""
+
         def typed_metric(predictions: list[Any], references: list[Any]) -> float:
             return len(predictions) / max(1, len(references))
 

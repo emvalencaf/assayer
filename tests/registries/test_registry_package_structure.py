@@ -4,10 +4,8 @@ Test suite for TASK-001: Create package structure for evaluators and registries.
 Tests that the required package structure exists and modules can be imported.
 """
 
-import os
 import pathlib
 import sys
-from typing import Any
 
 import pytest
 
@@ -26,7 +24,7 @@ class TestRegistryPackageStructure:
         assert init_path.is_file(), "assayer/evaluators/__init__.py must be a file"
 
         # Check it's a valid Python file by attempting to compile it
-        with open(init_path, "r", encoding="utf-8") as f:
+        with open(init_path, encoding="utf-8") as f:
             content = f.read()
 
         try:
@@ -45,7 +43,7 @@ class TestRegistryPackageStructure:
         assert init_path.is_file(), "assayer/registries/__init__.py must be a file"
 
         # Check it's a valid Python file by attempting to compile it
-        with open(init_path, "r", encoding="utf-8") as f:
+        with open(init_path, encoding="utf-8") as f:
             content = f.read()
 
         try:

@@ -5,10 +5,9 @@ chat metrics (bleu, rouge_l, bert_score, semantic_similarity) in a MetricRegistr
 """
 
 import pytest
-from typing import Callable
 
+from assayer.metrics.chat import bert_score, bleu, make_semantic_similarity, rouge_l
 from assayer.registries.metric_registry import MetricRegistry
-from assayer.metrics.chat import bleu, rouge_l, bert_score, make_semantic_similarity
 
 
 def test_register_chat_metrics_imports_successfully():
@@ -22,8 +21,9 @@ def test_register_chat_metrics_imports_successfully():
 
 def test_register_chat_metrics_has_correct_signature():
     """Test that register_chat_metrics has the expected signature."""
-    from assayer.metrics import register_chat_metrics
     import inspect
+
+    from assayer.metrics import register_chat_metrics
 
     # Get function signature
     sig = inspect.signature(register_chat_metrics)
@@ -38,7 +38,9 @@ def test_register_chat_metrics_has_correct_signature():
 
     # Parameter should have MetricRegistry type hint
     registry_param = sig.parameters["registry"]
-    assert str(registry_param.annotation) == "MetricRegistry" or "MetricRegistry" in str(registry_param.annotation)
+    assert str(registry_param.annotation) == "MetricRegistry" or "MetricRegistry" in str(
+        registry_param.annotation
+    )
 
 
 def test_register_chat_metrics_has_google_style_docstring():
@@ -54,7 +56,7 @@ def test_register_chat_metrics_has_google_style_docstring():
     assert "registry" in docstring  # Should document the registry parameter
 
     # Should have a description
-    assert len(docstring.split('\n')[0]) > 10  # First line should be substantial description
+    assert len(docstring.split("\n")[0]) > 10  # First line should be substantial description
 
 
 def test_register_chat_metrics_registers_all_four_metrics():
@@ -102,6 +104,7 @@ def test_register_chat_metrics_resolves_to_correct_callables():
     assert semantic_sim_fn is not make_semantic_similarity
     # Should be a function that takes two list arguments
     import inspect
+
     sig = inspect.signature(semantic_sim_fn)
     assert len(sig.parameters) == 2
 
@@ -209,8 +212,9 @@ def test_register_chat_metrics_with_empty_registry():
 
 def test_register_chat_metrics_type_hints():
     """Test that register_chat_metrics has proper type hints."""
-    from assayer.metrics import register_chat_metrics
     import inspect
+
+    from assayer.metrics import register_chat_metrics
 
     # Get type hints
     hints = inspect.signature(register_chat_metrics).parameters

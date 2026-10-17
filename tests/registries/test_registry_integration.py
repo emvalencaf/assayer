@@ -4,12 +4,13 @@ This module tests the complete user workflow for registering and using custom
 metrics and evaluators, ensuring all components work together correctly.
 """
 
-import pytest
 from typing import Any
 
-from assayer.registries import MetricRegistry, EvaluatorRegistry
+import pytest
+
 from assayer.evaluators import BaseEvaluator
 from assayer.models import FieldEvaluation
+from assayer.registries import EvaluatorRegistry, MetricRegistry
 
 
 def test_custom_metric_registration_and_usage():
@@ -82,7 +83,7 @@ def test_custom_evaluator_registration_and_usage():
                 obtained_value=prediction,
                 score=score,
                 prompt_hash=None,
-                metadata={"match_type": "exact"}
+                metadata={"match_type": "exact"},
             )
 
     # Register the evaluator class
@@ -105,11 +106,7 @@ def test_custom_evaluator_registration_and_usage():
     prediction = "hello world"
     reference = "hello world"
 
-    result = evaluator.evaluate(
-        prediction,
-        reference,
-        field_name="output_text"
-    )
+    result = evaluator.evaluate(prediction, reference, field_name="output_text")
 
     # Assert the result is a valid FieldEvaluation
     assert isinstance(result, FieldEvaluation)
@@ -153,7 +150,7 @@ def test_registry_isolation():
                 expected_value=reference,
                 obtained_value=prediction,
                 score=0.5,
-                prompt_hash=None
+                prompt_hash=None,
             )
 
     # Register in first registries only
@@ -232,7 +229,7 @@ def test_complete_integration_workflow():
                 obtained_value=prediction,
                 score=score,
                 prompt_hash=None,
-                metadata={"fuzzy_algorithm": "substring"}
+                metadata={"fuzzy_algorithm": "substring"},
             )
 
     # Register both
@@ -241,21 +238,14 @@ def test_complete_integration_workflow():
 
     # Retrieve and use the metric
     metric_fn = metric_registry.get("fuzzy_match")
-    metric_result = metric_fn(
-        ["hello", "world"],
-        ["Hello", "World"]
-    )
+    metric_result = metric_fn(["hello", "world"], ["Hello", "World"])
     assert metric_result == 1.0  # Case-insensitive exact matches
 
     # Retrieve and use the evaluator
     evaluator_class = evaluator_registry.get("fuzzy_evaluator")
     evaluator = evaluator_class("fuzzy_test")
 
-    evaluation_result = evaluator.evaluate(
-        "Hello World",
-        "hello world",
-        field_name="greeting"
-    )
+    evaluation_result = evaluator.evaluate("Hello World", "hello world", field_name="greeting")
 
     # Verify the complete workflow
     assert isinstance(evaluation_result, FieldEvaluation)

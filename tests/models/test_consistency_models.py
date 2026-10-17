@@ -2,7 +2,7 @@
 
 import pytest
 
-from assayer.models import FieldEvaluation,ConsistencyFieldEvaluation, ConsistencySummary
+from assayer.models import ConsistencyFieldEvaluation, ConsistencySummary, FieldEvaluation
 
 
 class TestConsistencyFieldEvaluation:
@@ -17,7 +17,7 @@ class TestConsistencyFieldEvaluation:
             expected_value="expected",
             obtained_value="obtained",
             score=0.8,
-            prompt_hash=None
+            prompt_hash=None,
         )
         field_eval2 = FieldEvaluation(
             field_name="test_field",
@@ -25,7 +25,7 @@ class TestConsistencyFieldEvaluation:
             expected_value="expected",
             obtained_value="obtained2",
             score=0.6,
-            prompt_hash=None
+            prompt_hash=None,
         )
 
         eval_result = ConsistencyFieldEvaluation(
@@ -38,7 +38,7 @@ class TestConsistencyFieldEvaluation:
             correct_rate=0.6,
             pass_at_k=True,
             recall_at_k=0.8,
-            raw_results=[field_eval1, field_eval2]
+            raw_results=[field_eval1, field_eval2],
         )
 
         # Test all fields are accessible and have expected types
@@ -85,7 +85,7 @@ class TestConsistencyFieldEvaluation:
                 score_std=0.2,
                 correct_rate=0.6,
                 pass_at_k=True,
-                recall_at_k=0.8
+                recall_at_k=0.8,
             )
 
         with pytest.raises(ValueError, match="n must be >= 1"):
@@ -98,7 +98,7 @@ class TestConsistencyFieldEvaluation:
                 score_std=0.2,
                 correct_rate=0.6,
                 pass_at_k=True,
-                recall_at_k=0.8
+                recall_at_k=0.8,
             )
 
     def test_post_init_raises_value_error_if_agreement_rate_outside_range(self):
@@ -113,7 +113,7 @@ class TestConsistencyFieldEvaluation:
                 score_std=0.2,
                 correct_rate=0.6,
                 pass_at_k=True,
-                recall_at_k=0.8
+                recall_at_k=0.8,
             )
 
         with pytest.raises(ValueError, match="agreement_rate must be in the range \\[0.0, 1.0\\]"):
@@ -126,7 +126,7 @@ class TestConsistencyFieldEvaluation:
                 score_std=0.2,
                 correct_rate=0.6,
                 pass_at_k=True,
-                recall_at_k=0.8
+                recall_at_k=0.8,
             )
 
     def test_post_init_raises_value_error_if_entropy_less_than_zero(self):
@@ -141,7 +141,7 @@ class TestConsistencyFieldEvaluation:
                 score_std=0.2,
                 correct_rate=0.6,
                 pass_at_k=True,
-                recall_at_k=0.8
+                recall_at_k=0.8,
             )
 
     def test_post_init_raises_value_error_if_score_std_less_than_zero(self):
@@ -156,7 +156,7 @@ class TestConsistencyFieldEvaluation:
                 score_std=-0.1,
                 correct_rate=0.6,
                 pass_at_k=True,
-                recall_at_k=0.8
+                recall_at_k=0.8,
             )
 
     def test_post_init_raises_value_error_if_correct_rate_outside_range(self):
@@ -171,7 +171,7 @@ class TestConsistencyFieldEvaluation:
                 score_std=0.2,
                 correct_rate=-0.1,
                 pass_at_k=True,
-                recall_at_k=0.8
+                recall_at_k=0.8,
             )
 
         with pytest.raises(ValueError, match="correct_rate must be in the range \\[0.0, 1.0\\]"):
@@ -184,7 +184,7 @@ class TestConsistencyFieldEvaluation:
                 score_std=0.2,
                 correct_rate=1.1,
                 pass_at_k=True,
-                recall_at_k=0.8
+                recall_at_k=0.8,
             )
 
     def test_post_init_raises_value_error_if_recall_at_k_outside_range(self):
@@ -199,7 +199,7 @@ class TestConsistencyFieldEvaluation:
                 score_std=0.2,
                 correct_rate=0.6,
                 pass_at_k=True,
-                recall_at_k=-0.1
+                recall_at_k=-0.1,
             )
 
         with pytest.raises(ValueError, match="recall_at_k must be in the range \\[0.0, 1.0\\]"):
@@ -212,7 +212,7 @@ class TestConsistencyFieldEvaluation:
                 score_std=0.2,
                 correct_rate=0.6,
                 pass_at_k=True,
-                recall_at_k=1.1
+                recall_at_k=1.1,
             )
 
     def test_accepts_none_values_without_raising(self):
@@ -227,7 +227,7 @@ class TestConsistencyFieldEvaluation:
             score_std=0.2,
             correct_rate=0.6,
             pass_at_k=True,
-            recall_at_k=0.8
+            recall_at_k=0.8,
         )
         assert eval_result.group_key is None
 
@@ -241,7 +241,7 @@ class TestConsistencyFieldEvaluation:
             score_std=0.2,
             correct_rate=0.6,
             pass_at_k=True,
-            recall_at_k=0.8
+            recall_at_k=0.8,
         )
         assert eval_result.dominant_label is None
 
@@ -255,7 +255,7 @@ class TestConsistencyFieldEvaluation:
             score_std=0.2,
             correct_rate=0.6,
             pass_at_k=True,
-            recall_at_k=0.8
+            recall_at_k=0.8,
         )
         assert eval_result.group_key is None
         assert eval_result.dominant_label is None
@@ -271,7 +271,7 @@ class TestConsistencyFieldEvaluation:
             score_std=0.2,
             correct_rate=0.6,
             pass_at_k=True,
-            recall_at_k=0.8
+            recall_at_k=0.8,
             # raw_results not provided
         )
 
@@ -290,7 +290,7 @@ class TestConsistencyFieldEvaluation:
             score_std=0.0,  # minimum value
             correct_rate=0.0,  # minimum value
             pass_at_k=False,
-            recall_at_k=0.0  # minimum value
+            recall_at_k=0.0,  # minimum value
         )
         assert eval_result.n == 1
         assert eval_result.agreement_rate == 0.0
@@ -309,7 +309,7 @@ class TestConsistencyFieldEvaluation:
             score_std=5.0,  # unbounded above, so any positive value is valid
             correct_rate=1.0,  # maximum value
             pass_at_k=True,
-            recall_at_k=1.0  # maximum value
+            recall_at_k=1.0,  # maximum value
         )
         assert eval_result.n == 1000
         assert eval_result.agreement_rate == 1.0
@@ -329,7 +329,7 @@ class TestConsistencyFieldEvaluation:
             score_std=0.0,  # must be 0.0 when n == 1
             correct_rate=1.0,
             pass_at_k=True,
-            recall_at_k=1.0
+            recall_at_k=1.0,
         )
 
         assert eval_result.n == 1
@@ -345,7 +345,7 @@ class TestConsistencyFieldEvaluation:
             expected_value="expected",
             obtained_value="obtained",
             score=0.8,
-            prompt_hash="abc123"
+            prompt_hash="abc123",
         )
 
         eval_result = ConsistencyFieldEvaluation(
@@ -358,7 +358,7 @@ class TestConsistencyFieldEvaluation:
             correct_rate=1.0,
             pass_at_k=True,
             recall_at_k=1.0,
-            raw_results=[field_eval]
+            raw_results=[field_eval],
         )
 
         assert len(eval_result.raw_results) == 1
@@ -381,7 +381,7 @@ class TestConsistencySummary:
             score_std=0.15,
             correct_rate=0.7,
             pass_at_k=True,
-            recall_at_k=0.85
+            recall_at_k=0.85,
         )
         eval2 = ConsistencyFieldEvaluation(
             group_key="group2",
@@ -392,7 +392,7 @@ class TestConsistencySummary:
             score_std=0.25,
             correct_rate=0.4,
             pass_at_k=False,
-            recall_at_k=0.6
+            recall_at_k=0.6,
         )
 
         summary = ConsistencySummary(
@@ -403,7 +403,7 @@ class TestConsistencySummary:
             mean_correct_rate=0.55,
             pass_at_k_rate=0.5,
             mean_recall_at_k=0.725,
-            worst_groups=[eval2]
+            worst_groups=[eval2],
         )
 
         # Test all fields are accessible and have expected types
@@ -442,7 +442,7 @@ class TestConsistencySummary:
                 mean_score_std=0.2,
                 mean_correct_rate=0.6,
                 pass_at_k_rate=-0.1,
-                mean_recall_at_k=0.7
+                mean_recall_at_k=0.7,
             )
 
         with pytest.raises(ValueError, match="pass_at_k_rate must be in the range \\[0.0, 1.0\\]"):
@@ -452,73 +452,85 @@ class TestConsistencySummary:
                 mean_score_std=0.2,
                 mean_correct_rate=0.6,
                 pass_at_k_rate=1.1,
-                mean_recall_at_k=0.7
+                mean_recall_at_k=0.7,
             )
 
     def test_post_init_raises_value_error_if_mean_correct_rate_outside_range(self):
         """Test that __post_init__ raises ValueError if mean_correct_rate is outside [0.0, 1.0]."""
-        with pytest.raises(ValueError, match="mean_correct_rate must be in the range \\[0.0, 1.0\\]"):
+        with pytest.raises(
+            ValueError, match="mean_correct_rate must be in the range \\[0.0, 1.0\\]"
+        ):
             ConsistencySummary(
                 mean_agreement_rate=0.5,
                 mean_entropy=1.0,
                 mean_score_std=0.2,
                 mean_correct_rate=-0.1,
                 pass_at_k_rate=0.8,
-                mean_recall_at_k=0.7
+                mean_recall_at_k=0.7,
             )
 
-        with pytest.raises(ValueError, match="mean_correct_rate must be in the range \\[0.0, 1.0\\]"):
+        with pytest.raises(
+            ValueError, match="mean_correct_rate must be in the range \\[0.0, 1.0\\]"
+        ):
             ConsistencySummary(
                 mean_agreement_rate=0.5,
                 mean_entropy=1.0,
                 mean_score_std=0.2,
                 mean_correct_rate=1.1,
                 pass_at_k_rate=0.8,
-                mean_recall_at_k=0.7
+                mean_recall_at_k=0.7,
             )
 
     def test_post_init_raises_value_error_if_mean_recall_at_k_outside_range(self):
         """Test that __post_init__ raises ValueError if mean_recall_at_k is outside [0.0, 1.0]."""
-        with pytest.raises(ValueError, match="mean_recall_at_k must be in the range \\[0.0, 1.0\\]"):
+        with pytest.raises(
+            ValueError, match="mean_recall_at_k must be in the range \\[0.0, 1.0\\]"
+        ):
             ConsistencySummary(
                 mean_agreement_rate=0.5,
                 mean_entropy=1.0,
                 mean_score_std=0.2,
                 mean_correct_rate=0.6,
                 pass_at_k_rate=0.8,
-                mean_recall_at_k=-0.1
+                mean_recall_at_k=-0.1,
             )
 
-        with pytest.raises(ValueError, match="mean_recall_at_k must be in the range \\[0.0, 1.0\\]"):
+        with pytest.raises(
+            ValueError, match="mean_recall_at_k must be in the range \\[0.0, 1.0\\]"
+        ):
             ConsistencySummary(
                 mean_agreement_rate=0.5,
                 mean_entropy=1.0,
                 mean_score_std=0.2,
                 mean_correct_rate=0.6,
                 pass_at_k_rate=0.8,
-                mean_recall_at_k=1.1
+                mean_recall_at_k=1.1,
             )
 
     def test_post_init_raises_value_error_if_mean_agreement_rate_outside_range(self):
         """Test that __post_init__ raises ValueError if mean_agreement_rate is outside [0.0, 1.0]."""
-        with pytest.raises(ValueError, match="mean_agreement_rate must be in the range \\[0.0, 1.0\\]"):
+        with pytest.raises(
+            ValueError, match="mean_agreement_rate must be in the range \\[0.0, 1.0\\]"
+        ):
             ConsistencySummary(
                 mean_agreement_rate=-0.1,
                 mean_entropy=1.0,
                 mean_score_std=0.2,
                 mean_correct_rate=0.6,
                 pass_at_k_rate=0.8,
-                mean_recall_at_k=0.7
+                mean_recall_at_k=0.7,
             )
 
-        with pytest.raises(ValueError, match="mean_agreement_rate must be in the range \\[0.0, 1.0\\]"):
+        with pytest.raises(
+            ValueError, match="mean_agreement_rate must be in the range \\[0.0, 1.0\\]"
+        ):
             ConsistencySummary(
                 mean_agreement_rate=1.1,
                 mean_entropy=1.0,
                 mean_score_std=0.2,
                 mean_correct_rate=0.6,
                 pass_at_k_rate=0.8,
-                mean_recall_at_k=0.7
+                mean_recall_at_k=0.7,
             )
 
     def test_per_group_and_worst_groups_default_to_empty_lists(self):
@@ -529,7 +541,7 @@ class TestConsistencySummary:
             mean_score_std=0.2,
             mean_correct_rate=0.6,
             pass_at_k_rate=0.8,
-            mean_recall_at_k=0.7
+            mean_recall_at_k=0.7,
             # per_group and worst_groups not provided
         )
 
@@ -547,7 +559,7 @@ class TestConsistencySummary:
             mean_score_std=50.0,  # unbounded above
             mean_correct_rate=0.6,
             pass_at_k_rate=0.8,
-            mean_recall_at_k=0.7
+            mean_recall_at_k=0.7,
         )
 
         assert summary.mean_entropy == 100.0
@@ -562,7 +574,7 @@ class TestConsistencySummary:
             mean_score_std=0.0,  # minimum value (not bounded above)
             mean_correct_rate=0.0,  # minimum value
             pass_at_k_rate=0.0,  # minimum value
-            mean_recall_at_k=0.0  # minimum value
+            mean_recall_at_k=0.0,  # minimum value
         )
         assert summary.mean_agreement_rate == 0.0
         assert summary.mean_entropy == 0.0
@@ -578,7 +590,7 @@ class TestConsistencySummary:
             mean_score_std=5.0,  # unbounded above, so any positive value is valid
             mean_correct_rate=1.0,  # maximum value
             pass_at_k_rate=1.0,  # maximum value
-            mean_recall_at_k=1.0  # maximum value
+            mean_recall_at_k=1.0,  # maximum value
         )
         assert summary.mean_agreement_rate == 1.0
         assert summary.mean_entropy == 10.0
@@ -597,7 +609,7 @@ class TestConsistencySummary:
             mean_correct_rate=0.0,
             pass_at_k_rate=0.0,
             mean_recall_at_k=0.0,
-            worst_groups=[]  # empty list
+            worst_groups=[],  # empty list
         )
 
         assert summary.per_group == []
@@ -614,7 +626,7 @@ class TestConsistencySummary:
             score_std=0.0,
             correct_rate=1.0,
             pass_at_k=True,
-            recall_at_k=1.0
+            recall_at_k=1.0,
         )
         eval2 = ConsistencyFieldEvaluation(
             group_key="group2",
@@ -625,7 +637,7 @@ class TestConsistencySummary:
             score_std=0.2,
             correct_rate=0.4,
             pass_at_k=False,
-            recall_at_k=0.6
+            recall_at_k=0.6,
         )
 
         summary = ConsistencySummary(
@@ -636,7 +648,7 @@ class TestConsistencySummary:
             mean_correct_rate=0.7,
             pass_at_k_rate=0.5,
             mean_recall_at_k=0.8,
-            worst_groups=[eval2]  # subset of per_group
+            worst_groups=[eval2],  # subset of per_group
         )
 
         assert len(summary.per_group) == 2

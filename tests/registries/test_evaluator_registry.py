@@ -4,12 +4,13 @@ This module tests the EvaluatorRegistry implementation according to the spec
 requirements: registration, retrieval, validation, and state isolation.
 """
 
-import pytest
 from typing import Any
 
-from assayer.registries.evaluator_registry import EvaluatorRegistry
+import pytest
+
 from assayer.evaluators.base import BaseEvaluator
 from assayer.models import FieldEvaluation
+from assayer.registries.evaluator_registry import EvaluatorRegistry
 
 
 class ConcreteEvaluator(BaseEvaluator):
@@ -23,7 +24,7 @@ class ConcreteEvaluator(BaseEvaluator):
             expected_value=reference,
             obtained_value=prediction,
             score=1.0,
-            prompt_hash=None
+            prompt_hash=None,
         )
 
 
@@ -38,12 +39,13 @@ class AnotherEvaluator(BaseEvaluator):
             expected_value=reference,
             obtained_value=prediction,
             score=0.8,
-            prompt_hash=None
+            prompt_hash=None,
         )
 
 
 class NotAnEvaluator:
     """A plain class that is not a BaseEvaluator subclass."""
+
     pass
 
 
@@ -298,7 +300,7 @@ class TestEvaluatorRegistryEdgeCases:
             "eval_with_underscores",
             "eval.with.dots",
             "eval123numbers",
-            "EVAL_UPPERCASE"
+            "EVAL_UPPERCASE",
         ]
 
         for name in special_names:

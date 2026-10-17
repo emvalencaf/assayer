@@ -2,8 +2,8 @@
 
 import sys
 import types
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 from assayer.metrics.chat import bert_score
 
 
@@ -129,14 +129,14 @@ class TestBertScore:
         sig = inspect.signature(bert_score)
         params = list(sig.parameters.keys())
 
-        assert params == ['predictions', 'references']
+        assert params == ["predictions", "references"]
         assert sig.return_annotation == float
 
         # Check type hints
         hints = get_type_hints(bert_score)
-        assert hints['predictions'] == list[str]
-        assert hints['references'] == list[str]
-        assert hints['return'] == float
+        assert hints["predictions"] == list[str]
+        assert hints["references"] == list[str]
+        assert hints["return"] == float
 
     def test_bert_score_has_docstring(self):
         """Test that bert_score function has a Google-style docstring."""

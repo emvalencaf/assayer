@@ -4,7 +4,6 @@ import ast
 import importlib
 import sys
 from pathlib import Path
-from typing import Any
 
 import pytest
 
@@ -15,9 +14,11 @@ class TestModelsModuleIsolation:
     def test_models_module_has_no_assayer_imports(self):
         """Test AC-SPEC-008: assayer/models.py does not import from any other assayer.* module."""
         # Read the models.py file content
-        models_file_path = Path(__file__).parent.parent / "assayer" / "models" / "__init__.py"
+        models_file_path = (
+            Path(__file__).resolve().parents[2] / "assayer" / "models" / "__init__.py"
+        )
 
-        with open(models_file_path, "r", encoding="utf-8") as f:
+        with open(models_file_path, encoding="utf-8") as f:
             content = f.read()
 
         # Parse the AST to examine import statements
@@ -29,10 +30,16 @@ class TestModelsModuleIsolation:
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
                 for alias in node.names:
-                    if alias.name.startswith("assayer") and not alias.name.startswith("assayer.models"):
+                    if alias.name.startswith("assayer") and not alias.name.startswith(
+                        "assayer.models"
+                    ):
                         assayer_imports.append(f"import {alias.name}")
             elif isinstance(node, ast.ImportFrom):
-                if node.module and node.module.startswith("assayer") and not node.module.startswith("assayer.models"):
+                if (
+                    node.module
+                    and node.module.startswith("assayer")
+                    and not node.module.startswith("assayer.models")
+                ):
                     names = [alias.name for alias in node.names]
                     assayer_imports.append(f"from {node.module} import {', '.join(names)}")
 
@@ -50,7 +57,16 @@ class TestModelsExports:
         """Test that __all__ exports exactly TokenUsage, FieldEvaluation, RunResult, ExperimentResult."""
         import assayer.models
 
-        expected_symbols = {"TokenUsage", "FieldEvaluation", "RunResult", "ExperimentResult", "ConsistencyFieldEvaluation", "ConsistencySummary", "ConsistencyRunResult", "ConsistencyReport"}
+        expected_symbols = {
+            "TokenUsage",
+            "FieldEvaluation",
+            "RunResult",
+            "ExperimentResult",
+            "ConsistencyFieldEvaluation",
+            "ConsistencySummary",
+            "ConsistencyRunResult",
+            "ConsistencyReport",
+        }
 
         # Check that __all__ exists
         assert hasattr(assayer.models, "__all__"), "assayer.models must define __all__"
@@ -60,8 +76,7 @@ class TestModelsExports:
 
         # Assert exact match
         assert actual_symbols == expected_symbols, (
-            f"__all__ must contain exactly {expected_symbols}. "
-            f"Found: {actual_symbols}"
+            f"__all__ must contain exactly {expected_symbols}. Found: {actual_symbols}"
         )
 
     def test_all_symbols_are_importable_from_models(self):
@@ -85,33 +100,35 @@ class TestModelsExports:
             symbol = getattr(assayer.models, symbol_name)
 
             # Verify it's a class (should be a dataclass)
-            assert isinstance(symbol, type), (
-                f"{symbol_name} must be a class, got {type(symbol)}"
-            )
+            assert isinstance(symbol, type), f"{symbol_name} must be a class, got {type(symbol)}"
 
     def test_direct_import_from_models_works(self):
         """Test that direct import statements work for each class."""
         # Test individual imports work without raising ImportError
         try:
             from assayer.models import TokenUsage
+
             assert TokenUsage is not None
         except ImportError as e:
             pytest.fail(f"Failed to import TokenUsage: {e}")
 
         try:
             from assayer.models import FieldEvaluation
+
             assert FieldEvaluation is not None
         except ImportError as e:
             pytest.fail(f"Failed to import FieldEvaluation: {e}")
 
         try:
             from assayer.models import RunResult
+
             assert RunResult is not None
         except ImportError as e:
             pytest.fail(f"Failed to import RunResult: {e}")
 
         try:
             from assayer.models import ExperimentResult
+
             assert ExperimentResult is not None
         except ImportError as e:
             pytest.fail(f"Failed to import ExperimentResult: {e}")
@@ -119,7 +136,7 @@ class TestModelsExports:
     def test_all_import_from_models_works(self):
         """Test that importing all symbols at once works."""
         try:
-            from assayer.models import TokenUsage, FieldEvaluation, RunResult, ExperimentResult
+            from assayer.models import ExperimentResult, FieldEvaluation, RunResult, TokenUsage
 
             # Verify all symbols are not None
             assert TokenUsage is not None
@@ -144,7 +161,7 @@ class TestExperimentResultExists:
         )
 
         # Verify it's a class
-        experiment_result = getattr(assayer.models, "ExperimentResult")
+        experiment_result = assayer.models.ExperimentResult
         assert isinstance(experiment_result, type), (
             f"ExperimentResult must be a class, got {type(experiment_result)}"
         )

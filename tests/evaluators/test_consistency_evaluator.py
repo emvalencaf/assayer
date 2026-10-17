@@ -1,7 +1,8 @@
 """Tests for ConsistencyEvaluator class."""
 
-import pytest
 from typing import Any
+
+import pytest
 
 from assayer.evaluators.base import BaseEvaluator
 from assayer.evaluators.consistency import ConsistencyEvaluator
@@ -164,6 +165,7 @@ class TestConsistencyEvaluatorConstructor:
 
     def test_constructor_accepts_different_evaluator_types(self) -> None:
         """Test constructor accepts different BaseEvaluator subclass instances."""
+
         class AnotherStubEvaluator(BaseEvaluator):
             def __init__(self) -> None:
                 super().__init__("another_stub")
@@ -295,10 +297,7 @@ class TestConsistencyEvaluatorEvaluateDataset:
         ]
 
         result = consistency_evaluator.evaluate_dataset(
-            dataset,
-            "group_field",
-            prediction_field="custom_pred",
-            reference_field="custom_ref"
+            dataset, "group_field", prediction_field="custom_pred", reference_field="custom_ref"
         )
 
         # Verify evaluator was called with correct field values
@@ -421,10 +420,22 @@ class TestConsistencyEvaluatorEvaluateDataset:
         consistency_evaluator = ConsistencyEvaluator(evaluator, min_k=2)
 
         dataset = [
-            {"group_field": "A", "prediction": "pred1", "reference": "ref1"},  # Group A: 1 record (excluded)
-            {"group_field": "B", "prediction": "pred2", "reference": "ref2"},  # Group B: 2 records (retained)
+            {
+                "group_field": "A",
+                "prediction": "pred1",
+                "reference": "ref1",
+            },  # Group A: 1 record (excluded)
+            {
+                "group_field": "B",
+                "prediction": "pred2",
+                "reference": "ref2",
+            },  # Group B: 2 records (retained)
             {"group_field": "B", "prediction": "pred3", "reference": "ref3"},
-            {"group_field": "C", "prediction": "pred4", "reference": "ref4"},  # Group C: 3 records (retained)
+            {
+                "group_field": "C",
+                "prediction": "pred4",
+                "reference": "ref4",
+            },  # Group C: 3 records (retained)
             {"group_field": "C", "prediction": "pred5", "reference": "ref5"},
             {"group_field": "C", "prediction": "pred6", "reference": "ref6"},
         ]
@@ -541,13 +552,26 @@ class TestConsistencyEvaluatorEvaluateDataset:
         ]
 
         # Mock all metric computation functions
-        with patch('assayer.evaluators.consistency_metrics.compute_agreement_rate', return_value=0.9) as mock_agreement, \
-             patch('assayer.evaluators.consistency_metrics.compute_entropy', return_value=0.5) as mock_entropy, \
-             patch('assayer.evaluators.consistency_metrics.compute_score_std', return_value=0.1) as mock_std, \
-             patch('assayer.evaluators.consistency_metrics.compute_correct_rate', return_value=0.7) as mock_correct, \
-             patch('assayer.evaluators.consistency_metrics.compute_pass_at_k', return_value=True) as mock_pass, \
-             patch('assayer.evaluators.consistency_metrics.compute_recall_at_k', return_value=0.85) as mock_recall:
-
+        with (
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_agreement_rate", return_value=0.9
+            ) as mock_agreement,
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_entropy", return_value=0.5
+            ) as mock_entropy,
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_score_std", return_value=0.1
+            ) as mock_std,
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_correct_rate", return_value=0.7
+            ) as mock_correct,
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_pass_at_k", return_value=True
+            ) as mock_pass,
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_recall_at_k", return_value=0.85
+            ) as mock_recall,
+        ):
             result = consistency_evaluator.evaluate_dataset(dataset, "group_field")
 
         # Should have 2 groups (A and B)
@@ -556,6 +580,7 @@ class TestConsistencyEvaluatorEvaluateDataset:
         # Check that per_group contains ConsistencyFieldEvaluation instances
         for group_eval in result.per_group:
             from assayer.models.consistency_field_evaluation import ConsistencyFieldEvaluation
+
             assert isinstance(group_eval, ConsistencyFieldEvaluation)
             assert group_eval.group_key in ["A", "B"]
 
@@ -584,25 +609,27 @@ class TestConsistencyEvaluatorEvaluateDataset:
         # Create dataset with multiple groups
         dataset = []
         for i in range(12):  # More than 10 groups to test top-10 limiting
-            dataset.append({
-                "group_field": f"group_{i}",
-                "prediction": f"pred_{i}",
-                "reference": f"ref_{i}"
-            })
+            dataset.append(
+                {"group_field": f"group_{i}", "prediction": f"pred_{i}", "reference": f"ref_{i}"}
+            )
 
         # Mock compute_agreement_rate to return different values for each group
         def mock_agreement_rate(results):
             # Return different agreement rates based on the first result's obtained_value
-            group_id = int(results[0].obtained_value.split('_')[1])
+            group_id = int(results[0].obtained_value.split("_")[1])
             return (group_id % 10) / 10.0  # Values from 0.0 to 0.9
 
-        with patch('assayer.evaluators.consistency_metrics.compute_agreement_rate', side_effect=mock_agreement_rate), \
-             patch('assayer.evaluators.consistency_metrics.compute_entropy', return_value=0.5), \
-             patch('assayer.evaluators.consistency_metrics.compute_score_std', return_value=0.1), \
-             patch('assayer.evaluators.consistency_metrics.compute_correct_rate', return_value=0.7), \
-             patch('assayer.evaluators.consistency_metrics.compute_pass_at_k', return_value=True), \
-             patch('assayer.evaluators.consistency_metrics.compute_recall_at_k', return_value=0.85):
-
+        with (
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_agreement_rate",
+                side_effect=mock_agreement_rate,
+            ),
+            patch("assayer.evaluators.consistency_metrics.compute_entropy", return_value=0.5),
+            patch("assayer.evaluators.consistency_metrics.compute_score_std", return_value=0.1),
+            patch("assayer.evaluators.consistency_metrics.compute_correct_rate", return_value=0.7),
+            patch("assayer.evaluators.consistency_metrics.compute_pass_at_k", return_value=True),
+            patch("assayer.evaluators.consistency_metrics.compute_recall_at_k", return_value=0.85),
+        ):
             result = consistency_evaluator.evaluate_dataset(dataset, "group_field")
 
         # worst_groups should contain at most 10 entries
@@ -611,7 +638,10 @@ class TestConsistencyEvaluatorEvaluateDataset:
         # worst_groups should be sorted by ascending agreement_rate
         if len(result.worst_groups) > 1:
             for i in range(len(result.worst_groups) - 1):
-                assert result.worst_groups[i].agreement_rate <= result.worst_groups[i + 1].agreement_rate
+                assert (
+                    result.worst_groups[i].agreement_rate
+                    <= result.worst_groups[i + 1].agreement_rate
+                )
 
     def test_consistency_summary_computes_mean_metrics(self) -> None:
         """Test that ConsistencySummary correctly computes mean values across groups."""
@@ -635,13 +665,16 @@ class TestConsistencyEvaluatorEvaluateDataset:
         ]
 
         # Mock metric functions to return specific values
-        with patch('assayer.evaluators.consistency_metrics.compute_agreement_rate', return_value=0.8), \
-             patch('assayer.evaluators.consistency_metrics.compute_entropy', return_value=1.0), \
-             patch('assayer.evaluators.consistency_metrics.compute_score_std', return_value=0.2), \
-             patch('assayer.evaluators.consistency_metrics.compute_correct_rate', return_value=0.6), \
-             patch('assayer.evaluators.consistency_metrics.compute_pass_at_k', return_value=True), \
-             patch('assayer.evaluators.consistency_metrics.compute_recall_at_k', return_value=0.9):
-
+        with (
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_agreement_rate", return_value=0.8
+            ),
+            patch("assayer.evaluators.consistency_metrics.compute_entropy", return_value=1.0),
+            patch("assayer.evaluators.consistency_metrics.compute_score_std", return_value=0.2),
+            patch("assayer.evaluators.consistency_metrics.compute_correct_rate", return_value=0.6),
+            patch("assayer.evaluators.consistency_metrics.compute_pass_at_k", return_value=True),
+            patch("assayer.evaluators.consistency_metrics.compute_recall_at_k", return_value=0.9),
+        ):
             result = consistency_evaluator.evaluate_dataset(dataset, "group_field")
 
         # With 2 identical groups, means should equal the individual values
@@ -680,13 +713,19 @@ class TestConsistencyEvaluatorEvaluateDataset:
             group_name = results[0].obtained_value[-1]  # Last char of "predN"
             return group_name in ["1", "3"]  # Groups A and C return True, B and D return False
 
-        with patch('assayer.evaluators.consistency_metrics.compute_agreement_rate', return_value=0.8), \
-             patch('assayer.evaluators.consistency_metrics.compute_entropy', return_value=1.0), \
-             patch('assayer.evaluators.consistency_metrics.compute_score_std', return_value=0.2), \
-             patch('assayer.evaluators.consistency_metrics.compute_correct_rate', return_value=0.6), \
-             patch('assayer.evaluators.consistency_metrics.compute_pass_at_k', side_effect=mock_pass_at_k), \
-             patch('assayer.evaluators.consistency_metrics.compute_recall_at_k', return_value=0.9):
-
+        with (
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_agreement_rate", return_value=0.8
+            ),
+            patch("assayer.evaluators.consistency_metrics.compute_entropy", return_value=1.0),
+            patch("assayer.evaluators.consistency_metrics.compute_score_std", return_value=0.2),
+            patch("assayer.evaluators.consistency_metrics.compute_correct_rate", return_value=0.6),
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_pass_at_k",
+                side_effect=mock_pass_at_k,
+            ),
+            patch("assayer.evaluators.consistency_metrics.compute_recall_at_k", return_value=0.9),
+        ):
             result = consistency_evaluator.evaluate_dataset(dataset, "group_field")
 
         # 2 out of 4 groups have pass_at_k=True, so pass_at_k_rate should be 0.5
@@ -782,17 +821,32 @@ class TestConsistencyEvaluatorEvaluateLive:
         consistency_evaluator = ConsistencyEvaluator(evaluator, k=2)
 
         # Mock all metric computation functions
-        with patch('assayer.evaluators.consistency_metrics.compute_agreement_rate', return_value=(0.8, "dominant")) as mock_agreement, \
-             patch('assayer.evaluators.consistency_metrics.compute_entropy', return_value=0.5) as mock_entropy, \
-             patch('assayer.evaluators.consistency_metrics.compute_score_std', return_value=0.1) as mock_std, \
-             patch('assayer.evaluators.consistency_metrics.compute_correct_rate', return_value=0.6) as mock_correct, \
-             patch('assayer.evaluators.consistency_metrics.compute_pass_at_k', return_value=True) as mock_pass, \
-             patch('assayer.evaluators.consistency_metrics.compute_recall_at_k', return_value=0.9) as mock_recall:
-
+        with (
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_agreement_rate",
+                return_value=(0.8, "dominant"),
+            ) as mock_agreement,
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_entropy", return_value=0.5
+            ) as mock_entropy,
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_score_std", return_value=0.1
+            ) as mock_std,
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_correct_rate", return_value=0.6
+            ) as mock_correct,
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_pass_at_k", return_value=True
+            ) as mock_pass,
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_recall_at_k", return_value=0.9
+            ) as mock_recall,
+        ):
             result = consistency_evaluator.evaluate_live(target_fn, "input", "reference")
 
         # Verify return type and group_key
         from assayer.models.consistency_field_evaluation import ConsistencyFieldEvaluation
+
         assert isinstance(result, ConsistencyFieldEvaluation)
         assert result.group_key is None
 
@@ -816,13 +870,27 @@ class TestConsistencyEvaluatorEvaluateLive:
         consistency_evaluator = ConsistencyEvaluator(evaluator, k=5)
 
         # Mock metric functions
-        with patch('assayer.evaluators.consistency_metrics.compute_agreement_rate', return_value=(0.9, "dom")) as mock_agreement, \
-             patch('assayer.evaluators.consistency_metrics.compute_entropy', return_value=0.3) as mock_entropy, \
-             patch('assayer.evaluators.consistency_metrics.compute_score_std', return_value=0.2) as mock_std, \
-             patch('assayer.evaluators.consistency_metrics.compute_correct_rate', return_value=0.4) as mock_correct, \
-             patch('assayer.evaluators.consistency_metrics.compute_pass_at_k', return_value=False) as mock_pass, \
-             patch('assayer.evaluators.consistency_metrics.compute_recall_at_k', return_value=0.8) as mock_recall:
-
+        with (
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_agreement_rate",
+                return_value=(0.9, "dom"),
+            ) as mock_agreement,
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_entropy", return_value=0.3
+            ) as mock_entropy,
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_score_std", return_value=0.2
+            ) as mock_std,
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_correct_rate", return_value=0.4
+            ) as mock_correct,
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_pass_at_k", return_value=False
+            ) as mock_pass,
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_recall_at_k", return_value=0.8
+            ) as mock_recall,
+        ):
             result = consistency_evaluator.evaluate_live(target_fn, "input", "reference")
 
         assert result.n == 5  # Should equal k
@@ -868,6 +936,7 @@ class TestConsistencyEvaluatorEvaluateLive:
         evaluator = StubEvaluator()
 
         call_count = 0
+
         def failing_on_second_call(input):
             nonlocal call_count
             call_count += 1
@@ -912,7 +981,7 @@ class TestConsistencyEvaluatorEvaluateLive:
                 score=0.8,
                 prompt_hash=None,
             ),
-            ValueError("Second evaluation failed")
+            ValueError("Second evaluation failed"),
         ]
 
         target_fn = Mock()
@@ -953,13 +1022,27 @@ class TestConsistencyEvaluatorEvaluateLive:
         consistency_evaluator = ConsistencyEvaluator(evaluator, k=2)
 
         # Mock all metric computation functions to track calls
-        with patch('assayer.evaluators.consistency_metrics.compute_agreement_rate', return_value=(0.5, "output1")) as mock_agreement, \
-             patch('assayer.evaluators.consistency_metrics.compute_entropy', return_value=1.0) as mock_entropy, \
-             patch('assayer.evaluators.consistency_metrics.compute_score_std', return_value=0.1) as mock_std, \
-             patch('assayer.evaluators.consistency_metrics.compute_correct_rate', return_value=0.5) as mock_correct, \
-             patch('assayer.evaluators.consistency_metrics.compute_pass_at_k', return_value=True) as mock_pass, \
-             patch('assayer.evaluators.consistency_metrics.compute_recall_at_k', return_value=0.7) as mock_recall:
-
+        with (
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_agreement_rate",
+                return_value=(0.5, "output1"),
+            ) as mock_agreement,
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_entropy", return_value=1.0
+            ) as mock_entropy,
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_score_std", return_value=0.1
+            ) as mock_std,
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_correct_rate", return_value=0.5
+            ) as mock_correct,
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_pass_at_k", return_value=True
+            ) as mock_pass,
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_recall_at_k", return_value=0.7
+            ) as mock_recall,
+        ):
             result = consistency_evaluator.evaluate_live(target_fn, "input", "reference")
 
             # Verify all metric functions were called with the collected results
@@ -990,13 +1073,27 @@ class TestConsistencyEvaluatorEvaluateLive:
         consistency_evaluator = ConsistencyEvaluator(evaluator, k=3)
 
         # Mock metric functions with specific return values
-        with patch('assayer.evaluators.consistency_metrics.compute_agreement_rate', return_value=(0.67, "output1")) as mock_agreement, \
-             patch('assayer.evaluators.consistency_metrics.compute_entropy', return_value=1.2) as mock_entropy, \
-             patch('assayer.evaluators.consistency_metrics.compute_score_std', return_value=0.15) as mock_std, \
-             patch('assayer.evaluators.consistency_metrics.compute_correct_rate', return_value=0.33) as mock_correct, \
-             patch('assayer.evaluators.consistency_metrics.compute_pass_at_k', return_value=True) as mock_pass, \
-             patch('assayer.evaluators.consistency_metrics.compute_recall_at_k', return_value=0.8) as mock_recall:
-
+        with (
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_agreement_rate",
+                return_value=(0.67, "output1"),
+            ) as mock_agreement,
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_entropy", return_value=1.2
+            ) as mock_entropy,
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_score_std", return_value=0.15
+            ) as mock_std,
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_correct_rate", return_value=0.33
+            ) as mock_correct,
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_pass_at_k", return_value=True
+            ) as mock_pass,
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_recall_at_k", return_value=0.8
+            ) as mock_recall,
+        ):
             result = consistency_evaluator.evaluate_live(target_fn, "input", "reference")
 
             # Verify all metric values are correctly set in the result
@@ -1058,13 +1155,27 @@ class TestConsistencyEvaluatorEvaluateLive:
         consistency_evaluator = ConsistencyEvaluator(evaluator, k=2, min_k=10)
 
         # Mock metric functions
-        with patch('assayer.evaluators.consistency_metrics.compute_agreement_rate', return_value=(1.0, "output1")) as mock_agreement, \
-             patch('assayer.evaluators.consistency_metrics.compute_entropy', return_value=0.0) as mock_entropy, \
-             patch('assayer.evaluators.consistency_metrics.compute_score_std', return_value=0.0) as mock_std, \
-             patch('assayer.evaluators.consistency_metrics.compute_correct_rate', return_value=0.5) as mock_correct, \
-             patch('assayer.evaluators.consistency_metrics.compute_pass_at_k', return_value=True) as mock_pass, \
-             patch('assayer.evaluators.consistency_metrics.compute_recall_at_k', return_value=1.0) as mock_recall:
-
+        with (
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_agreement_rate",
+                return_value=(1.0, "output1"),
+            ) as mock_agreement,
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_entropy", return_value=0.0
+            ) as mock_entropy,
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_score_std", return_value=0.0
+            ) as mock_std,
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_correct_rate", return_value=0.5
+            ) as mock_correct,
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_pass_at_k", return_value=True
+            ) as mock_pass,
+            patch(
+                "assayer.evaluators.consistency_metrics.compute_recall_at_k", return_value=1.0
+            ) as mock_recall,
+        ):
             result = consistency_evaluator.evaluate_live(target_fn, "input", "reference")
 
         # Should work normally with n=2, ignoring min_k=10

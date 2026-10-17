@@ -4,8 +4,9 @@ This module tests the BaseEvaluator abstract class to ensure it enforces
 proper subclassing requirements and validates constructor parameters.
 """
 
-import pytest
 from typing import Any
+
+import pytest
 
 from assayer.evaluators.base import BaseEvaluator
 from assayer.models import FieldEvaluation
@@ -22,12 +23,13 @@ class ConcreteEvaluator(BaseEvaluator):
             expected_value=reference,
             obtained_value=prediction,
             score=1.0,
-            prompt_hash=None
+            prompt_hash=None,
         )
 
 
 class IncompleteEvaluator(BaseEvaluator):
     """Test evaluator that does not implement evaluate method."""
+
     pass
 
 

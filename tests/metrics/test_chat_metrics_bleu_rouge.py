@@ -4,7 +4,6 @@ This module tests the BLEU and ROUGE-L metric implementations to ensure they
 match the reference implementations from NLTK and rouge-score libraries.
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
 
 
@@ -42,12 +41,12 @@ class TestBLEUMetric:
         predictions = [
             "the cat sat on the mat",
             "hello world from python",
-            "this is a test sentence"
+            "this is a test sentence",
         ]
         references = [
             "the cat sat on a mat",
             "hello world from java",
-            "this is another test sentence"
+            "this is another test sentence",
         ]
 
         score = bleu(predictions, references)
@@ -55,7 +54,7 @@ class TestBLEUMetric:
         assert 0.0 <= score <= 1.0
         assert score > 0.0  # Should have some overlap
 
-    @patch('nltk.translate.bleu_score.corpus_bleu')
+    @patch("nltk.translate.bleu_score.corpus_bleu")
     def test_bleu_matches_nltk_corpus_bleu(self, mock_corpus_bleu):
         """Test BLEU output is within ±0.01 of nltk.translate.bleu_score.corpus_bleu."""
         from assayer.metrics.chat import bleu
@@ -81,7 +80,7 @@ class TestBLEUMetric:
         assert all(isinstance(pred, list) for pred in predictions_tokenized)
 
         # Check uniform 4-gram weights were used
-        weights_kwarg = call_args[1].get('weights', None)
+        weights_kwarg = call_args[1].get("weights", None)
         expected_weights = (0.25, 0.25, 0.25, 0.25)
         assert weights_kwarg == expected_weights
 
@@ -129,7 +128,7 @@ class TestBLEUMetric:
         predictions = ["hello, world!"]
         references = ["hello, world!"]
 
-        with patch('nltk.translate.bleu_score.corpus_bleu') as mock_corpus_bleu:
+        with patch("nltk.translate.bleu_score.corpus_bleu") as mock_corpus_bleu:
             mock_corpus_bleu.return_value = 1.0
 
             bleu(predictions, references)
@@ -141,15 +140,16 @@ class TestBLEUMetric:
 
     def test_bleu_has_proper_type_hints_and_docstring(self):
         """Test BLEU function has Google-style docstring and type hints."""
-        from assayer.metrics.chat import bleu
         import inspect
+
+        from assayer.metrics.chat import bleu
 
         # Check function signature has type hints
         sig = inspect.signature(bleu)
         assert len(sig.parameters) == 2
 
-        predictions_param = sig.parameters['predictions']
-        references_param = sig.parameters['references']
+        predictions_param = sig.parameters["predictions"]
+        references_param = sig.parameters["references"]
 
         # Check parameter type hints (this will fail until implementation exists)
         assert predictions_param.annotation == list[str]
@@ -196,12 +196,12 @@ class TestROUGELMetric:
         predictions = [
             "the cat sat on the mat",
             "hello world from python",
-            "this is a test sentence"
+            "this is a test sentence",
         ]
         references = [
             "the cat sat on a mat",
             "hello world from java",
-            "this is another test sentence"
+            "this is another test sentence",
         ]
 
         score = rouge_l(predictions, references)
@@ -209,7 +209,7 @@ class TestROUGELMetric:
         assert 0.0 <= score <= 1.0
         assert score > 0.0  # Should have some longest common subsequence overlap
 
-    @patch('rouge_score.rouge_scorer.RougeScorer')
+    @patch("rouge_score.rouge_scorer.RougeScorer")
     def test_rouge_l_matches_rouge_score_library(self, mock_rouge_scorer_class):
         """Test ROUGE-L output is within ±0.01 of rouge-score library mean fmeasure."""
         from assayer.metrics.chat import rouge_l
@@ -224,10 +224,7 @@ class TestROUGELMetric:
         mock_score_2 = MagicMock()
         mock_score_2.fmeasure = 0.6
 
-        mock_scorer.score.side_effect = [
-            {"rougeL": mock_score_1},
-            {"rougeL": mock_score_2}
-        ]
+        mock_scorer.score.side_effect = [{"rougeL": mock_score_1}, {"rougeL": mock_score_2}]
 
         predictions = ["hello world", "test sentence"]
         references = ["hello earth", "test phrase"]
@@ -239,10 +236,7 @@ class TestROUGELMetric:
 
         # Verify score was called for each pair
         assert mock_scorer.score.call_count == 2
-        expected_calls = [
-            ((references[0], predictions[0]),),
-            ((references[1], predictions[1]),)
-        ]
+        expected_calls = [((references[0], predictions[0]),), ((references[1], predictions[1]),)]
         actual_calls = [call[0] for call in mock_scorer.score.call_args_list]
         assert actual_calls == expected_calls
 
@@ -309,15 +303,16 @@ class TestROUGELMetric:
 
     def test_rouge_l_has_proper_type_hints_and_docstring(self):
         """Test ROUGE-L function has Google-style docstring and type hints."""
-        from assayer.metrics.chat import rouge_l
         import inspect
+
+        from assayer.metrics.chat import rouge_l
 
         # Check function signature has type hints
         sig = inspect.signature(rouge_l)
         assert len(sig.parameters) == 2
 
-        predictions_param = sig.parameters['predictions']
-        references_param = sig.parameters['references']
+        predictions_param = sig.parameters["predictions"]
+        references_param = sig.parameters["references"]
 
         # Check parameter type hints (this will fail until implementation exists)
         assert predictions_param.annotation == list[str]

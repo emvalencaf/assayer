@@ -4,10 +4,9 @@ These tests verify that RunResult correctly holds input, output, evaluations lis
 and token usage according to AC-SPEC-005 and related acceptance criteria.
 """
 
-import pytest
 from typing import Any
 
-from assayer.models import RunResult, FieldEvaluation, TokenUsage
+from assayer.models import FieldEvaluation, RunResult, TokenUsage
 
 
 class TestRunResultBasicConstruction:
@@ -25,16 +24,13 @@ class TestRunResultBasicConstruction:
             expected_value="4",
             obtained_value="4",
             score=1.0,
-            prompt_hash=None
+            prompt_hash=None,
         )
         evaluations = [evaluation]
 
         # Act
         run_result = RunResult(
-            input=input_data,
-            output=output_data,
-            evaluations=evaluations,
-            token_usage=token_usage
+            input=input_data, output=output_data, evaluations=evaluations, token_usage=token_usage
         )
 
         # Assert
@@ -55,15 +51,12 @@ class TestRunResultBasicConstruction:
             expected_value=42,
             obtained_value=42,
             score=1.0,
-            prompt_hash="abcd1234"
+            prompt_hash="abcd1234",
         )
 
         # Act
         run_result = RunResult(
-            input=input_val,
-            output=output_val,
-            evaluations=[evaluation],
-            token_usage=token_usage
+            input=input_val, output=output_val, evaluations=[evaluation], token_usage=token_usage
         )
 
         # Assert - AC-SPEC-005: RunResult holds input, output, list of FieldEvaluation, and TokenUsage
@@ -88,11 +81,7 @@ class TestRunResultEvaluationsDefaulting:
         token_usage = TokenUsage(input_tokens=5, output_tokens=3, cost_usd=0.0)
 
         # Act - Note: not providing evaluations parameter
-        run_result = RunResult(
-            input=input_data,
-            output=output_data,
-            token_usage=token_usage
-        )
+        run_result = RunResult(input=input_data, output=output_data, token_usage=token_usage)
 
         # Assert
         assert run_result.evaluations == []
@@ -111,7 +100,7 @@ class TestRunResultEvaluationsDefaulting:
             input=input_data,
             output=output_data,
             evaluations=empty_evaluations,
-            token_usage=token_usage
+            token_usage=token_usage,
         )
 
         # Assert
@@ -128,11 +117,7 @@ class TestRunResultWithVariousDataTypes:
         token_usage = TokenUsage(input_tokens=0, output_tokens=0, cost_usd=None)
 
         # Act
-        run_result = RunResult(
-            input=None,
-            output=None,
-            token_usage=token_usage
-        )
+        run_result = RunResult(input=None, output=None, token_usage=token_usage)
 
         # Assert
         assert run_result.input is None
@@ -145,20 +130,13 @@ class TestRunResultWithVariousDataTypes:
         complex_input = {
             "nested": {"data": [1, 2, 3]},
             "list": ["a", "b", {"c": "d"}],
-            "number": 42.5
+            "number": 42.5,
         }
-        complex_output = [
-            {"response": "first"},
-            {"response": "second", "metadata": {"score": 0.9}}
-        ]
+        complex_output = [{"response": "first"}, {"response": "second", "metadata": {"score": 0.9}}]
         token_usage = TokenUsage(input_tokens=100, output_tokens=50, cost_usd=0.01)
 
         # Act
-        run_result = RunResult(
-            input=complex_input,
-            output=complex_output,
-            token_usage=token_usage
-        )
+        run_result = RunResult(input=complex_input, output=complex_output, token_usage=token_usage)
 
         # Assert
         assert run_result.input == complex_input
@@ -182,7 +160,7 @@ class TestRunResultWithMultipleEvaluations:
                 expected_value="A creative story",
                 obtained_value="Once upon a time...",
                 score=0.85,
-                prompt_hash="hash123"
+                prompt_hash="hash123",
             ),
             FieldEvaluation(
                 field_name="length",
@@ -190,16 +168,13 @@ class TestRunResultWithMultipleEvaluations:
                 expected_value=100,
                 obtained_value=100,
                 score=1.0,
-                prompt_hash=None
-            )
+                prompt_hash=None,
+            ),
         ]
 
         # Act
         run_result = RunResult(
-            input=input_data,
-            output=output_data,
-            evaluations=evaluations,
-            token_usage=token_usage
+            input=input_data, output=output_data, evaluations=evaluations, token_usage=token_usage
         )
 
         # Assert
@@ -220,11 +195,7 @@ class TestRunResultEdgeCases:
         zero_token_usage = TokenUsage(input_tokens=0, output_tokens=0, cost_usd=0.0)
 
         # Act
-        run_result = RunResult(
-            input=input_data,
-            output=output_data,
-            token_usage=zero_token_usage
-        )
+        run_result = RunResult(input=input_data, output=output_data, token_usage=zero_token_usage)
 
         # Assert
         assert run_result.token_usage.input_tokens == 0
@@ -245,7 +216,7 @@ class TestRunResultEdgeCases:
                 expected_value="match",
                 obtained_value="match",
                 score=1.0,  # perfect score
-                prompt_hash=None
+                prompt_hash=None,
             ),
             FieldEvaluation(
                 field_name="failure",
@@ -253,16 +224,13 @@ class TestRunResultEdgeCases:
                 expected_value="expected",
                 obtained_value="wrong",
                 score=0.0,  # worst score
-                prompt_hash=None
-            )
+                prompt_hash=None,
+            ),
         ]
 
         # Act
         run_result = RunResult(
-            input=input_data,
-            output=output_data,
-            evaluations=evaluations,
-            token_usage=token_usage
+            input=input_data, output=output_data, evaluations=evaluations, token_usage=token_usage
         )
 
         # Assert
@@ -277,9 +245,7 @@ class TestRunResultEdgeCases:
 
         # Act
         run_result = RunResult(
-            input=initial_input,
-            output="initial_output",
-            token_usage=token_usage
+            input=initial_input, output="initial_output", token_usage=token_usage
         )
 
         # Modify the run_result
@@ -290,7 +256,7 @@ class TestRunResultEdgeCases:
             expected_value="expected",
             obtained_value="actual",
             score=0.5,
-            prompt_hash=None
+            prompt_hash=None,
         )
         run_result.evaluations.append(new_evaluation)
 
@@ -316,7 +282,7 @@ class TestRunResultTypeCompatibility:
             input=input_val,
             output=output_val,
             evaluations=evaluations_val,
-            token_usage=token_usage_val
+            token_usage=token_usage_val,
         )
 
         # Assert - verify types match expected annotations

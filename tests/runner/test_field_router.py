@@ -4,12 +4,12 @@ This module tests the FieldRouter implementation, including constructor validati
 route method behavior with different output types, and error handling.
 """
 
-import pytest
-from unittest.mock import Mock
 from typing import Any
 
-from assayer.models import FieldEvaluation
+import pytest
+
 from assayer.evaluators.base import BaseEvaluator
+from assayer.models import FieldEvaluation
 from assayer.registries.evaluator_registry import EvaluatorRegistry
 
 
@@ -250,16 +250,8 @@ class TestFieldRouter:
         }
         router = FieldRouter(field_evaluators, self.registry)
 
-        output = {
-            "field1": "value1",
-            "field2": "value2",
-            "field3": "value3"
-        }
-        expected_output = {
-            "field1": "expected1",
-            "field2": "expected2",
-            "field3": "expected3"
-        }
+        output = {"field1": "value1", "field2": "value2", "field3": "value3"}
+        expected_output = {"field1": "expected1", "field2": "expected2", "field3": "expected3"}
 
         results = router.route(output, expected_output)
 

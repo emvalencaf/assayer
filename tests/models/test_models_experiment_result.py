@@ -1,6 +1,7 @@
 """Tests for the ExperimentResult model."""
 
 import pytest
+
 from assayer.models import ExperimentResult, RunResult, TokenUsage
 
 
@@ -24,15 +25,8 @@ class TestExperimentResultConstruction:
     def test_experiment_result_with_valid_name_and_runs(self):
         """ExperimentResult can be created with a valid name and list of RunResult."""
         token_usage = TokenUsage(input_tokens=10, output_tokens=5, cost_usd=0.01)
-        run_result = RunResult(
-            input="test input",
-            output="test output",
-            token_usage=token_usage
-        )
-        result = ExperimentResult(
-            experiment_name="test_experiment",
-            runs=[run_result]
-        )
+        run_result = RunResult(input="test input", output="test output", token_usage=token_usage)
+        result = ExperimentResult(experiment_name="test_experiment", runs=[run_result])
 
         assert result.experiment_name == "test_experiment"
         assert len(result.runs) == 1
@@ -91,11 +85,7 @@ class TestExperimentResultCompareMethod:
     def test_compare_method_accepts_experiment_result_parameter(self):
         """ExperimentResult.compare accepts another ExperimentResult as parameter."""
         token_usage = TokenUsage(input_tokens=10, output_tokens=5, cost_usd=0.01)
-        run_result = RunResult(
-            input="test input",
-            output="test output",
-            token_usage=token_usage
-        )
+        run_result = RunResult(input="test input", output="test output", token_usage=token_usage)
         result1 = ExperimentResult(experiment_name="experiment1", runs=[run_result])
         result2 = ExperimentResult(experiment_name="experiment2", runs=[])
 
@@ -116,20 +106,11 @@ class TestExperimentResultEdgeCases:
         token_usage1 = TokenUsage(input_tokens=10, output_tokens=5, cost_usd=0.01)
         token_usage2 = TokenUsage(input_tokens=15, output_tokens=8, cost_usd=0.02)
 
-        run_result1 = RunResult(
-            input="input 1",
-            output="output 1",
-            token_usage=token_usage1
-        )
-        run_result2 = RunResult(
-            input="input 2",
-            output="output 2",
-            token_usage=token_usage2
-        )
+        run_result1 = RunResult(input="input 1", output="output 1", token_usage=token_usage1)
+        run_result2 = RunResult(input="input 2", output="output 2", token_usage=token_usage2)
 
         result = ExperimentResult(
-            experiment_name="multi_run_experiment",
-            runs=[run_result1, run_result2]
+            experiment_name="multi_run_experiment", runs=[run_result1, run_result2]
         )
 
         assert result.experiment_name == "multi_run_experiment"

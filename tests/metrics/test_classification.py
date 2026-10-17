@@ -1,9 +1,9 @@
 """Tests for classification metrics."""
 
+from typing import Any
+
 import pytest
-from unittest.mock import Mock, patch
 from sklearn.metrics import accuracy_score
-from typing import Any, List
 
 # Import will fail until implementation exists - that's expected for TDD
 try:
@@ -257,13 +257,12 @@ class TestAccuracy:
             # Binary classification cases
             ([1, 0, 1, 1, 0], [1, 0, 1, 1, 0]),  # Perfect
             ([1, 0, 1, 0, 0], [1, 1, 1, 1, 0]),  # Partial
-            ([0, 0, 0], [1, 1, 1]),              # No match
-
+            ([0, 0, 0], [1, 1, 1]),  # No match
             # Multi-class cases
             (["a", "b", "c"], ["a", "b", "c"]),  # Perfect
             (["a", "b", "c"], ["a", "c", "b"]),  # Partial
-            ([0, 1, 2, 3], [0, 1, 2, 3]),        # Integer multiclass
-            ([0, 1, 2], [3, 3, 3]),              # No overlap in classes
+            ([0, 1, 2, 3], [0, 1, 2, 3]),  # Integer multiclass
+            ([0, 1, 2], [3, 3, 3]),  # No overlap in classes
         ]
 
         for predictions, references in test_cases:
@@ -274,10 +273,12 @@ class TestAccuracy:
 
 # Import factory functions for testing - will fail until implementation exists
 try:
-    from assayer.metrics.classification import make_precision, make_recall, make_f1
-    from typing import Callable
+    from collections.abc import Callable
+
+    from assayer.metrics.classification import make_f1, make_precision, make_recall
+
     # Define MetricFn type alias for classification metrics
-    MetricFn = Callable[[List[Any], List[Any]], float]
+    MetricFn = Callable[[list[Any], list[Any]], float]
 except ImportError:
     make_precision = None
     make_recall = None
@@ -374,7 +375,7 @@ class TestMakePrecision:
             pytest.skip("make_precision function not implemented yet")
 
         predictions = [0, 0, 0, 0, 0]  # All same class
-        references = [0, 1, 2, 1, 2]   # Mixed classes
+        references = [0, 1, 2, 1, 2]  # Mixed classes
 
         precision_fn = make_precision("macro")
         result = precision_fn(predictions, references)
@@ -530,7 +531,7 @@ class TestMakeRecall:
             pytest.skip("make_recall function not implemented yet")
 
         predictions = [0, 0, 0, 0, 0]  # All same class
-        references = [0, 1, 2, 1, 2]   # Mixed classes
+        references = [0, 1, 2, 1, 2]  # Mixed classes
 
         recall_fn = make_recall("macro")
         result = recall_fn(predictions, references)
@@ -686,7 +687,7 @@ class TestMakeF1:
             pytest.skip("make_f1 function not implemented yet")
 
         predictions = [0, 0, 0, 0, 0]  # All same class
-        references = [0, 1, 2, 1, 2]   # Mixed classes
+        references = [0, 1, 2, 1, 2]  # Mixed classes
 
         f1_fn = make_f1("macro")
         result = f1_fn(predictions, references)
@@ -806,8 +807,9 @@ class TestRegisterClassificationMetrics:
 
     def test_register_classification_metrics_has_correct_signature(self):
         """Test that register_classification_metrics has the expected signature."""
-        from assayer.metrics.classification import register_classification_metrics
         import inspect
+
+        from assayer.metrics.classification import register_classification_metrics
 
         # Get function signature
         sig = inspect.signature(register_classification_metrics)
@@ -822,7 +824,9 @@ class TestRegisterClassificationMetrics:
 
         # Parameter should have MetricRegistry type hint
         registry_param = sig.parameters["registry"]
-        assert str(registry_param.annotation) == "MetricRegistry" or "MetricRegistry" in str(registry_param.annotation)
+        assert str(registry_param.annotation) == "MetricRegistry" or "MetricRegistry" in str(
+            registry_param.annotation
+        )
 
     def test_register_classification_metrics_has_google_style_docstring(self):
         """Test that register_classification_metrics has a Google-style docstring."""
@@ -837,7 +841,7 @@ class TestRegisterClassificationMetrics:
         assert "registry" in docstring  # Should document the registry parameter
 
         # Should have a description
-        assert len(docstring.split('\n')[0]) > 10  # First line should be substantial description
+        assert len(docstring.split("\n")[0]) > 10  # First line should be substantial description
 
     def test_register_classification_metrics_registers_all_four_metrics(self):
         """Test that register_classification_metrics registers exactly the four expected metrics."""
@@ -857,7 +861,13 @@ class TestRegisterClassificationMetrics:
 
     def test_register_classification_metrics_resolves_to_correct_callables(self):
         """Test that each registered metric resolves to the correct callable."""
-        from assayer.metrics.classification import register_classification_metrics, accuracy, make_precision, make_recall, make_f1
+        from assayer.metrics.classification import (
+            accuracy,
+            make_f1,
+            make_precision,
+            make_recall,
+            register_classification_metrics,
+        )
         from assayer.registries.metric_registry import MetricRegistry
 
         registry = MetricRegistry()
@@ -875,6 +885,7 @@ class TestRegisterClassificationMetrics:
         assert precision_fn is not make_precision
         # Should be a function that takes two list arguments
         import inspect
+
         sig = inspect.signature(precision_fn)
         assert len(sig.parameters) == 2
 
@@ -913,7 +924,7 @@ class TestRegisterClassificationMetrics:
 
     def test_registered_precision_uses_macro_averaging(self):
         """Test that the registered precision metric uses macro averaging by default."""
-        from assayer.metrics.classification import register_classification_metrics, make_precision
+        from assayer.metrics.classification import make_precision, register_classification_metrics
         from assayer.registries.metric_registry import MetricRegistry
 
         registry = MetricRegistry()
@@ -937,7 +948,7 @@ class TestRegisterClassificationMetrics:
 
     def test_registered_recall_uses_macro_averaging(self):
         """Test that the registered recall metric uses macro averaging by default."""
-        from assayer.metrics.classification import register_classification_metrics, make_recall
+        from assayer.metrics.classification import make_recall, register_classification_metrics
         from assayer.registries.metric_registry import MetricRegistry
 
         registry = MetricRegistry()
@@ -961,7 +972,7 @@ class TestRegisterClassificationMetrics:
 
     def test_registered_f1_uses_macro_averaging(self):
         """Test that the registered f1 metric uses macro averaging by default."""
-        from assayer.metrics.classification import register_classification_metrics, make_f1
+        from assayer.metrics.classification import make_f1, register_classification_metrics
         from assayer.registries.metric_registry import MetricRegistry
 
         registry = MetricRegistry()
@@ -1043,8 +1054,9 @@ class TestRegisterClassificationMetrics:
 
     def test_register_classification_metrics_type_hints(self):
         """Test that register_classification_metrics has proper type hints."""
-        from assayer.metrics.classification import register_classification_metrics
         import inspect
+
+        from assayer.metrics.classification import register_classification_metrics
 
         # Get type hints
         hints = inspect.signature(register_classification_metrics).parameters

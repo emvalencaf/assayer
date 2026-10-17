@@ -7,17 +7,17 @@ with all runner components.
 
 import json
 import tempfile
-from typing import Any, Callable
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
 
-from assayer.models import ExperimentResult, RunResult, TokenUsage, FieldEvaluation
-from assayer.runner.pricing import PricingConfig
-from assayer.runner.pipeline import EvaluationPipeline
+from assayer.evaluators.base import BaseEvaluator
+from assayer.models import ExperimentResult, FieldEvaluation, RunResult, TokenUsage
 from assayer.registries.evaluator_registry import EvaluatorRegistry
 from assayer.registries.metric_registry import MetricRegistry
-from assayer.evaluators.base import BaseEvaluator
+from assayer.runner.pipeline import EvaluationPipeline
+from assayer.runner.pricing import PricingConfig
 
 
 class MockEvaluator(BaseEvaluator):
@@ -37,7 +37,7 @@ class MockEvaluator(BaseEvaluator):
             obtained_value=prediction,
             score=score,
             prompt_hash=None,
-            metadata={}
+            metadata={},
         )
 
 
@@ -46,10 +46,7 @@ class MockResult:
 
     def __init__(self, output: Any, input_tokens: int = 10, output_tokens: int = 20):
         self.output = output
-        self.usage_metadata = {
-            "input_tokens": input_tokens,
-            "output_tokens": output_tokens
-        }
+        self.usage_metadata = {"input_tokens": input_tokens, "output_tokens": output_tokens}
 
     def __getitem__(self, key):
         # Support dict-like access to output
@@ -81,7 +78,7 @@ class TestEvaluationPipelineInit:
             metrics=metrics,
             evaluator_registry=evaluator_registry,
             metric_registry=metric_registry,
-            experiment_name="test_experiment"
+            experiment_name="test_experiment",
         )
 
         assert pipeline is not None
@@ -94,10 +91,7 @@ class TestEvaluationPipelineInit:
         metric_registry = MetricRegistry()
         metric_registry.register("accuracy", lambda preds, refs: 0.85)
 
-        pricing_config = PricingConfig(
-            cost_per_input_token=0.001,
-            cost_per_output_token=0.002
-        )
+        pricing_config = PricingConfig(cost_per_input_token=0.001, cost_per_output_token=0.002)
 
         pipeline = EvaluationPipeline(
             target_fn=lambda x: x,
@@ -106,7 +100,7 @@ class TestEvaluationPipelineInit:
             metrics=["accuracy"],
             evaluator_registry=evaluator_registry,
             metric_registry=metric_registry,
-            pricing_config=pricing_config
+            pricing_config=pricing_config,
         )
 
         assert pipeline is not None
@@ -126,7 +120,7 @@ class TestEvaluationPipelineInit:
                 field_evaluators={"field": ["invalid_evaluator"]},
                 metrics=["accuracy"],
                 evaluator_registry=evaluator_registry,
-                metric_registry=metric_registry
+                metric_registry=metric_registry,
             )
 
     def test_init_invalid_metric_raises_keyerror(self):
@@ -144,7 +138,7 @@ class TestEvaluationPipelineInit:
                 field_evaluators={"field": ["mock_eval"]},
                 metrics=["invalid_metric"],
                 evaluator_registry=evaluator_registry,
-                metric_registry=metric_registry
+                metric_registry=metric_registry,
             )
 
 
@@ -172,6 +166,7 @@ class TestEvaluationPipelineRun:
 
     def test_run_single_example_returns_experiment_result(self):
         """Test run() with single example returns ExperimentResult with one RunResult."""
+
         def target_fn(input_val):
             result = MockResult("output_value")
             return result
@@ -185,7 +180,7 @@ class TestEvaluationPipelineRun:
             metrics=["accuracy"],
             evaluator_registry=self.evaluator_registry,
             metric_registry=self.metric_registry,
-            experiment_name="single_example_test"
+            experiment_name="single_example_test",
         )
 
         result = pipeline.run()
@@ -193,12 +188,13 @@ class TestEvaluationPipelineRun:
         assert isinstance(result, ExperimentResult)
         assert result.experiment_name == "single_example_test"
         assert len(result.runs) == 1
-        assert hasattr(result, 'metrics')  # Should have metrics field
+        assert hasattr(result, "metrics")  # Should have metrics field
         assert isinstance(result.metrics, dict)
         assert "accuracy" in result.metrics
 
     def test_run_multiple_examples_correct_count(self):
         """Test run() with N examples returns ExperimentResult with exactly N RunResults."""
+
         def target_fn(input_val):
             return MockResult(f"output_{input_val}")
 
@@ -214,7 +210,7 @@ class TestEvaluationPipelineRun:
             field_evaluators={"field": ["mock_eval"]},
             metrics=["accuracy"],
             evaluator_registry=self.evaluator_registry,
-            metric_registry=self.metric_registry
+            metric_registry=self.metric_registry,
         )
 
         result = pipeline.run()
@@ -224,6 +220,7 @@ class TestEvaluationPipelineRun:
 
     def test_run_populates_token_usage(self):
         """Test that each RunResult.token_usage is populated."""
+
         def target_fn(input_val):
             return MockResult("output", input_tokens=15, output_tokens=25)
 
@@ -235,7 +232,7 @@ class TestEvaluationPipelineRun:
             field_evaluators={"field": ["mock_eval"]},
             metrics=["accuracy"],
             evaluator_registry=self.evaluator_registry,
-            metric_registry=self.metric_registry
+            metric_registry=self.metric_registry,
         )
 
         result = pipeline.run()
@@ -248,13 +245,11 @@ class TestEvaluationPipelineRun:
 
     def test_run_with_pricing_calculates_cost(self):
         """Test that pricing configuration correctly calculates costs."""
+
         def target_fn(input_val):
             return MockResult("output", input_tokens=10, output_tokens=20)
 
-        pricing_config = PricingConfig(
-            cost_per_input_token=0.001,
-            cost_per_output_token=0.002
-        )
+        pricing_config = PricingConfig(cost_per_input_token=0.001, cost_per_output_token=0.002)
 
         dataset = [{"input": "test", "expected_output": "expected"}]
 
@@ -265,7 +260,7 @@ class TestEvaluationPipelineRun:
             metrics=["accuracy"],
             evaluator_registry=self.evaluator_registry,
             metric_registry=self.metric_registry,
-            pricing_config=pricing_config
+            pricing_config=pricing_config,
         )
 
         result = pipeline.run()
@@ -276,24 +271,24 @@ class TestEvaluationPipelineRun:
 
     def test_run_field_evaluations_populated(self):
         """Test that field evaluations are populated for all field-evaluator pairs."""
+
         def target_fn(input_val):
             return MockResult({"field1": "value1", "field2": "value2"})
 
         # Register a second evaluator
         self.evaluator_registry.register("second_eval", MockEvaluator)
 
-        dataset = [{"input": "test", "expected_output": {"field1": "expected1", "field2": "expected2"}}]
+        dataset = [
+            {"input": "test", "expected_output": {"field1": "expected1", "field2": "expected2"}}
+        ]
 
         pipeline = EvaluationPipeline(
             target_fn=target_fn,
             dataset=dataset,
-            field_evaluators={
-                "field1": ["mock_eval", "second_eval"],
-                "field2": ["mock_eval"]
-            },
+            field_evaluators={"field1": ["mock_eval", "second_eval"], "field2": ["mock_eval"]},
             metrics=["accuracy"],
             evaluator_registry=self.evaluator_registry,
-            metric_registry=self.metric_registry
+            metric_registry=self.metric_registry,
         )
 
         result = pipeline.run()
@@ -303,7 +298,9 @@ class TestEvaluationPipelineRun:
         assert len(run_result.evaluations) == 3
 
         # Check that all evaluations are FieldEvaluation instances
-        assert all(isinstance(eval_result, FieldEvaluation) for eval_result in run_result.evaluations)
+        assert all(
+            isinstance(eval_result, FieldEvaluation) for eval_result in run_result.evaluations
+        )
 
         # Check field names
         field_names = [eval_result.field_name for eval_result in run_result.evaluations]
@@ -335,7 +332,7 @@ class TestEvaluationPipelineRun:
             field_evaluators={"field": ["mock_eval"]},
             metrics=["counting_metric"],
             evaluator_registry=self.evaluator_registry,
-            metric_registry=self.metric_registry
+            metric_registry=self.metric_registry,
         )
 
         result = pipeline.run()
@@ -346,6 +343,7 @@ class TestEvaluationPipelineRun:
 
     def test_run_multiple_metrics(self):
         """Test that multiple metrics are computed and stored."""
+
         def target_fn(input_val):
             return MockResult("output")
 
@@ -357,7 +355,7 @@ class TestEvaluationPipelineRun:
             field_evaluators={"field": ["mock_eval"]},
             metrics=["accuracy", "f1"],
             evaluator_registry=self.evaluator_registry,
-            metric_registry=self.metric_registry
+            metric_registry=self.metric_registry,
         )
 
         result = pipeline.run()
@@ -368,6 +366,7 @@ class TestEvaluationPipelineRun:
 
     def test_run_no_usage_metadata_defaults_zero_tokens(self):
         """Test that missing usage_metadata defaults to zero tokens."""
+
         def target_fn(input_val):
             # Return object without usage_metadata
             result = MagicMock()
@@ -382,7 +381,7 @@ class TestEvaluationPipelineRun:
             field_evaluators={"field": ["mock_eval"]},
             metrics=["accuracy"],
             evaluator_registry=self.evaluator_registry,
-            metric_registry=self.metric_registry
+            metric_registry=self.metric_registry,
         )
 
         result = pipeline.run()
@@ -406,6 +405,7 @@ class TestEvaluationPipelineEdgeCases:
 
     def test_run_empty_dataset_returns_zero_runs(self):
         """Test that empty dataset returns ExperimentResult with zero runs."""
+
         def target_fn(input_val):
             return MockResult("output")
 
@@ -417,7 +417,7 @@ class TestEvaluationPipelineEdgeCases:
             field_evaluators={"field": ["mock_eval"]},
             metrics=["accuracy"],
             evaluator_registry=self.evaluator_registry,
-            metric_registry=self.metric_registry
+            metric_registry=self.metric_registry,
         )
 
         result = pipeline.run()
@@ -427,6 +427,7 @@ class TestEvaluationPipelineEdgeCases:
 
     def test_run_target_fn_exception_propagates_with_index(self):
         """Test that target_fn exceptions propagate with example index."""
+
         def failing_target_fn(input_val):
             if input_val == "fail":
                 raise ValueError("Target function failed")
@@ -443,7 +444,7 @@ class TestEvaluationPipelineEdgeCases:
             field_evaluators={"field": ["mock_eval"]},
             metrics=["accuracy"],
             evaluator_registry=self.evaluator_registry,
-            metric_registry=self.metric_registry
+            metric_registry=self.metric_registry,
         )
 
         with pytest.raises(ValueError, match="Target function failed"):
@@ -463,6 +464,7 @@ class TestEvaluationPipelineDatasetLoading:
 
     def test_run_with_list_dataset(self):
         """Test run() with dataset as list of dicts."""
+
         def target_fn(input_val):
             return MockResult(f"output_{input_val}")
 
@@ -477,7 +479,7 @@ class TestEvaluationPipelineDatasetLoading:
             field_evaluators={"field": ["mock_eval"]},
             metrics=["accuracy"],
             evaluator_registry=self.evaluator_registry,
-            metric_registry=self.metric_registry
+            metric_registry=self.metric_registry,
         )
 
         result = pipeline.run()
@@ -493,11 +495,12 @@ class TestEvaluationPipelineDatasetLoading:
             {"input": "file_input2", "expected_output": "file_expected2"},
         ]
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(dataset_content, f)
             temp_file_path = f.name
 
         try:
+
             def target_fn(input_val):
                 return MockResult(f"output_{input_val}")
 
@@ -507,7 +510,7 @@ class TestEvaluationPipelineDatasetLoading:
                 field_evaluators={"field": ["mock_eval"]},
                 metrics=["accuracy"],
                 evaluator_registry=self.evaluator_registry,
-                metric_registry=self.metric_registry
+                metric_registry=self.metric_registry,
             )
 
             result = pipeline.run()
@@ -517,6 +520,7 @@ class TestEvaluationPipelineDatasetLoading:
             assert result.runs[1].input == "file_input2"
         finally:
             import os
+
             os.unlink(temp_file_path)
 
 
@@ -548,28 +552,31 @@ class TestEvaluationPipelineIntegration:
             return result
 
         dataset = [
-            {"input": "Document 1", "expected_output": {"summary": "Expected summary 1", "score": 0.9}},
-            {"input": "Document 2", "expected_output": {"summary": "Expected summary 2", "score": 0.7}},
-            {"input": "Document 3", "expected_output": {"summary": "Expected summary 3", "score": 0.8}},
+            {
+                "input": "Document 1",
+                "expected_output": {"summary": "Expected summary 1", "score": 0.9},
+            },
+            {
+                "input": "Document 2",
+                "expected_output": {"summary": "Expected summary 2", "score": 0.7},
+            },
+            {
+                "input": "Document 3",
+                "expected_output": {"summary": "Expected summary 3", "score": 0.8},
+            },
         ]
 
-        pricing_config = PricingConfig(
-            cost_per_input_token=0.0001,
-            cost_per_output_token=0.0002
-        )
+        pricing_config = PricingConfig(cost_per_input_token=0.0001, cost_per_output_token=0.0002)
 
         pipeline = EvaluationPipeline(
             target_fn=target_fn,
             dataset=dataset,
-            field_evaluators={
-                "summary": ["test_evaluator"],
-                "score": ["test_evaluator"]
-            },
+            field_evaluators={"summary": ["test_evaluator"], "score": ["test_evaluator"]},
             metrics=["accuracy", "precision"],
             evaluator_registry=evaluator_registry,
             metric_registry=metric_registry,
             pricing_config=pricing_config,
-            experiment_name="integration_test"
+            experiment_name="integration_test",
         )
 
         result = pipeline.run()
@@ -598,7 +605,7 @@ class TestEvaluationPipelineIntegration:
             assert evaluation_fields == {"summary", "score"}
 
         # Verify metrics
-        assert hasattr(result, 'metrics')
+        assert hasattr(result, "metrics")
         assert isinstance(result.metrics, dict)
         assert "accuracy" in result.metrics
         assert "precision" in result.metrics

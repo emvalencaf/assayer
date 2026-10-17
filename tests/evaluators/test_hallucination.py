@@ -1,7 +1,8 @@
 """Tests for hallucination evaluator components."""
 
-import pytest
 import hashlib
+
+import pytest
 
 
 class TestHashPrompt:
@@ -127,7 +128,7 @@ class TestDefaultJudgeSystemPrompt:
 
     def test_hash_default_prompt_is_stable(self):
         """Test that hash_prompt(DEFAULT_JUDGE_SYSTEM_PROMPT) is deterministic."""
-        from assayer.evaluators.hallucination import hash_prompt, DEFAULT_JUDGE_SYSTEM_PROMPT
+        from assayer.evaluators.hallucination import DEFAULT_JUDGE_SYSTEM_PROMPT, hash_prompt
 
         # Hash the default prompt multiple times
         hash1 = hash_prompt(DEFAULT_JUDGE_SYSTEM_PROMPT)
@@ -177,10 +178,10 @@ class TestFaithfulnessEvaluator:
         assert evaluator.name == "test_field"
 
         # Check default values are set correctly
-        assert hasattr(evaluator, 'threshold')
+        assert hasattr(evaluator, "threshold")
         assert evaluator.threshold == 0.5
 
-        assert hasattr(evaluator, 'model_name')
+        assert hasattr(evaluator, "model_name")
         assert evaluator.model_name == "cross-encoder/nli-deberta-v3-small"
 
     def test_faithfulness_evaluator_constructor_custom_values(self):
@@ -188,9 +189,7 @@ class TestFaithfulnessEvaluator:
         from assayer.evaluators.hallucination import FaithfulnessEvaluator
 
         evaluator = FaithfulnessEvaluator(
-            field_name="custom_field",
-            threshold=0.8,
-            model_name="custom-model"
+            field_name="custom_field", threshold=0.8, model_name="custom-model"
         )
 
         assert evaluator.name == "custom_field"
@@ -199,8 +198,8 @@ class TestFaithfulnessEvaluator:
 
     def test_faithfulness_evaluator_inherits_from_base_evaluator(self):
         """Test that FaithfulnessEvaluator inherits from BaseEvaluator."""
-        from assayer.evaluators.hallucination import FaithfulnessEvaluator
         from assayer.evaluators.base import BaseEvaluator
+        from assayer.evaluators.hallucination import FaithfulnessEvaluator
 
         evaluator = FaithfulnessEvaluator("test_field")
         assert isinstance(evaluator, BaseEvaluator)
@@ -209,30 +208,30 @@ class TestFaithfulnessEvaluator:
         """Test that evaluate returns FieldEvaluation with score in [0, 1]."""
         from assayer.evaluators.hallucination import FaithfulnessEvaluator
         from assayer.models import FieldEvaluation
-        
+
         def mock_classifier(_):
             return mock_scores
-        
+
         evaluator = FaithfulnessEvaluator("test_field", classifier=mock_classifier)
 
         # Mock the NLI model to return a score in range
         mock_scores = [[0.1, 0.7, 0.2]]  # [contradiction, entailment, neutral]
-        
+
         result = evaluator.evaluate("The sky is blue", "The sky is blue")
 
         assert isinstance(result, FieldEvaluation)
         assert 0.0 <= result.score <= 1.0
         assert result.score == 0.7  # entailment score
 
-
     def test_faithfulness_evaluator_metadata_contains_required_fields(self):
         """Test that metadata contains is_hallucination, method, and threshold."""
-        from assayer.evaluators.hallucination import FaithfulnessEvaluator
         from unittest.mock import MagicMock
-        
+
+        from assayer.evaluators.hallucination import FaithfulnessEvaluator
+
         # Mock high entailment score (no hallucination)
         mock_scores = [[0.1, 0.8, 0.1]]  # [contradiction, entailment, neutral]
-        
+
         mock_classifier = MagicMock()
         mock_classifier.return_value = mock_scores
         evaluator = FaithfulnessEvaluator("test_field", threshold=0.6, classifier=mock_classifier)
@@ -251,8 +250,9 @@ class TestFaithfulnessEvaluator:
 
     def test_faithfulness_evaluator_metadata_hallucination_detection(self):
         """Test that is_hallucination flag works correctly with threshold."""
-        from assayer.evaluators.hallucination import FaithfulnessEvaluator
         from unittest.mock import MagicMock
+
+        from assayer.evaluators.hallucination import FaithfulnessEvaluator
 
         # Test case where score is below threshold (hallucination detected)
         mock_scores = [[0.6, 0.3, 0.1]]  # [contradiction, entailment, neutral]
@@ -268,14 +268,15 @@ class TestFaithfulnessEvaluator:
 
     def test_faithfulness_evaluator_prompt_hash_is_none(self):
         """Test that prompt_hash is None (no external LLM calls)."""
+        from unittest.mock import MagicMock, patch
+
         from assayer.evaluators.hallucination import FaithfulnessEvaluator
-        from unittest.mock import patch, MagicMock
 
         evaluator = FaithfulnessEvaluator("test_field")
 
         mock_scores = [[0.2, 0.7, 0.1]]
 
-        with patch('transformers.pipeline') as mock_pipeline:
+        with patch("transformers.pipeline") as mock_pipeline:
             mock_classifier = MagicMock()
             mock_classifier.return_value = mock_scores
             mock_pipeline.return_value = mock_classifier
@@ -286,15 +287,16 @@ class TestFaithfulnessEvaluator:
 
     def test_faithfulness_evaluator_no_external_llm_api_calls(self):
         """Test that evaluator makes no external LLM API calls."""
+        from unittest.mock import MagicMock, patch
+
         from assayer.evaluators.hallucination import FaithfulnessEvaluator
-        from unittest.mock import patch, MagicMock
 
         evaluator = FaithfulnessEvaluator("test_field")
 
         mock_scores = [[0.1, 0.8, 0.1]]
 
         # We only mock transformers.pipeline - no external API mocks needed
-        with patch('transformers.pipeline') as mock_pipeline:
+        with patch("transformers.pipeline") as mock_pipeline:
             mock_classifier = MagicMock()
             mock_classifier.return_value = mock_scores
             mock_pipeline.return_value = mock_classifier
@@ -319,8 +321,8 @@ class TestFaithfulnessEvaluator:
 
     def test_faithfulness_evaluator_empty_reference_returns_zero_score(self):
         """Test that empty reference returns score=0.0 without raising."""
+
         from assayer.evaluators.hallucination import FaithfulnessEvaluator
-        from unittest.mock import patch, MagicMock
 
         evaluator = FaithfulnessEvaluator("test_field")
 
@@ -332,8 +334,8 @@ class TestFaithfulnessEvaluator:
 
     def test_faithfulness_evaluator_both_empty_returns_zero_score(self):
         """Test that both empty inputs return score=0.0 without raising."""
+
         from assayer.evaluators.hallucination import FaithfulnessEvaluator
-        from unittest.mock import patch, MagicMock
 
         evaluator = FaithfulnessEvaluator("test_field")
 
@@ -344,8 +346,8 @@ class TestFaithfulnessEvaluator:
 
     def test_faithfulness_evaluator_whitespace_only_inputs_return_zero_score(self):
         """Test that whitespace-only inputs return score=0.0."""
+
         from assayer.evaluators.hallucination import FaithfulnessEvaluator
-        from unittest.mock import patch, MagicMock
 
         evaluator = FaithfulnessEvaluator("test_field")
 
@@ -363,9 +365,10 @@ class TestFaithfulnessEvaluator:
 
     def test_faithfulness_evaluator_field_evaluation_structure(self):
         """Test that returned FieldEvaluation has correct structure."""
+        from unittest.mock import MagicMock, patch
+
         from assayer.evaluators.hallucination import FaithfulnessEvaluator
         from assayer.models import FieldEvaluation
-        from unittest.mock import patch, MagicMock
 
         evaluator = FaithfulnessEvaluator("response_field", threshold=0.7)
 
@@ -373,7 +376,7 @@ class TestFaithfulnessEvaluator:
         prediction = "Test prediction"
         reference = "Test reference"
 
-        with patch('transformers.pipeline') as mock_pipeline:
+        with patch("transformers.pipeline") as mock_pipeline:
             mock_classifier = MagicMock()
             mock_classifier.return_value = mock_scores
             mock_pipeline.return_value = mock_classifier
@@ -399,13 +402,14 @@ class TestFaithfulnessEvaluator:
 
     def test_faithfulness_evaluator_fallback_jaccard_similarity(self):
         """Test fallback to Jaccard similarity when NLI model is unavailable."""
-        from assayer.evaluators.hallucination import FaithfulnessEvaluator
         from unittest.mock import patch
+
+        from assayer.evaluators.hallucination import FaithfulnessEvaluator
 
         evaluator = FaithfulnessEvaluator("test_field")
 
         # Mock transformers.pipeline to raise exception (model unavailable)
-        with patch('transformers.pipeline', side_effect=Exception("Model not found")):
+        with patch("transformers.pipeline", side_effect=Exception("Model not found")):
             # Test identical strings (Jaccard = 1.0)
             result = evaluator.evaluate("hello world", "hello world")
             assert result.score == 1.0
@@ -421,14 +425,15 @@ class TestFaithfulnessEvaluator:
 
     def test_faithfulness_evaluator_nli_model_initialization(self):
         """Test that NLI model is properly initialized with correct parameters."""
+        from unittest.mock import MagicMock, patch
+
         from assayer.evaluators.hallucination import FaithfulnessEvaluator
-        from unittest.mock import patch, MagicMock
 
         evaluator = FaithfulnessEvaluator("test_field", model_name="custom-nli-model")
 
         mock_scores = [[0.2, 0.7, 0.1]]
 
-        with patch('transformers.pipeline') as mock_pipeline:
+        with patch("transformers.pipeline") as mock_pipeline:
             mock_classifier = MagicMock()
             mock_classifier.return_value = mock_scores
             mock_pipeline.return_value = mock_classifier
@@ -437,15 +442,14 @@ class TestFaithfulnessEvaluator:
 
             # Verify pipeline was called with correct parameters
             mock_pipeline.assert_called_once_with(
-                "text-classification",
-                model="custom-nli-model",
-                return_all_scores=True
+                "text-classification", model="custom-nli-model", return_all_scores=True
             )
 
     def test_faithfulness_evaluator_nli_input_formatting(self):
         """Test that inputs are properly formatted for NLI model."""
+        from unittest.mock import MagicMock, patch
+
         from assayer.evaluators.hallucination import FaithfulnessEvaluator
-        from unittest.mock import patch, MagicMock
 
         evaluator = FaithfulnessEvaluator("test_field")
 
@@ -453,7 +457,7 @@ class TestFaithfulnessEvaluator:
         prediction = "The sky is blue"
         reference = "The sky appears blue in color"
 
-        with patch('transformers.pipeline') as mock_pipeline:
+        with patch("transformers.pipeline") as mock_pipeline:
             mock_classifier = MagicMock()
             mock_classifier.return_value = mock_scores
             mock_pipeline.return_value = mock_classifier
@@ -482,8 +486,9 @@ class TestFaithfulnessEvaluatorDocstringsAndTypeHints:
 
     def test_faithfulness_evaluator_init_has_type_hints(self):
         """Test that __init__ method has full type hints."""
-        from assayer.evaluators.hallucination import FaithfulnessEvaluator
         import inspect
+
+        from assayer.evaluators.hallucination import FaithfulnessEvaluator
 
         signature = inspect.signature(FaithfulnessEvaluator.__init__)
 
@@ -497,9 +502,10 @@ class TestFaithfulnessEvaluatorDocstringsAndTypeHints:
 
     def test_faithfulness_evaluator_evaluate_has_type_hints(self):
         """Test that evaluate method has full type hints."""
+        import inspect
+
         from assayer.evaluators.hallucination import FaithfulnessEvaluator
         from assayer.models import FieldEvaluation
-        import inspect
 
         signature = inspect.signature(FaithfulnessEvaluator.evaluate)
 
@@ -517,7 +523,7 @@ class TestFaithfulnessEvaluatorDocstringsAndTypeHints:
         # We can't directly access the docstring until the class is implemented,
         # but we can test the abstract method requirement
         evaluator = FaithfulnessEvaluator("test_field")
-        assert hasattr(evaluator, 'evaluate')
+        assert hasattr(evaluator, "evaluate")
 
         # The method should exist and be callable
         assert callable(evaluator.evaluate)
@@ -541,8 +547,9 @@ class TestDocstringsAndTypeHints:
 
     def test_hash_prompt_has_type_hints(self):
         """Test that hash_prompt has full type hints."""
-        from assayer.evaluators.hallucination import hash_prompt
         import inspect
+
+        from assayer.evaluators.hallucination import hash_prompt
 
         signature = inspect.signature(hash_prompt)
 
@@ -639,9 +646,9 @@ class TestParseScore:
             "score: high",
             "excellent quality",
             "2.5",  # Out of range
-            "-1",   # Out of range
-            "0.0.1", # Invalid format
-            "one point zero", # Written out numbers
+            "-1",  # Out of range
+            "0.0.1",  # Invalid format
+            "one point zero",  # Written out numbers
         ]
 
         for invalid_response in invalid_responses:
@@ -670,14 +677,13 @@ class TestLLMJudgeEvaluator:
 
     def test_llm_judge_evaluator_uses_default_prompt_when_none_provided(self):
         """Test that LLMJudgeEvaluator uses DEFAULT_JUDGE_SYSTEM_PROMPT when system_prompt=None."""
-        from assayer.evaluators.hallucination import LLMJudgeEvaluator, DEFAULT_JUDGE_SYSTEM_PROMPT
         from unittest.mock import MagicMock
+
+        from assayer.evaluators.hallucination import DEFAULT_JUDGE_SYSTEM_PROMPT, LLMJudgeEvaluator
 
         mock_judge_model = MagicMock()
         evaluator = LLMJudgeEvaluator(
-            field_name="test_field",
-            judge_model=mock_judge_model,
-            system_prompt=None
+            field_name="test_field", judge_model=mock_judge_model, system_prompt=None
         )
 
         # Access the private attribute to verify default prompt is used
@@ -685,50 +691,46 @@ class TestLLMJudgeEvaluator:
 
     def test_llm_judge_evaluator_uses_custom_prompt_when_provided(self):
         """Test that LLMJudgeEvaluator uses custom prompt when provided."""
-        from assayer.evaluators.hallucination import LLMJudgeEvaluator
         from unittest.mock import MagicMock
+
+        from assayer.evaluators.hallucination import LLMJudgeEvaluator
 
         custom_prompt = "This is a custom evaluation prompt."
         mock_judge_model = MagicMock()
 
         evaluator = LLMJudgeEvaluator(
-            field_name="test_field",
-            judge_model=mock_judge_model,
-            system_prompt=custom_prompt
+            field_name="test_field", judge_model=mock_judge_model, system_prompt=custom_prompt
         )
 
         assert evaluator._prompt == custom_prompt
 
     def test_llm_judge_evaluator_prompt_hash_equals_sha256_of_default_prompt(self):
         """Test that prompt_hash equals SHA-256 of DEFAULT_JUDGE_SYSTEM_PROMPT when no custom prompt."""
-        from assayer.evaluators.hallucination import (
-            LLMJudgeEvaluator,
-            DEFAULT_JUDGE_SYSTEM_PROMPT,
-            hash_prompt
-        )
         from unittest.mock import MagicMock
 
-        mock_judge_model = MagicMock()
-        evaluator = LLMJudgeEvaluator(
-            field_name="test_field",
-            judge_model=mock_judge_model
+        from assayer.evaluators.hallucination import (
+            DEFAULT_JUDGE_SYSTEM_PROMPT,
+            LLMJudgeEvaluator,
+            hash_prompt,
         )
+
+        mock_judge_model = MagicMock()
+        evaluator = LLMJudgeEvaluator(field_name="test_field", judge_model=mock_judge_model)
 
         expected_hash = hash_prompt(DEFAULT_JUDGE_SYSTEM_PROMPT)
         assert evaluator._prompt_hash == expected_hash
 
     def test_llm_judge_evaluator_prompt_hash_equals_sha256_of_custom_prompt(self):
         """Test that prompt_hash equals SHA-256 of custom prompt when provided."""
-        from assayer.evaluators.hallucination import LLMJudgeEvaluator, hash_prompt
         from unittest.mock import MagicMock
+
+        from assayer.evaluators.hallucination import LLMJudgeEvaluator, hash_prompt
 
         custom_prompt = "Custom evaluation prompt for testing."
         mock_judge_model = MagicMock()
 
         evaluator = LLMJudgeEvaluator(
-            field_name="test_field",
-            judge_model=mock_judge_model,
-            system_prompt=custom_prompt
+            field_name="test_field", judge_model=mock_judge_model, system_prompt=custom_prompt
         )
 
         expected_hash = hash_prompt(custom_prompt)
@@ -736,9 +738,10 @@ class TestLLMJudgeEvaluator:
 
     def test_llm_judge_evaluator_inherits_from_base_evaluator(self):
         """Test that LLMJudgeEvaluator inherits from BaseEvaluator."""
-        from assayer.evaluators.hallucination import LLMJudgeEvaluator
-        from assayer.evaluators.base import BaseEvaluator
         from unittest.mock import MagicMock
+
+        from assayer.evaluators.base import BaseEvaluator
+        from assayer.evaluators.hallucination import LLMJudgeEvaluator
 
         mock_judge_model = MagicMock()
         evaluator = LLMJudgeEvaluator("test_field", mock_judge_model)
@@ -748,9 +751,10 @@ class TestLLMJudgeEvaluator:
 
     def test_llm_judge_evaluator_evaluate_returns_field_evaluation_with_score_in_range(self):
         """Test that evaluate returns FieldEvaluation with score in [0, 1]."""
+        from unittest.mock import MagicMock
+
         from assayer.evaluators.hallucination import LLMJudgeEvaluator
         from assayer.models import FieldEvaluation
-        from unittest.mock import MagicMock
 
         # Mock judge model response
         mock_response = MagicMock()
@@ -767,8 +771,9 @@ class TestLLMJudgeEvaluator:
 
     def test_llm_judge_evaluator_metadata_contains_required_fields(self):
         """Test that metadata contains judge_model and prompt_hash."""
-        from assayer.evaluators.hallucination import LLMJudgeEvaluator
         from unittest.mock import MagicMock
+
+        from assayer.evaluators.hallucination import LLMJudgeEvaluator
 
         # Mock judge model response
         mock_response = MagicMock()
@@ -790,9 +795,10 @@ class TestLLMJudgeEvaluator:
 
     def test_llm_judge_evaluator_field_evaluation_structure(self):
         """Test that returned FieldEvaluation has correct structure."""
+        from unittest.mock import MagicMock
+
         from assayer.evaluators.hallucination import LLMJudgeEvaluator
         from assayer.models import FieldEvaluation
-        from unittest.mock import MagicMock
 
         # Mock judge model response
         mock_response = MagicMock()
@@ -825,8 +831,9 @@ class TestLLMJudgeEvaluator:
 
     def test_llm_judge_evaluator_handles_reference_none(self):
         """Test that LLMJudgeEvaluator handles reference=None correctly."""
-        from assayer.evaluators.hallucination import LLMJudgeEvaluator
         from unittest.mock import MagicMock
+
+        from assayer.evaluators.hallucination import LLMJudgeEvaluator
 
         # Mock judge model response
         mock_response = MagicMock()
@@ -843,8 +850,9 @@ class TestLLMJudgeEvaluator:
 
     def test_llm_judge_evaluator_calls_judge_model_with_correct_format(self):
         """Test that judge model is called with correctly formatted messages."""
-        from assayer.evaluators.hallucination import LLMJudgeEvaluator
         from unittest.mock import MagicMock
+
+        from assayer.evaluators.hallucination import LLMJudgeEvaluator
 
         # Mock judge model response
         mock_response = MagicMock()
@@ -875,8 +883,9 @@ class TestLLMJudgeEvaluator:
 
     def test_llm_judge_evaluator_raises_value_error_on_unparseable_response(self):
         """Test that _parse_score raises ValueError when judge response has no valid float."""
-        from assayer.evaluators.hallucination import LLMJudgeEvaluator
         from unittest.mock import MagicMock
+
+        from assayer.evaluators.hallucination import LLMJudgeEvaluator
 
         # Mock judge model to return unparseable response
         mock_response = MagicMock()
@@ -895,8 +904,9 @@ class TestLLMJudgeEvaluator:
 
     def test_llm_judge_evaluator_handles_various_valid_response_formats(self):
         """Test that evaluator handles various valid judge response formats."""
-        from assayer.evaluators.hallucination import LLMJudgeEvaluator
         from unittest.mock import MagicMock
+
+        from assayer.evaluators.hallucination import LLMJudgeEvaluator
 
         mock_judge_model = MagicMock()
         evaluator = LLMJudgeEvaluator("test_field", mock_judge_model)
@@ -921,8 +931,9 @@ class TestLLMJudgeEvaluator:
 
     def test_llm_judge_evaluator_constructor_validates_field_name(self):
         """Test that constructor validates field_name properly."""
-        from assayer.evaluators.hallucination import LLMJudgeEvaluator
         from unittest.mock import MagicMock
+
+        from assayer.evaluators.hallucination import LLMJudgeEvaluator
 
         mock_judge_model = MagicMock()
 
@@ -955,8 +966,9 @@ class TestLLMJudgeEvaluatorDocstringsAndTypeHints:
 
     def test_llm_judge_evaluator_init_has_type_hints(self):
         """Test that __init__ method has full type hints."""
-        from assayer.evaluators.hallucination import LLMJudgeEvaluator
         import inspect
+
+        from assayer.evaluators.hallucination import LLMJudgeEvaluator
 
         signature = inspect.signature(LLMJudgeEvaluator.__init__)
 
@@ -974,9 +986,10 @@ class TestLLMJudgeEvaluatorDocstringsAndTypeHints:
 
     def test_llm_judge_evaluator_evaluate_has_type_hints(self):
         """Test that evaluate method has full type hints."""
+        import inspect
+
         from assayer.evaluators.hallucination import LLMJudgeEvaluator
         from assayer.models import FieldEvaluation
-        import inspect
 
         signature = inspect.signature(LLMJudgeEvaluator.evaluate)
 
@@ -991,14 +1004,15 @@ class TestLLMJudgeEvaluatorDocstringsAndTypeHints:
 
     def test_llm_judge_evaluator_evaluate_has_docstring(self):
         """Test that evaluate method has a Google-style docstring."""
-        from assayer.evaluators.hallucination import LLMJudgeEvaluator
         from unittest.mock import MagicMock
+
+        from assayer.evaluators.hallucination import LLMJudgeEvaluator
 
         mock_judge_model = MagicMock()
         evaluator = LLMJudgeEvaluator("test_field", mock_judge_model)
 
         # The method should exist and be callable
-        assert hasattr(evaluator, 'evaluate')
+        assert hasattr(evaluator, "evaluate")
         assert callable(evaluator.evaluate)
 
         # If implemented, it should have a docstring
@@ -1018,8 +1032,9 @@ class TestLLMJudgeEvaluatorDocstringsAndTypeHints:
 
     def test_parse_score_has_type_hints(self):
         """Test that _parse_score has full type hints."""
-        from assayer.evaluators.hallucination import _parse_score
         import inspect
+
+        from assayer.evaluators.hallucination import _parse_score
 
         signature = inspect.signature(_parse_score)
 
@@ -1036,7 +1051,10 @@ class TestRegisterHallucinationEvaluators:
 
     def test_register_hallucination_evaluators_registers_faithfulness_evaluator(self):
         """Test that 'faithfulness' is retrievable via EvaluatorRegistry.get('faithfulness')."""
-        from assayer.evaluators.hallucination import register_hallucination_evaluators, FaithfulnessEvaluator
+        from assayer.evaluators.hallucination import (
+            FaithfulnessEvaluator,
+            register_hallucination_evaluators,
+        )
         from assayer.registries.evaluator_registry import EvaluatorRegistry
 
         registry = EvaluatorRegistry()
@@ -1048,7 +1066,10 @@ class TestRegisterHallucinationEvaluators:
 
     def test_register_hallucination_evaluators_registers_llm_judge_evaluator(self):
         """Test that 'llm_judge' is retrievable via EvaluatorRegistry.get('llm_judge')."""
-        from assayer.evaluators.hallucination import register_hallucination_evaluators, LLMJudgeEvaluator
+        from assayer.evaluators.hallucination import (
+            LLMJudgeEvaluator,
+            register_hallucination_evaluators,
+        )
         from assayer.registries.evaluator_registry import EvaluatorRegistry
 
         registry = EvaluatorRegistry()
@@ -1060,7 +1081,11 @@ class TestRegisterHallucinationEvaluators:
 
     def test_register_hallucination_evaluators_registers_both_evaluators(self):
         """Test that both evaluators are registered correctly."""
-        from assayer.evaluators.hallucination import register_hallucination_evaluators, FaithfulnessEvaluator, LLMJudgeEvaluator
+        from assayer.evaluators.hallucination import (
+            FaithfulnessEvaluator,
+            LLMJudgeEvaluator,
+            register_hallucination_evaluators,
+        )
         from assayer.registries.evaluator_registry import EvaluatorRegistry
 
         registry = EvaluatorRegistry()
@@ -1090,9 +1115,14 @@ class TestRegisterHallucinationEvaluators:
         with pytest.raises(ValueError):
             register_hallucination_evaluators(registry)
 
-    def test_register_hallucination_evaluators_partial_duplicate_registration_raises_value_error(self):
+    def test_register_hallucination_evaluators_partial_duplicate_registration_raises_value_error(
+        self,
+    ):
         """Test that partial duplicate registration raises ValueError."""
-        from assayer.evaluators.hallucination import register_hallucination_evaluators, FaithfulnessEvaluator
+        from assayer.evaluators.hallucination import (
+            FaithfulnessEvaluator,
+            register_hallucination_evaluators,
+        )
         from assayer.registries.evaluator_registry import EvaluatorRegistry
 
         registry = EvaluatorRegistry()
@@ -1124,10 +1154,14 @@ class TestRegisterHallucinationEvaluators:
 
     def test_register_hallucination_evaluators_works_with_existing_different_evaluators(self):
         """Test that registration works when registry has other evaluators."""
-        from assayer.evaluators.hallucination import register_hallucination_evaluators, FaithfulnessEvaluator, LLMJudgeEvaluator
         from assayer.evaluators.base import BaseEvaluator
-        from assayer.registries.evaluator_registry import EvaluatorRegistry
+        from assayer.evaluators.hallucination import (
+            FaithfulnessEvaluator,
+            LLMJudgeEvaluator,
+            register_hallucination_evaluators,
+        )
         from assayer.models import FieldEvaluation
+        from assayer.registries.evaluator_registry import EvaluatorRegistry
 
         # Create a dummy evaluator class for testing
         class DummyEvaluator(BaseEvaluator):
@@ -1139,7 +1173,7 @@ class TestRegisterHallucinationEvaluators:
                     obtained_value=prediction,
                     score=0.5,
                     prompt_hash=None,
-                    metadata={}
+                    metadata={},
                 )
 
         registry = EvaluatorRegistry()
@@ -1174,8 +1208,9 @@ class TestRegisterHallucinationEvaluators:
 
     def test_register_hallucination_evaluators_has_type_hints(self):
         """Test that register_hallucination_evaluators has full type hints."""
-        from assayer.evaluators.hallucination import register_hallucination_evaluators
         import inspect
+
+        from assayer.evaluators.hallucination import register_hallucination_evaluators
 
         signature = inspect.signature(register_hallucination_evaluators)
 

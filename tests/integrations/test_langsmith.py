@@ -2,11 +2,12 @@
 
 import json
 import os
-import pytest
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
 
-from assayer.integrations.langsmith import make_langsmith_publisher, LangSmithPublisher
-from assayer.models import TokenUsage, FieldEvaluation, RunResult, ExperimentResult
+import pytest
+
+from assayer.integrations.langsmith import LangSmithPublisher, make_langsmith_publisher
+from assayer.models import ExperimentResult, FieldEvaluation, RunResult, TokenUsage
 
 
 class TestMakeLangSmithPublisher:
@@ -84,10 +85,7 @@ class TestLangSmithPublisherPublish:
         run1 = RunResult(input="test input 1", output="test output 1", token_usage=token_usage1)
         run2 = RunResult(input="test input 2", output="test output 2", token_usage=token_usage2)
 
-        experiment = ExperimentResult(
-            experiment_name="test_experiment",
-            runs=[run1, run2]
-        )
+        experiment = ExperimentResult(experiment_name="test_experiment", runs=[run1, run2])
 
         # Execute
         publisher.publish(experiment, "test_dataset")
@@ -113,11 +111,7 @@ class TestLangSmithPublisherPublish:
         mock_client.create_run.assert_called_once()
         call_args = mock_client.create_run.call_args[1]
 
-        expected_metadata = {
-            "input_tokens": 150,
-            "output_tokens": 75,
-            "cost_usd": 0.025
-        }
+        expected_metadata = {"input_tokens": 150, "output_tokens": 75, "cost_usd": 0.025}
 
         assert "metadata" in call_args
         for key, value in expected_metadata.items():
@@ -159,7 +153,7 @@ class TestLangSmithPublisherPublish:
             expected_value="expected",
             obtained_value="obtained",
             score=0.8,
-            prompt_hash="hash1"
+            prompt_hash="hash1",
         )
 
         evaluation2 = FieldEvaluation(
@@ -168,14 +162,14 @@ class TestLangSmithPublisherPublish:
             expected_value="relevant",
             obtained_value="somewhat relevant",
             score=0.6,
-            prompt_hash="hash2"
+            prompt_hash="hash2",
         )
 
         run = RunResult(
             input="test input",
             output="test output",
             token_usage=token_usage,
-            evaluations=[evaluation1, evaluation2]
+            evaluations=[evaluation1, evaluation2],
         )
 
         experiment = ExperimentResult(experiment_name="test_experiment", runs=[run])
@@ -203,14 +197,14 @@ class TestLangSmithPublisherPublish:
             obtained_value="medium quality",
             score=0.75,
             prompt_hash="abc123",
-            metadata=metadata
+            metadata=metadata,
         )
 
         run = RunResult(
             input="test input",
             output="test output",
             token_usage=token_usage,
-            evaluations=[evaluation]
+            evaluations=[evaluation],
         )
 
         experiment = ExperimentResult(experiment_name="test_experiment", runs=[run])
@@ -246,14 +240,14 @@ class TestLangSmithPublisherPublish:
             obtained_value="medium quality",
             score=0.75,
             prompt_hash=None,
-            metadata=metadata
+            metadata=metadata,
         )
 
         run = RunResult(
             input="test input",
             output="test output",
             token_usage=token_usage,
-            evaluations=[evaluation]
+            evaluations=[evaluation],
         )
 
         experiment = ExperimentResult(experiment_name="test_experiment", runs=[run])
@@ -318,14 +312,14 @@ class TestLangSmithPublisherPublish:
             expected_value="high",
             obtained_value="medium",
             score=0.75,
-            prompt_hash="hash123"
+            prompt_hash="hash123",
         )
 
         run = RunResult(
             input="test input",
             output="test output",
             token_usage=token_usage,
-            evaluations=[evaluation]
+            evaluations=[evaluation],
         )
 
         experiment = ExperimentResult(experiment_name="test_experiment", runs=[run])
@@ -344,27 +338,40 @@ class TestLangSmithPublisherPublish:
         # First run with 2 evaluations
         token_usage1 = TokenUsage(input_tokens=100, output_tokens=50, cost_usd=0.01)
         evaluation1a = FieldEvaluation(
-            field_name="accuracy", evaluator_method="exact_match",
-            expected_value="A", obtained_value="A", score=1.0, prompt_hash=None
+            field_name="accuracy",
+            evaluator_method="exact_match",
+            expected_value="A",
+            obtained_value="A",
+            score=1.0,
+            prompt_hash=None,
         )
         evaluation1b = FieldEvaluation(
-            field_name="relevance", evaluator_method="llm_judge",
-            expected_value="relevant", obtained_value="relevant", score=0.9, prompt_hash="hash1"
+            field_name="relevance",
+            evaluator_method="llm_judge",
+            expected_value="relevant",
+            obtained_value="relevant",
+            score=0.9,
+            prompt_hash="hash1",
         )
         run1 = RunResult(
-            input="input1", output="output1", token_usage=token_usage1,
-            evaluations=[evaluation1a, evaluation1b]
+            input="input1",
+            output="output1",
+            token_usage=token_usage1,
+            evaluations=[evaluation1a, evaluation1b],
         )
 
         # Second run with 1 evaluation
         token_usage2 = TokenUsage(input_tokens=200, output_tokens=100, cost_usd=None)
         evaluation2a = FieldEvaluation(
-            field_name="fluency", evaluator_method="grammar_check",
-            expected_value="fluent", obtained_value="fluent", score=0.85, prompt_hash=None
+            field_name="fluency",
+            evaluator_method="grammar_check",
+            expected_value="fluent",
+            obtained_value="fluent",
+            score=0.85,
+            prompt_hash=None,
         )
         run2 = RunResult(
-            input="input2", output="output2", token_usage=token_usage2,
-            evaluations=[evaluation2a]
+            input="input2", output="output2", token_usage=token_usage2, evaluations=[evaluation2a]
         )
 
         experiment = ExperimentResult(experiment_name="complex_experiment", runs=[run1, run2])
@@ -399,7 +406,7 @@ class TestLangSmithPublisherPublish:
             expected_value="test",
             obtained_value="test",
             score=1.0,
-            prompt_hash=None
+            prompt_hash=None,
             # metadata defaults to empty dict
         )
 
@@ -407,7 +414,7 @@ class TestLangSmithPublisherPublish:
             input="test input",
             output="test output",
             token_usage=token_usage,
-            evaluations=[evaluation]
+            evaluations=[evaluation],
         )
 
         experiment = ExperimentResult(experiment_name="test_experiment", runs=[run])
