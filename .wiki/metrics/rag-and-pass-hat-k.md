@@ -5,7 +5,7 @@ description: Goal success, faithfulness, context precision and recall over retri
 resource: assayer/metrics/judge.py
 tags: [metrics, judge, retrieval, rag]
 status: stable
-generated: { by: claude-code, at: 2026-10-17T22:00:00Z }
+generated: { by: claude-code/pre-commit, at: 2026-10-17T22:00:00Z }
 sources:
   - id: judge
     resource: assayer/metrics/judge.py
