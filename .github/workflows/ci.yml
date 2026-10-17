@@ -57,8 +57,21 @@ jobs:
               - '!docs/**'
               - '!.wiki/**'
 
+  core:
+    name: Tests (core only)
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Core-only environment
+        run: uv run --isolated --no-dev scripts/check_core_only.py
+      - name: Pytest (packaging)
+        run: uv run --group dev pytest tests/test_packaging.py
+
   tests:
-    name: Tests
+    name: Tests (all extras)
     needs: changes
     # a skipped job counts as passed for required status checks
     if: needs.changes.outputs.code == 'true'
@@ -72,7 +85,7 @@ jobs:
           path: ~/.cache/huggingface
           key: hf-${{ runner.os }}-v1
       - name: Pytest
-        run: uv run --group dev pytest
+        run: uv run --extra all --group dev pytest
 
   commits:
     name: Commit messages

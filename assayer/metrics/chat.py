@@ -6,11 +6,9 @@ and semantic similarity metrics for measuring generation quality against ground-
 
 from collections.abc import Callable
 
-import nltk.translate.bleu_score
 import numpy as np
-from nltk.translate.bleu_score import SmoothingFunction
-from rouge_score import rouge_scorer
 
+from assayer._extras import require
 from assayer.registries.metric_registry import MetricRegistry
 
 # Type alias for metric functions
@@ -37,8 +35,12 @@ def bleu(predictions: list[str], references: list[str]) -> float:
         Corpus-level BLEU score as a float in [0, 1]. Returns 0.0 for empty inputs.
 
     Raises:
-        None. Returns 0.0 for any error conditions.
+        ImportError: If the extra this metric needs is not installed. Any other error
+            returns 0.0.
     """
+    # A missing extra is an error, not a score
+    nltk_bleu = require("nltk.translate.bleu_score", "text", "bleu")
+
     # Handle empty inputs
     if not predictions or not references or len(predictions) == 0 or len(references) == 0:
         return 0.0
@@ -55,8 +57,8 @@ def bleu(predictions: list[str], references: list[str]) -> float:
 
     try:
         # Use smoothing to handle cases where there aren't enough n-grams
-        sf = SmoothingFunction()
-        score = nltk.translate.bleu_score.corpus_bleu(
+        sf = nltk_bleu.SmoothingFunction()
+        score = nltk_bleu.corpus_bleu(
             list_of_references,
             predictions_tokenized,
             weights=weights,
@@ -100,8 +102,11 @@ def rouge_l(predictions: list[str], references: list[str]) -> float:
         Mean ROUGE-L F1 score as a float in [0, 1]. Returns 0.0 for empty inputs.
 
     Raises:
-        None. Returns 0.0 for any error conditions.
+        ImportError: If the extra this metric needs is not installed. Any other error
+            returns 0.0.
     """
+    rouge_scorer = require("rouge_score.rouge_scorer", "text", "rouge_l")
+
     # Handle empty inputs
     if not predictions or not references or len(predictions) == 0 or len(references) == 0:
         return 0.0
@@ -148,19 +153,20 @@ def bert_score(predictions: list[str], references: list[str]) -> float:
         Mean BERTScore F1 score as a float in [0, 1]. Returns 0.0 for empty inputs.
 
     Raises:
-        None. Returns 0.0 for any error conditions.
+        ImportError: If the extra this metric needs is not installed. Any other error
+            returns 0.0.
     """
+    # Dynamic import to allow tests to mock
+    bert_score_lib = require("bert_score", "semantic", "bert_score")
+
     # Handle empty inputs
     if not predictions or not references or len(predictions) == 0 or len(references) == 0:
         return 0.0
 
     try:
-        # Dynamic import to allow tests to mock
-        import bert_score
-
         # Call bert_score.score with required parameters
         # Returns (precision, recall, f1) tensors
-        _, _, f1_scores = bert_score.score(
+        _, _, f1_scores = bert_score_lib.score(
             predictions, references, lang="en", rescale_with_baseline=True
         )
 
@@ -194,7 +200,8 @@ def make_semantic_similarity(
         the mean cosine similarity as a float in [0, 1].
 
     Raises:
-        None. The returned metric function handles all errors gracefully by returning 0.0.
+        None. The returned metric function raises ImportError without the `semantic` extra
+        and returns 0.0 on any other error.
     """
 
     def semantic_similarity_metric(predictions: list[str], references: list[str]) -> float:
@@ -212,22 +219,22 @@ def make_semantic_similarity(
             or any error conditions.
 
         Raises:
-            None. Returns 0.0 for any error conditions.
+            ImportError: If the `semantic` extra is not installed. Any other error
+                returns 0.0.
         """
+        # Use module-level import for testing compatibility, import dynamically if needed
+        transformer = SentenceTransformer
+        if transformer is None:
+            transformer = require(
+                "sentence_transformers", "semantic", "make_semantic_similarity"
+            ).SentenceTransformer
+
         # Handle empty inputs
         if not predictions or not references or len(predictions) == 0 or len(references) == 0:
             return 0.0
 
         try:
-            # Use module-level import for testing compatibility, import dynamically if needed
-            if SentenceTransformer is None:
-                from sentence_transformers import (
-                    SentenceTransformer as _SentenceTransformer,
-                )
-
-                encoder = _SentenceTransformer(model_name)
-            else:
-                encoder = SentenceTransformer(model_name)
+            encoder = transformer(model_name)
 
             # Encode predictions and references
             pred_embeddings = encoder.encode(predictions)

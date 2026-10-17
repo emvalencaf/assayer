@@ -1,5 +1,17 @@
-"""Integration modules for external services."""
+"""Integration modules for external services.
 
-from assayer.integrations.langsmith_adapter import LangSmithAdapter
+Each Adapter needs its own extra (`assayer[langfuse]`, `assayer[langsmith]`) and is loaded
+on first access, so importing this package needs neither.
+"""
 
-__all__ = ["LangSmithAdapter"]
+from assayer._extras import lazy_exports
+
+__getattr__, __dir__ = lazy_exports(
+    __name__,
+    {
+        "LangSmithAdapter": "assayer.integrations.langsmith_adapter",
+        "LangfuseAdapter": "assayer.integrations.langfuse_adapter",
+    },
+)
+
+__all__ = ["LangSmithAdapter", "LangfuseAdapter"]

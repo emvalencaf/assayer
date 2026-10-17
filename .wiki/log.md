@@ -1,6 +1,12 @@
 # Update Log
 
 ## 2026-10-17
+* **Update**: [Package organization](architecture/package-organization.md) records the shared `lazy_exports` helper behind the lazy `LangChainJudge` and Adapters, `LLMJudgeEvaluator` requiring the `langchain` extra at construction, and the CI `scripts/check_core_only.py` check.
+* **Update**: [Package organization](architecture/package-organization.md) records the lean core, the extras and the lazy `LangChainJudge` and backend Adapters (#38).
+* **Update**: [Adapters](architecture/adapters.md) records that the Langfuse live smoke test now passes against Langfuse Cloud, deduplicates observations by id (re-exports can show one twice for a while), reads flattened `final_state.done` metadata, and matches Scores to traces and dataset runs by subject.
+* **Update**: [Adapters](architecture/adapters.md) records what the Langfuse live smoke test reads back (dataset item, observations, dataset runs, scores), its `finally` cleanup, and the `scripts/validate-langfuse.sh` wizard.
+* **Update**: [Adapters](architecture/adapters.md) records that `LangfuseAdapter` fails a Trajectory as `validation` when the Langfuse project id cannot be resolved, and that a Trajectory without a `case_id` carries no dataset id on its spans.
+* **Update**: [Adapters](architecture/adapters.md) documents `LangfuseAdapter` (#37): dataset items, one dataset run per repetition, OTLP spans for observations, `NUMERIC` scores and error mapping; [Package organization](architecture/package-organization.md) lists it under `integrations/`.
 * **Update**: [Adapters](architecture/adapters.md) records that the LangSmith live smoke test reads runs with the async `client.runs.query` and checks the root's `reference_example_id`, the shared trace id and the `dotted_order` nesting.
 * **Update**: [Adapters](architecture/adapters.md) records that the live smoke test reads project-level `overall.f` feedback back with `list_feedback` (it is not in `feedback_stats`) and that the UI may not list it like run feedback.
 * **Update**: [Adapters](architecture/adapters.md) records what the LangSmith live smoke test checks, the `ASSAYER_SMOKE_KEEP` opt-out of cleanup, and the `scripts/validate-langsmith.sh` wizard.

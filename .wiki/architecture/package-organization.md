@@ -13,6 +13,12 @@ sources:
   - id: metrics-init
     resource: assayer/metrics/__init__.py
     title: Public API of the metrics subpackage
+  - id: extras
+    resource: assayer/_extras.py
+    title: Optional-dependency helpers (`require`, `lazy_exports`)
+  - id: core-only-check
+    resource: scripts/check_core_only.py
+    title: CI check of the core-only environment
 ---
 
 # Overview
@@ -31,9 +37,12 @@ build on `judges` and `models`.
 | `runner/` | Evaluation, historical and consistency pipelines, field routing, pricing, and the `field_map/` package (Alignment, Field scoring, schema utility, YAML/JSON loading). |
 | `alignment.py`, `path.py` | Top-level pure helpers (Alignment of list items, dotted-path `resolve`) shared by `metrics/` and `runner/field_map/`; they import nothing else from `assayer` but each other. Still importable from `assayer.runner.field_map`. |
 | `adapters/` | The `Adapter` Protocol, `ExportReport`/`ExportFailure`, the closed failure taxonomy, deterministic export ids, the retry policy, `plan_export`/`run_export` and `InMemoryAdapter`; no backend-specific clients. See [Adapters](adapters.md). |
-| `integrations/` | Adapters for external services: `LangSmithAdapter` (see [Adapters](adapters.md)). |
+| `integrations/` | Adapters for external services: `LangSmithAdapter` and `LangfuseAdapter` (see [Adapters](adapters.md)). |
 
 # Conventions
+
+* The core installs only `numpy` and `scikit-learn`; `semantic`, `text`, `langchain`, `langfuse`, `langsmith`, `yaml` and `all` are extras. A missing one raises an `ImportError` naming `assayer[<extra>]` (see `assayer/_extras.py`), and `LangChainJudge` and the backend Adapters load lazily from `assayer.judges`, `assayer.adapters` and `assayer.integrations`, each of which assigns the module `__getattr__` and `__dir__` built by `lazy_exports(__name__, {name: module})` in `assayer/_extras.py`. `LLMJudgeEvaluator` now requires the `langchain` extra when constructed, not at its first call.
+* CI checks the lean core with `scripts/check_core_only.py` (`uv run --isolated --no-dev`): no optional dependency may be installed, the public modules must import, and each extra-only feature (`LangChainJudge`, `LangfuseAdapter`, `LangSmithAdapter`, `bleu`) must raise an `ImportError` naming `assayer[<extra>]`.
 
 * One concept per module; each subpackage re-exports its public API in `__init__.py` with `__all__`.
 * Registration is explicit through `register_<task>_metrics(registry)` and `register_<task>_evaluators(registry)`; importing never registers.

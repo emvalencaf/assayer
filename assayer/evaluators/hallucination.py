@@ -3,14 +3,15 @@
 import hashlib
 import re
 from collections.abc import Callable
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from langchain_core.language_models.chat_models import BaseChatModel
-from langchain_core.messages import HumanMessage, SystemMessage
-
+from assayer._extras import require
 from assayer.evaluators.base import BaseEvaluator
 from assayer.models import FieldEvaluation
 from assayer.registries.evaluator_registry import EvaluatorRegistry
+
+if TYPE_CHECKING:
+    from langchain_core.language_models.chat_models import BaseChatModel
 
 DEFAULT_JUDGE_SYSTEM_PROMPT: str = """\
 You are an expert evaluator assessing the quality and faithfulness of an AI assistant's response.
@@ -90,7 +91,7 @@ class FaithfulnessEvaluator(BaseEvaluator):
     def _get_classifier(self) -> Callable[[str], Any]:
         """Lazily initialize classifier if not injected."""
         if self._classifier is None:
-            import transformers
+            transformers = require("transformers", "semantic", "the NLI evaluator")
 
             self._classifier = transformers.pipeline(
                 "text-classification",
@@ -267,7 +268,7 @@ class LLMJudgeEvaluator(BaseEvaluator):
     def __init__(
         self,
         field_name: str,
-        judge_model: BaseChatModel,
+        judge_model: "BaseChatModel",
         system_prompt: str | None = None,
     ) -> type(None):
         """Initialize the LLM judge evaluator.
@@ -280,8 +281,10 @@ class LLMJudgeEvaluator(BaseEvaluator):
 
         Raises:
             ValueError: If field_name is empty or whitespace-only after stripping.
+            ImportError: If the `langchain` extra is not installed.
         """
         super().__init__(field_name)
+        self._messages = require("langchain_core.messages", "langchain", "LLMJudgeEvaluator")
         self._judge_model = judge_model
         self._prompt = system_prompt or DEFAULT_JUDGE_SYSTEM_PROMPT
         self._prompt_hash = hash_prompt(self._prompt)
@@ -318,7 +321,10 @@ class LLMJudgeEvaluator(BaseEvaluator):
             user_message = f"Context/Reference: {reference}\nResponse to evaluate: {prediction}"
 
         # Create messages for the judge model
-        messages = [SystemMessage(content=self._prompt), HumanMessage(content=user_message)]
+        messages = [
+            self._messages.SystemMessage(content=self._prompt),
+            self._messages.HumanMessage(content=user_message),
+        ]
 
         # Call the judge model and parse the response
         response = self._judge_model.invoke(messages)

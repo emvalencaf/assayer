@@ -62,7 +62,7 @@ A Python library for evaluating and observing LLM-powered applications. It
 provides a unified interface to run structured evaluations (chat turn quality,
 classification accuracy and named entity extraction) using both deterministic
 metrics and model-based judges (LLM-as-Judge). Token costs are tracked per run.
-Experiments can be exported to LangSmith with `LangSmithAdapter` (Langfuse is planned).
+Experiments can be exported to LangSmith with `LangSmithAdapter` and to Langfuse with `LangfuseAdapter`.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -76,7 +76,7 @@ Experiments can be exported to LangSmith with `LangSmithAdapter` (Langfuse is pl
 - **Token cost tracking**: input/output tokens and estimated USD cost per run, comparable across experiments
 - **Extensible**: register custom metrics and evaluator types without modifying core files
 - **Audit trail**: every evaluated field records method, expected value, obtained value, score and prompt hash
-- **Observability integrations**: `Runner(adapter=LangSmithAdapter()).export(experiment)` sends Cases, run trees and Scores to LangSmith through a vendor-neutral Adapter (Langfuse is planned)
+- **Observability integrations**: `Runner(adapter=LangSmithAdapter()).export(experiment)` (or `LangfuseAdapter()`) sends Cases, traces and Scores to LangSmith or Langfuse through a vendor-neutral Adapter
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -128,8 +128,30 @@ Experiments can be exported to LangSmith with `LangSmithAdapter` (Langfuse is pl
    ```bash
    python -m venv .venv
    source .venv/bin/activate
-   pip install -e .
+   pip install -e '.[all]'
    ```
+   The core (`pip install assayer`) needs only `numpy` and `scikit-learn`. Add what you use:
+
+   | Extra | Brings | Needed for |
+   |---|---|---|
+   | `semantic` | `bert-score`, `sentence-transformers`, `torch`, `transformers` | `bert_score`, `make_semantic_similarity`, the NLI evaluator |
+   | `text` | `nltk`, `rouge-score` | `bleu`, `rouge_l` |
+   | `langchain` | `langchain-core` | `LangChainJudge` |
+   | `langfuse` | `langfuse` | `LangfuseAdapter` |
+   | `langsmith` | `langsmith` | `LangSmithAdapter` |
+   | `yaml` | `pyyaml` | YAML field maps |
+   | `all` | all of the above | |
+
+   Using something whose extra is missing raises an `ImportError` naming `assayer[<extra>]`.
+   Consumers import from `assayer`, `assayer.metrics`, `assayer.judges` and `assayer.adapters`.
+
+   **Lazy downloads and offline use.** BERTScore and semantic similarity download their
+   Hugging Face models (`roberta-large` and `sentence-transformers/all-MiniLM-L6-v2`, plus the
+   BERTScore baseline) on first use into `~/.cache/huggingface`, and the NLI evaluator downloads
+   its model the same way. `bleu` splits on whitespace and needs no NLTK data today; if you add metrics that use NLTK
+   tokenizers or corpora, fetch them once with `nltk.download(...)`. To run
+   offline, run each metric once with network access, then set `HF_HUB_OFFLINE=1` (and
+   `TRANSFORMERS_OFFLINE=1`) so the cache is used without reaching the Hub.
 3. Enable the git hooks
    ```bash
    scripts/setup.sh

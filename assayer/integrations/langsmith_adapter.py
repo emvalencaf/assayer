@@ -13,8 +13,13 @@ from collections.abc import Callable
 from types import TracebackType
 from typing import Self
 
-import langsmith
-from langsmith.utils import LangSmithError
+from assayer._extras import missing_extra
+
+try:
+    import langsmith
+    from langsmith.utils import LangSmithError
+except ImportError as exc:
+    raise missing_extra("langsmith", "LangSmithAdapter") from exc
 
 from assayer.adapters import AdapterConfigError, ExportReport, export_experiment
 from assayer.integrations.langsmith_export import LangSmithExport
