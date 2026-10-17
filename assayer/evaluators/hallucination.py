@@ -281,8 +281,10 @@ class LLMJudgeEvaluator(BaseEvaluator):
 
         Raises:
             ValueError: If field_name is empty or whitespace-only after stripping.
+            ImportError: If the `langchain` extra is not installed.
         """
         super().__init__(field_name)
+        self._messages = require("langchain_core.messages", "langchain", "LLMJudgeEvaluator")
         self._judge_model = judge_model
         self._prompt = system_prompt or DEFAULT_JUDGE_SYSTEM_PROMPT
         self._prompt_hash = hash_prompt(self._prompt)
@@ -319,10 +321,9 @@ class LLMJudgeEvaluator(BaseEvaluator):
             user_message = f"Context/Reference: {reference}\nResponse to evaluate: {prediction}"
 
         # Create messages for the judge model
-        messages_module = require("langchain_core.messages", "langchain", "LLMJudgeEvaluator")
         messages = [
-            messages_module.SystemMessage(content=self._prompt),
-            messages_module.HumanMessage(content=user_message),
+            self._messages.SystemMessage(content=self._prompt),
+            self._messages.HumanMessage(content=user_message),
         ]
 
         # Call the judge model and parse the response

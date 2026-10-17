@@ -65,10 +65,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - name: Public modules import with no extra
-        run: >
-          uv run --no-dev python -c
-          "import assayer, assayer.metrics, assayer.judges, assayer.adapters"
+      - name: Core-only environment
+        run: uv run --isolated --no-dev scripts/check_core_only.py
       - name: Pytest (packaging)
         run: uv run --group dev pytest tests/test_packaging.py
 

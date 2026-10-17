@@ -4,8 +4,7 @@
 `assayer[langchain]`.
 """
 
-import importlib
-
+from assayer._extras import lazy_exports
 from assayer.judges.judge import Judge, JudgeResponse
 from assayer.judges.ledger import JudgeLedger, call_judge, track_judge
 from assayer.judges.parsing import (
@@ -21,17 +20,7 @@ from assayer.judges.parsing import (
 )
 from assayer.judges.prompt import Prompt
 
-
-def __getattr__(name: str) -> object:
-    """Load `LangChainJudge` on first use, so that the core imports without its extra."""
-    if name == "LangChainJudge":
-        return importlib.import_module("assayer.judges.langchain_judge").LangChainJudge
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
-
-def __dir__() -> list[str]:
-    return sorted([*globals(), "LangChainJudge"])
-
+__getattr__, __dir__ = lazy_exports(__name__, {"LangChainJudge": "assayer.judges.langchain_judge"})
 
 __all__ = [
     "ClaimVerdict",
