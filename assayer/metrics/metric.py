@@ -5,7 +5,7 @@ whether it needs a Judge (`kind`). Built-in and custom metrics share this one
 shape, so they run, skip and fail the same way.
 """
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field, fields
 from typing import Any, Literal, get_args
 
@@ -40,7 +40,8 @@ class Metric:
         name: Name of the metric; becomes the name of its Scores.
         level: What the metric scores: "step", "trajectory" or "experiment".
         fn: Called as `fn(subject, case)`, where subject is a Step, Trajectory or
-            Experiment according to `level`. Returns a number in [0, 1] or a
+            Experiment according to `level`, plus the keyword parameters given
+            for a Field (see `evaluate`). Returns a number in [0, 1] or a
             boolean. A missing answer is scored 0 by the metric itself; an
             input the metric cannot work without is declared in `requires`.
         requires: Names of the Case fields (such as "expected_output") and of
@@ -81,12 +82,21 @@ class Metric:
         if unknown:
             raise ValueError(f"requires names unknown fields: {sorted(unknown)}")
 
-    def evaluate(self, subject: Any, case: Case | None = None) -> MetricOutcome:
+    def evaluate(
+        self,
+        subject: Any,
+        case: Case | None = None,
+        field: str | None = None,
+        params: Mapping[str, Any] | None = None,
+    ) -> MetricOutcome:
         """Apply the metric once.
 
         Args:
             subject: The Step, Trajectory or Experiment, according to `level`.
             case: The Case the subject was produced for, if any.
+            field: Dotted path of the output Field the subject and case were cut
+                down to; recorded on the Score or failure.
+            params: Keyword parameters passed on to `fn`.
 
         Returns:
             One Score, or one evaluation failure when a required input is
@@ -99,11 +109,21 @@ class Metric:
             missing = [name for name in self.requires if _lookup(name, case, subject) is None]
             if missing:
                 error = f"missing required input: {', '.join(missing)}"
-                return MetricOutcome(failures=[EvaluationFailure(self.name, error, target_id)])
-            value = self.fn(subject, case)
-            score = Score(name=self.name, value=value, target=self.level, target_id=target_id)
+                return MetricOutcome(
+                    failures=[EvaluationFailure(self.name, error, target_id, field)]
+                )
+            value = self.fn(subject, case, **(params or {}))
+            score = Score(
+                name=self.name,
+                value=value,
+                field=field,
+                target=self.level,
+                target_id=target_id,
+            )
         except Exception as exc:
-            return MetricOutcome(failures=[EvaluationFailure(self.name, str(exc), target_id)])
+            return MetricOutcome(
+                failures=[EvaluationFailure(self.name, str(exc), target_id, field)]
+            )
         return MetricOutcome(scores=[score])
 
     def _target_id(self, subject: Any) -> str | None:

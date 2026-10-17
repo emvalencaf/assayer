@@ -41,6 +41,18 @@ class Experiment:
         if not self.name.strip():
             raise ValueError("name must not be empty")
 
+    def scores_by_field(self) -> dict[str | None, list[Score]]:
+        """Group the Scores by the output Field they refer to.
+
+        Returns:
+            The Scores per Field path, in the order they were computed. Scores of
+            the whole output are under the key None.
+        """
+        grouped: dict[str | None, list[Score]] = {}
+        for score in self.scores:
+            grouped.setdefault(score.field, []).append(score)
+        return grouped
+
     def total_usage(self, pricing: PricingConfig | None = None) -> TokenUsage:
         """Sum the token usage of all Trajectories, excluding the Judge.
 
