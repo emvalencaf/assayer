@@ -1,82 +1,11 @@
-"""The map from output Fields (dotted paths) to the metrics that score them."""
+"""Validates a field map and builds its entries."""
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, field
-from typing import Any, Literal, get_args
+from typing import Any
 
 from assayer.metrics import Metric
-
-Align = Literal["key", "best_match", "positional"]
-ALIGNMENTS = get_args(Align)
-
-
-@dataclass(frozen=True)
-class FieldMetric:
-    """One metric applied to one Field, with the parameters of that pair.
-
-    Args:
-        path: Dotted path of the Field, such as "address.city".
-        metric: The metric that scores it.
-        params: Keyword parameters passed to the metric's function.
-    """
-
-    path: str
-    metric: Metric
-    params: dict[str, Any] = field(default_factory=dict)
-
-    @property
-    def similarity_name(self) -> str:
-        """Name of the Score that stands for this entry when items are compared."""
-        return self.metric.name
-
-    def metrics(self) -> list[Metric]:
-        """The metrics this entry applies."""
-        return [self.metric]
-
-
-@dataclass(frozen=True)
-class ListField:
-    """How to score a Field that is a list of objects.
-
-    Each predicted item is paired with an expected one (the Alignment), the pairs
-    are scored property by property, and the items left without a pair are
-    penalised by `list_precision`, `list_recall` and `list_f1` Scores.
-
-    Args:
-        properties: Maps the dotted path of a property, relative to an item, to a
-            list of metrics as in the field map, or to a nested `ListField` for
-            an array inside the item (aligned the same way, recursively).
-        align: How items are paired: "best_match" (greedy by descending
-            similarity, the mean of the pair's property Scores, ties by
-            position), "key" (items with equal `key`) or "positional" (same index).
-        key: Property whose value identifies an item; required by "key".
-        threshold: Lowest similarity for "best_match" to pair two items.
-    """
-
-    properties: Mapping[str, Any]
-    align: Align = "best_match"
-    key: str | None = None
-    threshold: float = 0.5
-
-
-@dataclass(frozen=True)
-class ListSpec:
-    """A validated `ListField`, with its properties built into pairs."""
-
-    path: str
-    align: Align
-    key: str | None
-    threshold: float
-    properties: list["FieldMetric | ListSpec"]
-
-    @property
-    def similarity_name(self) -> str:
-        """Name of the Score that stands for this entry when items are compared."""
-        return "list_f1"
-
-    def metrics(self) -> list[Metric]:
-        """The metrics this entry applies, nested properties included."""
-        return metrics_of(self.properties)
+from assayer.runner.field_map.field_metric import FieldMetric
+from assayer.runner.field_map.list_field import ALIGNMENTS, ListField, ListSpec
 
 
 def build_field_map(
@@ -158,29 +87,3 @@ def _build_list(path: str, spec: ListField) -> ListSpec:
 def metrics_of(entries: Sequence[FieldMetric | ListSpec]) -> list[Metric]:
     """List every metric used by a built field map, nested properties included."""
     return [metric for entry in entries for metric in entry.metrics()]
-
-
-def resolve(value: Any, path: str) -> Any:
-    """Read a dotted path out of nested dictionaries and lists.
-
-    Args:
-        value: The structured output.
-        path: Dotted path; a numeric segment indexes a list.
-
-    Returns:
-        What the path points at, or None when any step of it is absent.
-    """
-    for segment in path.split("."):
-        if isinstance(value, Mapping):
-            value = value.get(segment)
-        elif (
-            isinstance(value, Sequence)
-            and not isinstance(value, str)
-            and segment.isascii()
-            and segment.isdigit()
-        ):
-            index = int(segment)
-            value = value[index] if index < len(value) else None
-        else:
-            return None
-    return value

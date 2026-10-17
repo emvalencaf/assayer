@@ -2,13 +2,13 @@
 type: Reference
 title: Per-Field measurement
 description: The Runner's field map, which scores each output Field on its own by dotted path, and how the Scores and failures carry the Field.
-resource: assayer/runner/field_map.py
+resource: assayer/runner/field_map/
 tags: [runner, metrics, field]
 status: draft
 generated: { by: claude-code/pre-commit, at: 2026-10-17T23:59:00Z }
 sources:
   - id: field-map
-    resource: assayer/runner/field_map.py
+    resource: assayer/runner/field_map/
     title: build_field_map and resolve
   - id: runner
     resource: assayer/runner/runner.py
@@ -75,7 +75,7 @@ call.[^field-map]
 * `TypeError`: the map is not a mapping, a value is not a list, an entry is not a `Metric` or `(Metric, params)`, or `params` is not a mapping.
 * `ValueError`: a path is blank or has an empty segment (`a..b`), a metric is listed twice under one path (their Scores could not be told apart), or a metric is not trajectory-level. Only trajectory-level metrics are accepted for now, because a Field is cut out of a Trajectory's output.
 
-[^field-map]: assayer/runner/field_map.py
+[^field-map]: assayer/runner/field_map/
 [^runner]: assayer/runner/runner.py
 [^alignment]: assayer/runner/alignment.py
 [^scoring]: assayer/runner/field_scoring.py
