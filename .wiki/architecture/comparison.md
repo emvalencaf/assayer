@@ -22,7 +22,7 @@ sources:
 
 `compare(experiment_a, experiment_b)` in `assayer.runner` reports how
 the second Experiment differs from the first, always **b minus a** (#27).[^compare]
-It sits beside the legacy `compare_experiments`, which is unchanged. It takes no
+It replaced the legacy `compare_experiments` and `ExperimentResult.compare` (#39). It takes no
 `pricing` argument: the cost uses the `Experiment.pricing` each side carries, so the
 two sides may use different models.
 

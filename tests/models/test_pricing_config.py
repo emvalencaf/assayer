@@ -1,9 +1,10 @@
-"""Tests for PricingConfig and its compatibility alias in the runner."""
+"""Tests for PricingConfig."""
 
 from assayer.models import PricingConfig
-from assayer.runner.pricing import PricingConfig as RunnerPricingConfig
 
 
 class TestPricingConfig:
-    def test_runner_pricing_still_exposes_the_same_class(self):
-        assert RunnerPricingConfig is PricingConfig
+    def test_cost_prices_input_and_output_tokens(self):
+        pricing = PricingConfig(cost_per_input_token=0.5, cost_per_output_token=2.0)
+
+        assert pricing.cost(10, 3) == 11.0

@@ -7,19 +7,12 @@ from assayer.metrics.agent import (
     tool_argument_match,
     tool_correctness,
 )
-from assayer.metrics.chat import (
-    bert_score,
-    bleu,
-    make_semantic_similarity,
-    register_chat_metrics,
-    rouge_l,
-)
+from assayer.metrics.chat import bert_score, bleu, make_semantic_similarity, rouge_l
 from assayer.metrics.classification import (
     accuracy,
     make_f1,
     make_precision,
     make_recall,
-    register_classification_metrics,
 )
 from assayer.metrics.consistency import (
     make_pass_hat_k,
@@ -44,7 +37,7 @@ from assayer.metrics.judge import (
     make_goal_success,
 )
 from assayer.metrics.metric import Detailed, Metric, MetricOutcome
-from assayer.metrics.ner import ner_macro_f1, register_ner_evaluators, register_ner_metrics
+from assayer.metrics.ner import EntitySpan, NERMatcher, NERMatchResult, ner_macro_f1
 from assayer.metrics.retrieval import (
     make_context_precision,
     make_context_recall,
@@ -57,8 +50,11 @@ __all__ = [
     "CRITERIA_PROMPT",
     "GOAL_SUCCESS_PROMPT",
     "Detailed",
+    "EntitySpan",
     "Metric",
     "MetricOutcome",
+    "NERMatchResult",
+    "NERMatcher",
     "accuracy",
     "bert_score",
     "bleu",
@@ -81,13 +77,9 @@ __all__ = [
     "normalized_exact_match",
     "numeric_tolerance",
     "register_agent_metrics",
-    "register_chat_metrics",
-    "register_classification_metrics",
     "register_consistency_metrics",
     "register_corpus_metrics",
     "register_field_metrics",
-    "register_ner_evaluators",
-    "register_ner_metrics",
     "register_retrieval_metrics",
     "rouge_l",
     "step_efficiency",

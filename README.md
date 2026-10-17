@@ -42,8 +42,10 @@
       <a href="#usage">Usage</a>
       <ul>
         <li><a href="#quick-start">Quick start</a></li>
-        <li><a href="#extending-assayer">Extending Assayer</a></li>
+        <li><a href="#using-assayer-from-another-repository">Using Assayer from another repository</a></li>
         <li><a href="#token-cost-tracking">Token cost tracking</a></li>
+        <li><a href="#examples">Examples</a></li>
+        <li><a href="#migrating-from-the-legacy-api">Migrating from the legacy API</a></li>
         <li><a href="#running-tests">Running tests</a></li>
         <li><a href="#status-line-budget">Status line budget</a></li>
       </ul>
@@ -58,11 +60,12 @@
 
 ## About The Project
 
-A Python library for evaluating and observing LLM-powered applications. It
-provides a unified interface to run structured evaluations (chat turn quality,
-classification accuracy and named entity extraction) using both deterministic
-metrics and model-based judges (LLM-as-Judge). Token costs are tracked per run.
-Experiments can be exported to LangSmith with `LangSmithAdapter` and to Langfuse with `LangfuseAdapter`.
+A Python library for evaluating and observing LLM-powered applications and agents.
+A `Runner` runs your target over a `Dataset` of `Case`s, keeps what it did as
+`Trajectory`s and scores them with metrics, deterministic or judge-based
+(LLM-as-Judge), into an `Experiment`. Token costs are tracked per run, and an
+Experiment can be exported to LangSmith with `LangSmithAdapter` and to Langfuse with
+`LangfuseAdapter`.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -71,11 +74,13 @@ Experiments can be exported to LangSmith with `LangSmithAdapter` and to Langfuse
 - **Chat quality metrics**: BLEU, ROUGE-L, BERTScore, semantic similarity
 - **Classification metrics**: accuracy, precision, recall, F1
 - **NER evaluation**: entity-level F1 by type, macro F1
-- **Hallucination detection**: reference-based (faithfulness scoring) and LLM-as-Judge
-- **Mixed structured output**: evaluate a single chain that returns chat, classification and NER fields in one pipeline run
+- **Agent metrics**: tool correctness, tool arguments, end state and step efficiency
+- **Judge-based metrics**: criteria, goal success and faithfulness to the retrieved context, with any Judge you inject
+- **Retrieval metrics**: context precision and recall
+- **Structured output**: score each Field of the output on its own, including lists of objects, with a field map in code, YAML or JSON
+- **Consistency**: run a Case k times and measure agreement, entropy, pass@k and pass^k
 - **Token cost tracking**: input/output tokens and estimated USD cost per run, comparable across experiments
-- **Extensible**: register custom metrics and evaluator types without modifying core files
-- **Audit trail**: every evaluated field records method, expected value, obtained value, score and prompt hash
+- **Extensible**: write a `Metric` and register it, without modifying core files
 - **Observability integrations**: `Runner(adapter=LangSmithAdapter()).export(experiment)` (or `LangfuseAdapter()`) sends Cases, traces and Scores to LangSmith or Langfuse through a vendor-neutral Adapter
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -84,10 +89,14 @@ Experiments can be exported to LangSmith with `LangSmithAdapter` and to Langfuse
 
 | Abstraction | Role |
 |-------------|------|
-| `Dataset` | Collection of input/expected-output pairs (local JSON) |
-| `Evaluator` | Scores a single prediction against a reference |
-| `Metric` | Aggregates scores across a full dataset |
-| `Runner` | Orchestrates runs, applies evaluators/metrics, tracks tokens |
+| `Dataset` / `Case` | A named collection of inputs, each with an optional reference to compare against (a list, a JSON file or `Dataset`) |
+| `Runner` | Runs a target over a Dataset, applies metrics and returns an Experiment; `score` does the same for outputs collected beforehand |
+| `Trajectory` / `Step` | What the target did for one input: model calls, tool calls and retrievals, up to the final answer |
+| `Metric` | Names a way of computing Scores for a Step, a Trajectory or a whole Experiment |
+| `Registry` | Holds metrics by name, built-in and custom alike |
+| `Experiment` | The Trajectories, Scores and evaluation failures of one run, with tokens and cost |
+| `Judge` | The injected language model behind judge-based metrics |
+| `Adapter` | The boundary to an observability backend |
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -103,7 +112,7 @@ Experiments can be exported to LangSmith with `LangSmithAdapter` and to Langfuse
 ### Built With
 
 * [Python](https://www.python.org) managed with [uv](https://docs.astral.sh/uv/)
-* [LangSmith](https://www.langchain.com/langsmith)
+* [LangSmith](https://www.langchain.com/langsmith) and [Langfuse](https://langfuse.com)
 * [Transformers](https://huggingface.co/docs/transformers) and [PyTorch](https://pytorch.org)
 * [pytest](https://docs.pytest.org) for tests
 * [ruff](https://docs.astral.sh/ruff/) for lint and format
@@ -134,7 +143,7 @@ Experiments can be exported to LangSmith with `LangSmithAdapter` and to Langfuse
 
    | Extra | Brings | Needed for |
    |---|---|---|
-   | `semantic` | `bert-score`, `sentence-transformers`, `torch`, `transformers` | `bert_score`, `make_semantic_similarity`, the NLI evaluator |
+   | `semantic` | `bert-score`, `sentence-transformers`, `torch`, `transformers` | `bert_score`, `make_semantic_similarity` |
    | `text` | `nltk`, `rouge-score` | `bleu`, `rouge_l` |
    | `langchain` | `langchain-core` | `LangChainJudge` |
    | `langfuse` | `langfuse` | `LangfuseAdapter` |
@@ -143,12 +152,11 @@ Experiments can be exported to LangSmith with `LangSmithAdapter` and to Langfuse
    | `all` | all of the above | |
 
    Using something whose extra is missing raises an `ImportError` naming `assayer[<extra>]`.
-   Consumers import from `assayer`, `assayer.metrics`, `assayer.judges` and `assayer.adapters`.
+   Consumers import from `assayer.models`, `assayer.metrics`, `assayer.runner`, `assayer.registries`, `assayer.judges` and `assayer.adapters`.
 
    **Lazy downloads and offline use.** BERTScore and semantic similarity download their
    Hugging Face models (`roberta-large` and `sentence-transformers/all-MiniLM-L6-v2`, plus the
-   BERTScore baseline) on first use into `~/.cache/huggingface`, and the NLI evaluator downloads
-   its model the same way. `bleu` splits on whitespace and needs no NLTK data today; if you add metrics that use NLTK
+   BERTScore baseline) on first use into `~/.cache/huggingface`. `bleu` splits on whitespace and needs no NLTK data today; if you add metrics that use NLTK
    tokenizers or corpora, fetch them once with `nltk.download(...)`. To run
    offline, run each metric once with network access, then set `HF_HUB_OFFLINE=1` (and
    `TRANSFORMERS_OFFLINE=1`) so the cache is used without reaching the Hub.
@@ -164,54 +172,204 @@ Experiments can be exported to LangSmith with `LangSmithAdapter` and to Langfuse
 ### Quick start
 
 ```python
-from assayer import Runner, Dataset
-from assayer.metrics import bleu, f1
-from assayer.evaluators import ChatEvaluator, ClassificationEvaluator
+from assayer.metrics import corpus_metric, make_f1
+from assayer.models import Case, Dataset
+from assayer.runner import Runner
 
-dataset = Dataset.from_json("data/examples.json")
-
-runner = Runner(
-    target_fn=my_llm_chain,
-    evaluators=[ChatEvaluator(), ClassificationEvaluator()],
-    metrics=[bleu, f1],
-    experiment_name="my-experiment-v1",
+dataset = Dataset(
+    "tickets",
+    [
+        Case(input="My invoice is wrong", id="c1", expected_output="billing"),
+        Case(input="The app crashes", id="c2", expected_output="technical"),
+    ],
 )
 
-result = runner.run(dataset)
-print(result.summary())
+
+def my_llm_chain(text: str) -> str:  # your target: any callable
+    return "billing" if "invoice" in text else "general"
+
+
+runner = Runner(my_llm_chain, [corpus_metric("f1", make_f1())])
+experiment = runner.run(dataset)
+
+for score in experiment.scores:
+    print(score.name, score.value)
 ```
 
-### Extending Assayer
+`dataset` may also be a list of dictionaries or the path to a JSON file. The target
+returns a plain value, which becomes the `final_output` of a one-Step Trajectory, or a
+`Trajectory` when it wants to report its Steps, tokens and tool calls.
 
-**Custom metric:**
+### Using Assayer from another repository
+
+Install the core plus the extras you use (see [Installation](#installation)), then
+import from the subpackages. The core needs no extra:
+
+```bash
+pip install assayer                       # numpy and scikit-learn only
+pip install 'assayer[text,langchain]'     # or the extras you need
+```
+
+**A custom metric.** A `Metric` is a function `fn(subject, case)` that returns a number in
+[0, 1] (or a boolean), at the level it scores: `"step"`, `"trajectory"` or `"experiment"`.
+`requires` names the inputs it cannot work without; a Case that lacks one is an
+`EvaluationFailure` on the Experiment, not a score of 0.
+
 ```python
-from assayer.registry import MetricRegistry
+from assayer.metrics import Metric
+from assayer.models import Case, Dataset, Trajectory
+from assayer.registries import Registry
+from assayer.runner import Runner
 
 
-def my_metric(predictions, references): ...
+def polite(trajectory: Trajectory, case: Case) -> float:
+    return float("please" in trajectory.final_output.lower())
 
 
-MetricRegistry.register("my_metric", my_metric)
+registry = Registry()  # optional: look metrics up by name, built-in or custom
+registry.register(Metric(name="polite", level="trajectory", fn=polite))
+
+dataset = Dataset("greetings", [Case(input="Greet the user", id="c1")])
+experiment = Runner(lambda text: "Please come in", [registry.get("polite")]).run(dataset)
+
+print([(s.name, s.value) for s in experiment.scores])  # [('polite', 1.0)]
 ```
 
-**Custom evaluator:**
+**One runnable example per extra.** Each snippet is self-contained; the first four run
+offline (the semantic one downloads its model once), the last two need credentials.
+
+`text`: BLEU and ROUGE-L over a corpus.
+
 ```python
-from assayer.evaluators import BaseEvaluator
-from assayer.registry import EvaluatorRegistry
+from assayer.metrics import bleu, corpus_metric, rouge_l
+from assayer.models import Case, Dataset
+from assayer.runner import Runner
 
-
-class MyEvaluator(BaseEvaluator):
-    def evaluate(self, prediction, reference): ...
-
-
-EvaluatorRegistry.register("my_evaluator", MyEvaluator)
+dataset = Dataset("qa", [Case(input="q", id="c1", expected_output="the cat sat on the mat")])
+metrics = [corpus_metric("bleu", bleu), corpus_metric("rouge_l", rouge_l)]
+experiment = Runner(lambda q: "the cat sat on a mat", metrics).run(dataset)
+print({s.name: round(s.value, 2) for s in experiment.scores})
 ```
+
+`semantic`: semantic similarity with a sentence-transformers model.
+
+```python
+from assayer.metrics import corpus_metric, make_semantic_similarity
+from assayer.models import Case, Dataset
+from assayer.runner import Runner
+
+dataset = Dataset("qa", [Case(input="q", id="c1", expected_output="a feline rests on a rug")])
+metric = corpus_metric("semantic_similarity", make_semantic_similarity())
+experiment = Runner(lambda q: "a cat sleeps on a carpet", [metric]).run(dataset)
+print(experiment.scores[0].value)
+```
+
+`yaml`: a field map in a YAML file scores each Field of a structured output on its own.
+
+```python
+from pathlib import Path
+
+from assayer.models import Case, Dataset
+from assayer.runner import Runner, load_field_map
+
+Path("field_map.yaml").write_text("label: [exact_match]\nscore:\n  - numeric_tolerance: {tolerance: 1}\n")
+
+dataset = Dataset(
+    "fields", [Case(input="x", id="c1", expected_output={"label": "a", "score": 5})]
+)
+runner = Runner(lambda x: {"label": "a", "score": 6}, field_metrics=load_field_map("field_map.yaml"))
+experiment = runner.run(dataset)
+print({(s.field, s.name): s.value for s in experiment.scores})
+```
+
+`langchain`: any LangChain chat model becomes the Judge of a judge-based metric. A fake
+model keeps the snippet offline; swap in `ChatOpenAI()`, `ChatAnthropic()` or similar.
+
+```python
+from langchain_core.language_models.fake_chat_models import FakeListChatModel
+
+from assayer.judges import LangChainJudge
+from assayer.metrics import make_criteria_judge
+from assayer.models import Case, Dataset
+from assayer.runner import Runner
+
+judge = LangChainJudge(FakeListChatModel(responses=['{"score": 5, "reason": "Clear."}']))
+metric = make_criteria_judge(judge, criteria="The answer is clear and correct.")
+
+dataset = Dataset("qa", [Case(input="What is 2 + 2?", id="c1")])
+experiment = Runner(lambda q: "4", [metric]).run(dataset)
+print(experiment.scores[0].value, experiment.scores[0].comment)  # 1.0 Clear.
+print(experiment.judge_calls)  # the Judge's calls and tokens are kept apart from the target's
+```
+
+`langsmith`: export an Experiment (needs `LANGSMITH_API_KEY`).
+
+```python
+from assayer.adapters import LangSmithAdapter
+from assayer.models import Case, Dataset
+from assayer.runner import Runner
+
+dataset = Dataset("greetings", [Case(input="hi", id="c1", expected_output="hi")])
+runner = Runner(lambda text: text, adapter=LangSmithAdapter())
+report = runner.export(runner.run(dataset))
+print(report.ok, len(report.confirmed))
+```
+
+`langfuse`: the same with Langfuse (needs `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY` and,
+outside the EU cloud, `LANGFUSE_BASE_URL`).
+
+```python
+from assayer.adapters import LangfuseAdapter
+from assayer.models import Case, Dataset
+from assayer.runner import Runner
+
+dataset = Dataset("greetings", [Case(input="hi", id="c1", expected_output="hi")])
+runner = Runner(lambda text: text, adapter=LangfuseAdapter())
+report = runner.export(runner.run(dataset))
+print(report.ok, len(report.confirmed), len(report.queued))
+```
+
+An export never raises for an item that fails: read `report.failed` and `report.notes`.
+Using something whose extra is missing raises an `ImportError` naming `assayer[<extra>]`.
 
 ### Token cost tracking
 
-Every `RunResult` exposes `input_tokens`, `output_tokens` and `cost_usd`. Use
-`ExperimentResult.compare(other)` to get per-metric deltas and the average token
-cost delta between two experiments.
+A Step reports its tokens in `Step.usage`; `Runner(pricing=PricingConfig(...))` keeps the
+target's prices on the `Experiment`, and `Trajectory.total_usage()` and
+`Experiment.total_usage()` sum tokens and cost. `compare(a, b)` (`assayer.runner`)
+returns a `Comparison` with the delta per (metric, Field) and the mean token and cost
+deltas per Case between two Experiments. The Judge's tokens are kept apart in
+`Experiment.judge_usage` and are never priced with the target's prices.
+
+### Examples
+
+Runnable scripts in [`examples/`](examples), both offline:
+
+- [`examples/ticket_classification.py`](examples/ticket_classification.py): a custom
+  `Metric` plus a built-in metric on one Field of a structured output.
+- [`examples/faithfulness_check.py`](examples/faithfulness_check.py): `make_faithfulness`
+  with a scripted Judge over a retrieval Trajectory.
+
+```bash
+uv run --extra all python examples/ticket_classification.py
+```
+
+### Migrating from the legacy API
+
+The legacy pipelines and their models were removed in one clean break; there are no
+aliases. See "Breaking" in [CHANGELOG.md](CHANGELOG.md) for the full list.
+
+| Legacy | Now |
+|---|---|
+| `EvaluationPipeline`, `HistoricalPipeline` | `Runner(...).run(dataset)` and `Runner(...).score(dataset, outputs)` |
+| `ConsistencyPipeline` | `Runner(repetitions=k)` with `register_consistency_metrics` |
+| `ExperimentResult`, `RunResult`, `FieldEvaluation` | `Experiment`, `Trajectory`, `Score` |
+| `field_evaluators={"f": ["name"]}`, `FieldRouter` | `Runner(field_metrics={"f": [metric]})` |
+| `BaseEvaluator` and `EvaluatorRegistry` | a `Metric` and `Registry` |
+| `MetricRegistry`, `register_chat_metrics` and the like | `Registry`, `register_corpus_metrics` |
+| `FaithfulnessEvaluator`, `LLMJudgeEvaluator` | `make_faithfulness(judge)`, `make_criteria_judge(judge, ...)` |
+| `result.compare(other)` | `compare(a, b)` |
+| `LangSmithPublisher` | `LangSmithAdapter` |
 
 ### Running tests
 

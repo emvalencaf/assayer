@@ -5,9 +5,6 @@ from typing import Any
 
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 
-# Import the MetricRegistry for type hints
-from assayer.registries.metric_registry import MetricRegistry
-
 # Type alias for metric functions
 MetricFn = Callable[[list[Any], list[Any]], float]
 
@@ -191,25 +188,3 @@ def make_f1(average: str = "macro") -> MetricFn:
         return f1_score(references, predictions, average=average, zero_division=0)
 
     return f1_metric
-
-
-def register_classification_metrics(registry: MetricRegistry) -> None:
-    """Register classification metrics in the provided MetricRegistry.
-
-    Registers four standard classification metrics: accuracy, precision (macro),
-    recall (macro), and F1 (macro) in the provided registry. The precision, recall,
-    and F1 metrics use macro averaging by default.
-
-    Args:
-        registry: The MetricRegistry instance to register metrics in.
-
-    Raises:
-        KeyError: If any metric name is already registered in the registry.
-    """
-    # Register accuracy metric directly
-    registry.register("accuracy", accuracy)
-
-    # Register precision, recall, and F1 metrics with macro averaging
-    registry.register("precision", make_precision("macro"))
-    registry.register("recall", make_recall("macro"))
-    registry.register("f1", make_f1("macro"))

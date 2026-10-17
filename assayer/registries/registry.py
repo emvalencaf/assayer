@@ -3,8 +3,6 @@
 Built-in and custom metrics are registered the same way and looked up by name.
 """
 
-# Inner-module import: `assayer.metrics` imports the legacy registries, so going
-# through its `__init__` would be circular.
 from assayer.metrics.metric import Metric
 
 
