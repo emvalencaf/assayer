@@ -1,6 +1,7 @@
 # Update Log
 
 ## 2026-10-17
+* **Update**: [Adapters](architecture/adapters.md) records that `LangfuseAdapter` fails a Trajectory as `validation` when the Langfuse project id cannot be resolved, and that a Trajectory without a `case_id` carries no dataset id on its spans.
 * **Update**: [Adapters](architecture/adapters.md) documents `LangfuseAdapter` (#37): dataset items, one dataset run per repetition, OTLP spans for observations, `NUMERIC` scores and error mapping; [Package organization](architecture/package-organization.md) lists it under `integrations/`.
 * **Update**: [Adapters](architecture/adapters.md) records that the LangSmith live smoke test reads runs with the async `client.runs.query` and checks the root's `reference_example_id`, the shared trace id and the `dotted_order` nesting.
 * **Update**: [Adapters](architecture/adapters.md) records that the live smoke test reads project-level `overall.f` feedback back with `list_feedback` (it is not in `feedback_stats`) and that the UI may not list it like run feedback.

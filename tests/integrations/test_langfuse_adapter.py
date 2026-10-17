@@ -232,10 +232,6 @@ def _roots(backend):
     return [span for span in backend.spans.values() if span["parent_span_id"] is None]
 
 
-def _trace_of(backend, span):
-    return next(key[0] for key, value in backend.spans.items() if value is span)
-
-
 class TestDataset:
     def test_the_dataset_is_synced_by_name_once_per_export(self, exported):
         _, backend = exported
@@ -456,6 +452,26 @@ class TestDatasetRuns:
             if span["parent_span_id"] is None:
                 attributes = span["attributes"]
                 assert attributes["langfuse.experiment.item.root_observation_id"] == span_id
+
+
+class TestUnlinked:
+    def test_a_trajectory_without_a_case_id_does_not_point_at_a_dataset_item(self, adapter):
+        runner = Runner(_tool_then_model, adapter=adapter)
+        experiment = runner.run(Dataset("d", [Case(input="a", id="c1")]))
+        experiment.trajectories[0].case_id = None
+
+        runner.export(experiment)
+
+        (root,) = _roots(adapter.client.backend)
+        assert "langfuse.experiment.dataset.id" not in root["attributes"]
+
+    def test_an_unresolvable_project_is_a_validation_failure_of_the_trajectory(self, adapter):
+        adapter.client.api.projects.get.return_value = SimpleNamespace(data=[])
+        runner, experiment = _run(adapter)
+
+        report = runner.export(experiment)
+
+        assert ("trajectory", "validation") in {(f.target_kind, f.kind) for f in report.failed}
 
 
 class TestScores:

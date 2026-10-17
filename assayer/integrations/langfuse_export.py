@@ -120,10 +120,12 @@ class LangfuseExport:
             self._dataset_id = dataset.id
         return self._dataset_id
 
-    def _project(self) -> str | None:
+    def _project(self) -> str:
         if self._project_id is None:
             projects = self._client.api.projects.get().data
-            self._project_id = projects[0].id if projects else None
+            if not projects:
+                raise AdapterCallError("validation", "could not resolve the Langfuse project id")
+            self._project_id = projects[0].id
         return self._project_id
 
     def _run_id(self, run_name: str) -> str:
@@ -169,15 +171,17 @@ class LangfuseExport:
         t_id = payload["id"]
         run_name = f"{self._experiment.name}/rep-{payload['repetition']}"
         span_id = t_id[:16]
-        item_id = payload["case_id"] if payload["case_id"] is not None else t_id
         shared = {
             "langfuse.environment": _EXPERIMENT_ENVIRONMENT,
             "langfuse.experiment.id": self._run_id(run_name),
             "langfuse.experiment.name": run_name,
-            "langfuse.experiment.dataset.id": dataset_id,
-            "langfuse.experiment.item.id": item_id,
             "langfuse.experiment.item.root_observation_id": span_id,
         }
+        if payload["case_id"] is not None:
+            shared["langfuse.experiment.dataset.id"] = dataset_id
+            shared["langfuse.experiment.item.id"] = payload["case_id"]
+        else:  # no dataset item exists for it, so the run must not point at one
+            shared["langfuse.experiment.item.id"] = t_id
         metadata = {
             "assayer.id": t_id,
             "assayer.case_id": payload["case_id"],
