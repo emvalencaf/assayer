@@ -78,13 +78,13 @@ Sketch (one helper in e.g. `assayer/_optional.py`):
 ```python
 from importlib import import_module
 
+
 def require(module: str, extra: str, purpose: str):
     try:
         return import_module(module)
     except ImportError as exc:
         raise ImportError(
-            f"{purpose} requires '{module}'. "
-            f"Install it with: pip install 'assayer[{extra}]'"
+            f"{purpose} requires '{module}'. Install it with: pip install 'assayer[{extra}]'"
         ) from exc
 ```
 
