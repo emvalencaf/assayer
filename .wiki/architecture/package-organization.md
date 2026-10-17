@@ -5,7 +5,7 @@ description: How the assayer package is split by responsibility, and the convent
 resource: CODE_STANDARDS.md
 tags: [architecture, conventions]
 status: stable
-generated: { by: claude-code/pre-commit, at: 2026-10-17T22:00:00Z }
+generated: { by: claude-code/pre-commit, at: 2026-10-17T23:00:00Z }
 sources:
   - id: standards
     resource: CODE_STANDARDS.md
@@ -19,6 +19,9 @@ sources:
   - id: core-only-check
     resource: scripts/check_core_only.py
     title: CI check of the core-only environment
+  - id: license
+    resource: LICENSE
+    title: MIT license text
 ---
 
 # Overview
@@ -43,9 +46,13 @@ build on `judges` and `models`.
 * The core installs only `numpy` and `scikit-learn`; `semantic`, `text`, `langchain`, `langfuse`, `langsmith`, `yaml` and `all` are extras. A missing one raises an `ImportError` naming `assayer[<extra>]` (see `assayer/_extras.py`), and `LangChainJudge` and the backend Adapters load lazily from `assayer.judges`, `assayer.adapters` and `assayer.integrations`, each of which assigns the module `__getattr__` and `__dir__` built by `lazy_exports(__name__, {name: module})` in `assayer/_extras.py`.
 * CI checks the lean core with `scripts/check_core_only.py` (`uv run --isolated --no-dev`): no optional dependency may be installed, the public modules must import, and each extra-only feature (`LangChainJudge`, `LangfuseAdapter`, `LangSmithAdapter`, `bleu`) must raise an `ImportError` naming `assayer[<extra>]`.
 
+* The package is MIT licensed: the `LICENSE` file at the repository root (Edson Mota Valença Filho, 2026) is declared in `pyproject.toml` with `license = "MIT"` and `license-files = ["LICENSE"]`.[^license]
+
 * One concept per module; each subpackage re-exports its public API in `__init__.py` with `__all__`.
 * Registration is explicit through `register_<task>_metrics(registry)`; importing never registers.
 * New metrics are added, not edited into core files.
 * Tests mirror the package under `tests/<subpackage>/`.
 
 The full rules live in the **Package organization** section of `CODE_STANDARDS.md`.
+
+[^license]: The `LICENSE` file at the repository root.

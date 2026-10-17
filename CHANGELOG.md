@@ -21,6 +21,7 @@ The legacy API is removed in one change (#39), with no aliases: the old imports 
 - `LangSmithPublisher` and `make_langsmith_publisher` (`assayer.integrations.langsmith`), replaced by `LangSmithAdapter` (#36). Its gaps are listed in `docs/research/langsmith.md`.
 
 ### Added
+- `LICENSE` (MIT, Edson Mota Valença Filho, 2026), declared in `pyproject.toml`.
 - `model_step(response, model=, input=, name=)` (`assayer.runner`) builds a model Step from a LangChain-style reply (`content` and `usage_metadata`, read by attribute, so no extra), the way to report a target's tokens now that the token extractor is gone. `EntitySpan`, `NERMatchResult` and `NERMatcher` live in `assayer/metrics/ner_matching.py`.
 - README section "Using Assayer from another repository" with a custom-metric example and one runnable example per extra, a migration table, and a rewritten quick start (the old one imported names that did not exist).
 - `tests/test_examples.py` runs the examples and the offline README snippets, and `tests/test_legacy_removed.py` checks that the removed modules and names stay gone. The behaviors of the removed pipelines (empty dataset, invalid JSON, several metrics, priced usage) are ported to `tests/runner/test_runner.py`, the consistency parity tests now assert fixed values, and the NER matcher tests moved to `tests/metrics/test_ner.py`.

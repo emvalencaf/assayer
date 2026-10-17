@@ -397,7 +397,7 @@ Claude Code, not your invoice.
 
 ## Roadmap
 
-- [ ] Add a `LICENSE` file
+- [x] Add a `LICENSE` file
 - [ ] Tag and publish `v0.1.0`
 
 See the [open issues](https://github.com/emvalencaf/assayer/issues) for proposed features and known issues.
@@ -415,7 +415,7 @@ Coding and documentation rules are in [CODE_STANDARDS.md](CODE_STANDARDS.md).
 
 ## License
 
-Released under the MIT license. A `LICENSE` file has not been added yet.
+Released under the MIT license. See [LICENSE](LICENSE).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
