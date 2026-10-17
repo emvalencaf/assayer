@@ -1,7 +1,7 @@
 """Adapters: the vendor-neutral boundary to observability backends.
 
 `LangfuseAdapter` and `LangSmithAdapter` are importable from here too; they are loaded on first
-access and need `assayer[langfuse]` or `assayer[langsmith]`.
+access and need `llm-assayer-eval[langfuse]` or `llm-assayer-eval[langsmith]`.
 """
 
 from assayer._extras import lazy_exports

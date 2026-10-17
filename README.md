@@ -139,7 +139,7 @@ Experiment can be exported to LangSmith with `LangSmithAdapter` and to Langfuse 
    source .venv/bin/activate
    pip install -e '.[all]'
    ```
-   The core (`pip install assayer`) needs only `numpy` and `scikit-learn`. Add what you use:
+   The core (`pip install llm-assayer-eval`) needs only `numpy` and `scikit-learn`. Add what you use:
 
    | Extra | Brings | Needed for |
    |---|---|---|
@@ -151,7 +151,7 @@ Experiment can be exported to LangSmith with `LangSmithAdapter` and to Langfuse 
    | `yaml` | `pyyaml` | YAML field maps |
    | `all` | all of the above | |
 
-   Using something whose extra is missing raises an `ImportError` naming `assayer[<extra>]`.
+   Using something whose extra is missing raises an `ImportError` naming `llm-assayer-eval[<extra>]`.
    Consumers import from `assayer.models`, `assayer.metrics`, `assayer.runner`, `assayer.registries`, `assayer.judges` and `assayer.adapters`.
 
    **Lazy downloads and offline use.** BERTScore and semantic similarity download their
@@ -206,8 +206,20 @@ Install the core plus the extras you use (see [Installation](#installation)), th
 import from the subpackages. The core needs no extra:
 
 ```bash
-pip install assayer                       # numpy and scikit-learn only
-pip install 'assayer[text,langchain]'     # or the extras you need
+pip install llm-assayer-eval                    # numpy and scikit-learn only
+pip install 'llm-assayer-eval[text,langchain]'  # or the extras you need
+```
+
+The distribution is named `llm-assayer-eval` (the name `assayer` belongs to another
+project on PyPI), but the import name stays `assayer`:
+
+```python
+import assayer
+```
+
+```bash
+# until a release is on PyPI, install straight from git
+pip install 'llm-assayer-eval[all] @ git+https://github.com/emvalencaf/assayer'
 ```
 
 **A custom metric.** A `Metric` is a function `fn(subject, case)` that returns a number in
@@ -332,7 +344,7 @@ print(report.ok, len(report.confirmed), len(report.queued))
 ```
 
 An export never raises for an item that fails: read `report.failed` and `report.notes`.
-Using something whose extra is missing raises an `ImportError` naming `assayer[<extra>]`.
+Using something whose extra is missing raises an `ImportError` naming `llm-assayer-eval[<extra>]`.
 
 ### Token cost tracking
 
@@ -345,16 +357,37 @@ deltas per Case between two Experiments. The Judge's tokens are kept apart in
 
 ### Examples
 
-Runnable scripts in [`examples/`](examples), both offline:
+Runnable scripts in [`examples/`](examples), all offline:
 
-- [`examples/ticket_classification.py`](examples/ticket_classification.py): a custom
-  `Metric` plus a built-in metric on one Field of a structured output.
-- [`examples/faithfulness_check.py`](examples/faithfulness_check.py): `make_faithfulness`
-  with a scripted Judge over a retrieval Trajectory.
+| Script | Shows |
+|---|---|
+| [`ticket_classification.py`](examples/ticket_classification.py) | a custom `Metric` plus a built-in metric on one Field of a structured output |
+| [`ner_extraction.py`](examples/ner_extraction.py) | pure NER: `EntitySpan`s scored with entity-level macro F1 |
+| [`support_pipeline.py`](examples/support_pipeline.py) | one structured output scored per Field: classification (accuracy, F1), NER and text generation (ROUGE-L) |
+| [`schema_structured_output.py`](examples/schema_structured_output.py) | a field map drafted from a JSON Schema with `schema_to_field_map`: enums (classification), free text (generation) and extracted values, nested objects, a list of objects and a list of strings, each scored by its type |
+| [`agent_tool_use.py`](examples/agent_tool_use.py) | an agent `Trajectory` scored on tool calls, arguments, end state and steps, then two agents compared on quality and cost |
+| [`faithfulness_check.py`](examples/faithfulness_check.py) | `make_faithfulness` with a scripted Judge over a retrieval Trajectory |
+| [`logged_traffic_scoring.py`](examples/logged_traffic_scoring.py) | scoring live traffic by logging it and scoring batches (see below) |
 
 ```bash
-uv run --extra all python examples/ticket_classification.py
+uv run --extra all python examples/ner_extraction.py
 ```
+
+### Historical and live evaluation
+
+- **Historical (offline).** `Runner.run(dataset)` runs your target over a Dataset;
+  `Runner.score(dataset, outputs)` scores outputs you collected earlier, from a log, a
+  trace export or a CSV, without calling the target. `compare(a, b)` tells two
+  Experiments apart, and `export` sends them to LangSmith or Langfuse.
+- **Live (online).** Assayer has no live mode of its own: there is no hook that scores
+  each request as it is served, and none is planned for now. You can build one in your
+  project from the same pieces: capture each interaction as a `Trajectory` where your
+  app serves it, and have a job (a cron, a worker, a notebook) call
+  `Runner(metrics=...).score(Dataset(...), trajectories)` on the batch, or on a sample of
+  it. Production traffic rarely has a reference answer, so use reference-free metrics
+  (custom rules, judge-based criteria and faithfulness, cost and latency checks).
+  [`examples/logged_traffic_scoring.py`](examples/logged_traffic_scoring.py) is a
+  minimal version of that loop.
 
 ### Migrating from the legacy API
 
@@ -400,7 +433,9 @@ Claude Code, not your invoice.
 ## Roadmap
 
 - [x] Add a `LICENSE` file
+- [x] Pick the PyPI name: `llm-assayer-eval` (import name stays `assayer`)
 - [ ] Tag and publish `v0.1.0`
+- [ ] A first-class live mode (scoring requests as they are served)
 
 See the [open issues](https://github.com/emvalencaf/assayer/issues) for proposed features and known issues.
 

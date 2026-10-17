@@ -5,7 +5,7 @@ description: The Runner's field map, which scores each output Field on its own b
 resource: assayer/runner/field_map/
 tags: [runner, metrics, field]
 status: draft
-generated: { by: claude-code/pre-commit, at: 2026-10-18T00:30:00Z }
+generated: { by: claude-code/pre-commit, at: 2026-10-18T01:00:00Z }
 sources:
   - id: field-map
     resource: assayer/runner/field_map/
@@ -93,7 +93,7 @@ call.[^field-map]
 * Defaults: enum/boolean `exact_match` + `f1`; short string (`format`, `pattern` or `maxLength` <= 64) `normalized_exact_match`; other string `rouge_l`; number `numeric_tolerance` (`tolerance: 0`); array of non-objects `list_f1`; object recursed into dotted paths; array of objects a `best_match` list Field. Inside list items `f1` and `rouge_l` (corpus-level) give way to `exact_match` and `normalized_exact_match`.
 * An id-like item property (`id`, `key`, `uuid`, `*_id`, `*_key`) is not scored; the YAML gets a commented `# key: id` hint and the alignment stays `best_match`. When the key is the item's only property, the list aligns by it (`align: key`, no properties).
 * A union of several types or a `$ref` that does not resolve raises `ValueError` naming the property.
-* `load_field_map` reads `.json`, `.yaml` or `.yml` (YAML needs `assayer[yaml]`); `parse_field_map(data, registry=None)` resolves names against a registry (default: the field-level and corpus metrics) and returns a map `Runner(field_metrics=...)` accepts.[^loader]
+* `load_field_map` reads `.json`, `.yaml` or `.yml` (YAML needs `llm-assayer-eval[yaml]`); `parse_field_map(data, registry=None)` resolves names against a registry (default: the field-level and corpus metrics) and returns a map `Runner(field_metrics=...)` accepts.[^loader]
 * A malformed map or an unreadable file raises `FieldMapError` (a `ValueError`) at load: unknown metric or list option, bad entry shape, or any rule `build_field_map` enforces.
 
 [^field-map]: assayer/runner/field_map/

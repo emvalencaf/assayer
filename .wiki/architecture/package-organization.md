@@ -5,7 +5,7 @@ description: How the assayer package is split by responsibility, and the convent
 resource: CODE_STANDARDS.md
 tags: [architecture, conventions]
 status: stable
-generated: { by: claude-code/pre-commit, at: 2026-10-17T23:00:00Z }
+generated: { by: claude-code/pre-commit, at: 2026-10-18T01:00:00Z }
 sources:
   - id: standards
     resource: CODE_STANDARDS.md
@@ -43,8 +43,8 @@ build on `judges` and `models`.
 
 # Conventions
 
-* The core installs only `numpy` and `scikit-learn`; `semantic`, `text`, `langchain`, `langfuse`, `langsmith`, `yaml` and `all` are extras. A missing one raises an `ImportError` naming `assayer[<extra>]` (see `assayer/_extras.py`), and `LangChainJudge` and the backend Adapters load lazily from `assayer.judges`, `assayer.adapters` and `assayer.integrations`, each of which assigns the module `__getattr__` and `__dir__` built by `lazy_exports(__name__, {name: module})` in `assayer/_extras.py`.
-* CI checks the lean core with `scripts/check_core_only.py` (`uv run --isolated --no-dev`): no optional dependency may be installed, the public modules must import, and each extra-only feature (`LangChainJudge`, `LangfuseAdapter`, `LangSmithAdapter`, `bleu`) must raise an `ImportError` naming `assayer[<extra>]`.
+* The core installs only `numpy` and `scikit-learn`; `semantic`, `text`, `langchain`, `langfuse`, `langsmith`, `yaml` and `all` are extras. The distribution is published as `llm-assayer-eval` (the import name stays `assayer`). A missing extra raises an `ImportError` naming `llm-assayer-eval[<extra>]` (see `assayer/_extras.py`), and `LangChainJudge` and the backend Adapters load lazily from `assayer.judges`, `assayer.adapters` and `assayer.integrations`, each of which assigns the module `__getattr__` and `__dir__` built by `lazy_exports(__name__, {name: module})` in `assayer/_extras.py`.
+* CI checks the lean core with `scripts/check_core_only.py` (`uv run --isolated --no-dev`): no optional dependency may be installed, the public modules must import, and each extra-only feature (`LangChainJudge`, `LangfuseAdapter`, `LangSmithAdapter`, `bleu`) must raise an `ImportError` naming `llm-assayer-eval[<extra>]`.
 
 * The package is MIT licensed: the `LICENSE` file at the repository root (Edson Mota Valença Filho, 2026) is declared in `pyproject.toml` with `license = "MIT"` and `license-files = ["LICENSE"]`.[^license]
 

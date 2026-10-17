@@ -40,8 +40,8 @@ for load, extra in (
     try:
         load()
     except ImportError as exc:
-        if f"assayer[{extra}]" not in str(exc):
-            sys.exit(f"ImportError does not name assayer[{extra}]: {exc}")
+        if f"llm-assayer-eval[{extra}]" not in str(exc):
+            sys.exit(f"ImportError does not name llm-assayer-eval[{extra}]: {exc}")
     else:
         sys.exit(f"no ImportError for the {extra} extra")
 

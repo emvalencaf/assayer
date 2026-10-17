@@ -1,6 +1,7 @@
 """Integration modules for external services.
 
-Each Adapter needs its own extra (`assayer[langfuse]`, `assayer[langsmith]`) and is loaded
+Each Adapter needs its own extra (`llm-assayer-eval[langfuse]`,
+`llm-assayer-eval[langsmith]`) and is loaded
 on first access, so importing this package needs neither.
 """
 

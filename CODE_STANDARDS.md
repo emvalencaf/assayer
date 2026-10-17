@@ -29,7 +29,7 @@ concern, and dependencies point from the outer layers inward:
 | Subpackage | Holds | Does not hold |
 |---|---|---|
 | `models/` | Plain data structures (`@dataclass`) that carry results: `TokenUsage`, `PricingConfig` and the vendor-neutral `Trajectory`, `Step`, `Score`, `Experiment`, `Comparison`, `EvaluationFailure`, `Dataset` and `Case` | Logic that calls metrics, I/O or external services |
-| `judges/` | The Judge Protocol and `JudgeResponse`, the versioned and hashed `Prompt`, tolerant verdict parsing (`score` + `reason`) and the ledger of Judge calls and tokens | Metrics, scoring decisions, provider clients (`LangChainJudge` is the one wrapper, behind `assayer[langchain]`) |
+| `judges/` | The Judge Protocol and `JudgeResponse`, the versioned and hashed `Prompt`, tolerant verdict parsing (`score` + `reason`) and the ledger of Judge calls and tokens | Metrics, scoring decisions, provider clients (`LangChainJudge` is the one wrapper, behind `llm-assayer-eval[langchain]`) |
 | `metrics/` | The `Metric` contract (`level`, `requires`, `kind`) and built-in metrics, grouped by task (`agent`, `chat`, `classification`, `ner` (with `ner_matching` for entity spans), `consistency`, `field` for the Field comparisons, `judge` for the Judge-based ones, `retrieval` for context precision and recall, `retrieved` for reading the ranked items of the retrieval Steps; `corpus` lifts the chat, classification and NER functions to Experiment level); the corpus functions themselves are pure `(predictions, references) -> float` | State, network calls |
 | `registries/` | `Registry` (holds `Metric` objects) | Built-in metric definitions |
 | `runner/` | dataset loading, `Runner` (target → Experiment), `model_step` (reply → model Step), the `field_map/` package (field metrics, Alignment of list Fields, Field scoring, the schema utility and YAML/JSON loading), comparison | Metric math |
@@ -56,7 +56,7 @@ Conventions:
   return a `MetricFn` (`Callable[[list, list], float]`).
 - **Optional heavy dependencies** (an extra in `pyproject.toml`, for example
   `sentence_transformers`) are imported on demand with `assayer._extras.require`, which
-  raises an `ImportError` naming `assayer[<extra>]`; a metric must not turn a missing extra
+  raises an `ImportError` naming `llm-assayer-eval[<extra>]`; a metric must not turn a missing extra
   into a 0.0. Public modules import with no extra, and a name that needs one (such as
   `LangChainJudge`) is loaded on first access through the module's `__getattr__`.
 
