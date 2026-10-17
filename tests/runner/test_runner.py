@@ -5,7 +5,15 @@ import json
 import pytest
 
 from assayer.metrics.metric import Metric
-from assayer.models import Case, Dataset, Experiment, Step, Trajectory
+from assayer.models import (
+    Case,
+    Dataset,
+    Experiment,
+    PricingConfig,
+    Step,
+    TokenUsage,
+    Trajectory,
+)
 from assayer.runner import Runner
 
 
@@ -209,3 +217,30 @@ class TestScoreCollectedOutputs:
     def test_run_needs_a_target(self):
         with pytest.raises(ValueError, match="target"):
             Runner(metrics=[]).run(Dataset("d", []))
+
+
+class TestPricing:
+    def test_pricing_is_kept_on_the_experiment_for_run_and_score(self):
+        pricing = PricingConfig(0.001, 0.002)
+        dataset = Dataset("d", [Case(input="a")])
+
+        assert Runner(_echo, pricing=pricing).run(dataset).pricing == pricing
+        assert Runner(pricing=pricing).score(dataset, ["a"]).pricing == pricing
+
+    def test_total_usage_defaults_to_the_experiment_pricing(self):
+        usage = TokenUsage(1000, 0, None)
+        target = lambda v: Trajectory(steps=[Step(kind="model", usage=usage)])
+
+        experiment = Runner(target, pricing=PricingConfig(0.001, 0)).run(
+            Dataset("d", [Case(input="a")])
+        )
+
+        assert experiment.total_usage().cost_usd == pytest.approx(1.0)
+        assert experiment.total_judge_usage() is None
+
+    def test_the_target_pricing_is_never_applied_to_the_judge(self):
+        experiment = Experiment(
+            "e", pricing=PricingConfig(1, 1), judge_usage=TokenUsage(10, 10, None)
+        )
+
+        assert experiment.total_judge_usage().cost_usd is None

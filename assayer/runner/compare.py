@@ -8,6 +8,7 @@ also monkey-patches the ExperimentResult.compare method when imported.
 """
 
 from collections import defaultdict
+from collections.abc import Callable
 from statistics import fmean
 from typing import Any
 
@@ -15,8 +16,8 @@ from assayer.models import (
     Comparison,
     Experiment,
     ExperimentResult,
-    PricingConfig,
     RunResult,
+    TokenUsage,
 )
 
 
@@ -98,19 +99,21 @@ def compare_experiments(
     }
 
 
-def compare(
-    experiment_a: Experiment, experiment_b: Experiment, pricing: PricingConfig | None = None
-) -> Comparison:
+def compare(experiment_a: Experiment, experiment_b: Experiment) -> Comparison:
     """Report how the second Experiment differs from the first.
+
+    The cost uses the `pricing` each Experiment carries, so the two sides may
+    use different models. The Judge's usage is never part of it.
 
     Args:
         experiment_a: The baseline.
         experiment_b: The Experiment compared with the baseline.
-        pricing: Token prices. Without it, the cost delta is None.
 
     Returns:
         The deltas (b minus a) per (metric, Field) and the mean token and cost
-        deltas per Case. Repetitions of a Case are averaged inside it first.
+        deltas per Case; repetitions of a Case are averaged inside it first. A
+        token or cost delta is None when either side has no recorded usage, and
+        the cost one also when either side has no pricing.
     """
     means_a = _mean_scores(experiment_a)
     means_b = _mean_scores(experiment_b)
@@ -119,13 +122,18 @@ def compare(
         for key in sorted(means_a.keys() | means_b.keys(), key=lambda k: (k[0], k[1] or ""))
     }
 
-    usage_a = _mean_usage_per_case(experiment_a, pricing)
-    usage_b = _mean_usage_per_case(experiment_b, pricing)
-    deltas = [
-        b - a if a is not None and b is not None else None
-        for a, b in zip(usage_a, usage_b, strict=True)
-    ]
-    return Comparison(metric_deltas, *deltas)
+    inputs_a, outputs_a, cost_a = _mean_usage_per_case(experiment_a)
+    inputs_b, outputs_b, cost_b = _mean_usage_per_case(experiment_b)
+    return Comparison(
+        metric_deltas=metric_deltas,
+        input_tokens_delta=_delta(inputs_a, inputs_b),
+        output_tokens_delta=_delta(outputs_a, outputs_b),
+        cost_usd_delta=_delta(cost_a, cost_b),
+    )
+
+
+def _delta(a: float | None, b: float | None) -> float | None:
+    return b - a if a is not None and b is not None else None
 
 
 def _mean_scores(experiment: Experiment) -> dict[tuple[str, str | None], float]:
@@ -136,19 +144,29 @@ def _mean_scores(experiment: Experiment) -> dict[tuple[str, str | None], float]:
 
 
 def _mean_usage_per_case(
-    experiment: Experiment, pricing: PricingConfig | None
+    experiment: Experiment,
 ) -> tuple[float | None, float | None, float | None]:
-    per_case: dict[str | None, list] = defaultdict(list)
-    for trajectory in experiment.trajectories:
-        per_case[trajectory.case_id].append(trajectory.total_usage(pricing))
-    if not per_case:
+    """Mean input tokens, output tokens and cost per Case, None where unknown.
+
+    Nothing is known when no Step recorded usage (e.g. outputs scored after the
+    fact), which is different from having used zero tokens.
+    """
+    has_usage = any(
+        step.usage is not None
+        for trajectory in experiment.trajectories
+        for step in trajectory.steps
+    )
+    if not has_usage:
         return None, None, None
-    inputs = fmean(fmean(u.input_tokens for u in usages) for usages in per_case.values())
-    outputs = fmean(fmean(u.output_tokens for u in usages) for usages in per_case.values())
-    cost = None
-    if pricing is not None:
-        cost = fmean(fmean(u.cost_usd for u in usages) for usages in per_case.values())
-    return inputs, outputs, cost
+    per_case: dict[str | None, list[TokenUsage]] = defaultdict(list)
+    for trajectory in experiment.trajectories:
+        per_case[trajectory.case_id].append(trajectory.total_usage(experiment.pricing))
+
+    def mean(value: Callable[[TokenUsage], float | None]) -> float | None:
+        return fmean(fmean(value(u) for u in usages) for usages in per_case.values())  # type: ignore[misc]
+
+    cost = mean(lambda u: u.cost_usd) if experiment.pricing is not None else None
+    return mean(lambda u: u.input_tokens), mean(lambda u: u.output_tokens), cost
 
 
 def _compare_method_impl(self: ExperimentResult, other: ExperimentResult) -> dict[str, Any]:

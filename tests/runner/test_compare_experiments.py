@@ -63,20 +63,55 @@ class TestUsageDeltas:
 
         assert compare(a, b).input_tokens_delta == pytest.approx(-100)
 
-    def test_cost_needs_pricing(self):
-        a = Experiment("a", trajectories=[_trajectory("c1", (1000, 0))])
-        b = Experiment("b", trajectories=[_trajectory("c1", (3000, 0))])
+    def test_cost_uses_the_pricing_of_each_experiment(self):
+        a = Experiment(
+            "a", trajectories=[_trajectory("c1", (1000, 0))], pricing=PricingConfig(0.001, 0)
+        )
+        b = Experiment(
+            "b", trajectories=[_trajectory("c1", (1000, 0))], pricing=PricingConfig(0.003, 0)
+        )
 
-        assert compare(a, b).cost_usd_delta is None
-        priced = compare(a, b, pricing=PricingConfig(0.001, 0.002))
-        assert priced.cost_usd_delta == pytest.approx(2.0)
+        assert compare(a, b).cost_usd_delta == pytest.approx(2.0)
+
+    def test_cost_is_none_when_either_side_has_no_pricing(self):
+        priced = Experiment(
+            "a", trajectories=[_trajectory("c1", (10, 0))], pricing=PricingConfig(1, 1)
+        )
+        unpriced = Experiment("b", trajectories=[_trajectory("c1", (10, 0))])
+
+        result = compare(priced, unpriced)
+
+        assert result.cost_usd_delta is None
+        assert result.input_tokens_delta == 0
+
+    def test_judge_usage_is_not_part_of_the_cost(self):
+        a = Experiment("a", trajectories=[_trajectory("c1", (10, 0))], pricing=PricingConfig(1, 1))
+        b = Experiment(
+            "b",
+            trajectories=[_trajectory("c1", (10, 0))],
+            pricing=PricingConfig(1, 1),
+            judge_usage=TokenUsage(5000, 5000, None),
+        )
+
+        assert compare(a, b).cost_usd_delta == 0
 
     def test_no_trajectories_gives_none(self):
-        a = Experiment("a")
-        b = Experiment("b", trajectories=[_trajectory("c1", (1, 1))])
+        a = Experiment("a", pricing=PricingConfig(1, 1))
+        b = Experiment("b", trajectories=[_trajectory("c1", (1, 1))], pricing=PricingConfig(1, 1))
 
-        result = compare(a, b, pricing=PricingConfig(1, 1))
+        result = compare(a, b)
 
         assert result.input_tokens_delta is None
         assert result.output_tokens_delta is None
+        assert result.cost_usd_delta is None
+
+    def test_outputs_without_recorded_usage_give_none_not_zero(self):
+        scored = Experiment("a", trajectories=[_trajectory("c1")], pricing=PricingConfig(1, 1))
+        run = Experiment(
+            "b", trajectories=[_trajectory("c1", (10, 1))], pricing=PricingConfig(1, 1)
+        )
+
+        result = compare(scored, run)
+
+        assert result.input_tokens_delta is None
         assert result.cost_usd_delta is None

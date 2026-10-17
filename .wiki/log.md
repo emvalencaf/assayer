@@ -1,6 +1,7 @@
 # Update Log
 
 ## 2026-10-17
+* **Update**: `Experiment.pricing`, set by `Runner(pricing=...)`, now prices the target; `compare(a, b)` lost its `pricing` argument and returns `None` token and cost deltas when a side has no recorded usage. See [Comparison](architecture/comparison.md), [Runner](architecture/runner.md) and [Domain models](architecture/domain-models.md).
 * **Addition**: Documented [Comparison](architecture/comparison.md) and `compare(a, b)` (#27), listed in the [architecture index](architecture/index.md).
 * **Update**: [Runner](architecture/runner.md) now records `Runner.score(dataset, outputs)` and the optional `target` (`run` raises `ValueError` without one).
 * **Update**: [Domain models](architecture/domain-models.md) now list `Comparison`.

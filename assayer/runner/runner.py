@@ -5,7 +5,7 @@ from collections.abc import Callable, Iterable, Sequence
 from typing import Any
 
 from assayer.metrics import Metric
-from assayer.models import Case, Dataset, Experiment, Step, Trajectory
+from assayer.models import Case, Dataset, Experiment, PricingConfig, Step, Trajectory
 from assayer.runner.case_loader import load_cases
 
 
@@ -20,6 +20,8 @@ class Runner:
         metrics: The metrics to apply, at their own level.
         repetitions: How many times each Case is run; each repetition is kept as
             its own Trajectory.
+        pricing: Prices of the target's model, kept on the Experiment so its cost
+            can be compared. Not applied to the Judge.
 
     Raises:
         ValueError: If repetitions is less than 1.
@@ -30,12 +32,14 @@ class Runner:
         target: Callable[[Any], Any] | None = None,
         metrics: Iterable[Metric] = (),
         repetitions: int = 1,
+        pricing: PricingConfig | None = None,
     ) -> None:
         if repetitions < 1:
             raise ValueError("repetitions must be at least 1")
         self.target = target
         self.metrics = list(metrics)
         self.repetitions = repetitions
+        self.pricing = pricing
 
     def run(self, dataset: Dataset | list[dict] | str) -> Experiment:
         """Run the target over every Case and apply the metrics.
@@ -56,7 +60,7 @@ class Runner:
         if not isinstance(dataset, Dataset):
             dataset = load_cases(dataset, self.metrics)
 
-        experiment = Experiment(name=dataset.name)
+        experiment = Experiment(name=dataset.name, pricing=self.pricing)
         pairs: list[tuple[Trajectory, Case]] = []
         for position, case in enumerate(dataset.cases):
             case_id = case.id if case.id is not None else str(position)
@@ -92,7 +96,7 @@ class Runner:
                 f"for {len(dataset.cases)} Cases"
             )
 
-        experiment = Experiment(name=dataset.name)
+        experiment = Experiment(name=dataset.name, pricing=self.pricing)
         pairs: list[tuple[Trajectory, Case]] = []
         for position, (case, output) in enumerate(zip(dataset.cases, outputs, strict=True)):
             case_id = case.id if case.id is not None else str(position)

@@ -17,6 +17,9 @@ class Experiment:
         scores: Scores of Steps, Trajectories and the Experiment as a whole.
         failures: Metrics that could not be computed.
         judge_usage: Token usage of the Judge, kept apart from the target's totals.
+        pricing: Prices of the target's model, kept so the cost can be recomputed
+            and compared. They never apply to `judge_usage`, whose model is
+            another one: price that with `total_judge_usage(pricing)`.
 
     Raises:
         ValueError: If name is empty or whitespace-only.
@@ -27,6 +30,7 @@ class Experiment:
     scores: list[Score] = field(default_factory=list)
     failures: list[EvaluationFailure] = field(default_factory=list)
     judge_usage: TokenUsage | None = None
+    pricing: PricingConfig | None = None
 
     def __post_init__(self) -> None:
         """Validate name.
@@ -41,11 +45,13 @@ class Experiment:
         """Sum the token usage of all Trajectories, excluding the Judge.
 
         Args:
-            pricing: Token prices. Without it, `cost_usd` of the result is None.
+            pricing: Token prices. Defaults to the Experiment's own; without any,
+                `cost_usd` of the result is None.
 
         Returns:
-            The summed usage, with cost only when pricing is given.
+            The summed usage, with cost only when pricing is known.
         """
+        pricing = pricing or self.pricing
         total = TokenUsage(input_tokens=0, output_tokens=0, cost_usd=0.0 if pricing else None)
         for trajectory in self.trajectories:
             total = total + trajectory.total_usage(pricing)

@@ -20,7 +20,7 @@ sources:
 
 # Overview
 
-`Runner(target, metrics, repetitions=1).run(dataset)` calls the target with each
+`Runner(target, metrics, repetitions=1, pricing=None).run(dataset)` calls the target with each
 `Case.input` and returns an `Experiment` (#26).[^runner] `target` is optional:
 `run` raises `ValueError` without one, and only `score` works without it.
 
@@ -30,6 +30,9 @@ sources:
 * Every Trajectory gets `case_id` (the Case id, else its position) and
   `repetition`; Steps without an id get one so Step Scores can point at them.
 * Metrics run at their own level; Scores and `EvaluationFailure`s go on the Experiment.
+* `pricing` (a `PricingConfig` for the target's model) is stored on `Experiment.pricing`,
+  by both `run` and `score`, so `Experiment.total_usage()` and
+  [compare](comparison.md) can price the target. It is never applied to the Judge.
 
 # Scoring collected outputs
 
