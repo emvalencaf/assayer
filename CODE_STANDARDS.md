@@ -29,7 +29,7 @@ concern, and dependencies point from the outer layers inward:
 | Subpackage | Holds | Does not hold |
 |---|---|---|
 | `models/` | Plain data structures (`@dataclass`) that carry results: `TokenUsage`, `PricingConfig`, `FieldEvaluation`, `RunResult`, `ExperimentResult`, the `Consistency*` family and the vendor-neutral `Trajectory`, `Step`, `Score`, `Experiment`, `EvaluationFailure`, `Dataset` and `Case` | Logic that calls evaluators, I/O or external services |
-| `judges/` | The Judge Protocol and `JudgeResponse`, the versioned and hashed `Prompt`, tolerant verdict parsing (`score` + `reason`) and the ledger of Judge calls and tokens | Metrics, scoring decisions, provider clients |
+| `judges/` | The Judge Protocol and `JudgeResponse`, the versioned and hashed `Prompt`, tolerant verdict parsing (`score` + `reason`) and the ledger of Judge calls and tokens | Metrics, scoring decisions, provider clients (`LangChainJudge` is the one wrapper, behind `assayer[langchain]`) |
 | `evaluators/` | `BaseEvaluator` (ABC) and its implementations (`ner`, `hallucination`, `consistency`) | Aggregation across a dataset |
 | `metrics/` | The `Metric` contract (`level`, `requires`, `kind`) and built-in metrics, grouped by task (`agent`, `chat`, `classification`, `ner`, `consistency`, `field` for the Field comparisons, `judge` for the Judge-based ones, `retrieval` for context precision and recall, `retrieved` for reading the ranked items of the retrieval Steps; `corpus` lifts the chat, classification and NER functions to Experiment level); legacy ones are pure functions `(predictions, references) -> float` | State, network calls |
 | `registries/` | `Registry` (holds `Metric` objects) and the legacy `MetricRegistry` and `EvaluatorRegistry` | Built-in metric or evaluator definitions |
@@ -56,8 +56,11 @@ Conventions:
   function plus a registration call; core files stay untouched.
 - **Metric factories** that need configuration are named `make_<metric>` and
   return a `MetricFn` (`Callable[[list, list], float]`).
-- **Optional heavy dependencies** (for example `sentence_transformers`) are
-  imported defensively so the package still imports without them.
+- **Optional heavy dependencies** (an extra in `pyproject.toml`, for example
+  `sentence_transformers`) are imported on demand with `assayer._extras.require`, which
+  raises an `ImportError` naming `assayer[<extra>]`; a metric must not turn a missing extra
+  into a 0.0. Public modules import with no extra, and a name that needs one (such as
+  `LangChainJudge`) is loaded on first access through the module's `__getattr__`.
 
 Tests mirror the package: `tests/<subpackage>/test_<module>.py` (`tests/runner/test_pipeline.py` covers `assayer/runner/pipeline.py`).
 

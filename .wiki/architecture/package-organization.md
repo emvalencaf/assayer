@@ -35,6 +35,8 @@ build on `judges` and `models`.
 
 # Conventions
 
+* The core installs only `numpy` and `scikit-learn`; `semantic`, `text`, `langchain`, `langfuse`, `langsmith`, `yaml` and `all` are extras. A missing one raises an `ImportError` naming `assayer[<extra>]` (see `assayer/_extras.py`), and `LangChainJudge` and the backend Adapters load lazily from `assayer.judges` and `assayer.adapters`.
+
 * One concept per module; each subpackage re-exports its public API in `__init__.py` with `__all__`.
 * Registration is explicit through `register_<task>_metrics(registry)` and `register_<task>_evaluators(registry)`; importing never registers.
 * New metrics and evaluators are added, not edited into core files.

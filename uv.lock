@@ -58,21 +58,43 @@ name = "assayer"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "numpy", version = "2.5.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "scikit-learn" },
+]
+
+[package.optional-dependencies]
+all = [
     { name = "bert-score" },
     { name = "langchain-core" },
     { name = "langfuse" },
     { name = "langsmith" },
     { name = "nltk" },
-    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
-    { name = "numpy", version = "2.5.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "pyyaml" },
     { name = "rouge-score" },
-    { name = "scikit-learn" },
     { name = "sentence-transformers" },
     { name = "torch" },
     { name = "transformers" },
 ]
-
-[package.optional-dependencies]
+langchain = [
+    { name = "langchain-core" },
+]
+langfuse = [
+    { name = "langfuse" },
+]
+langsmith = [
+    { name = "langsmith" },
+]
+semantic = [
+    { name = "bert-score" },
+    { name = "sentence-transformers" },
+    { name = "torch" },
+    { name = "transformers" },
+]
+text = [
+    { name = "nltk" },
+    { name = "rouge-score" },
+]
 yaml = [
     { name = "pyyaml" },
 ]
@@ -81,31 +103,30 @@ yaml = [
 dev = [
     { name = "pytest" },
     { name = "pytest-cov" },
-    { name = "pyyaml" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "bert-score" },
-    { name = "langchain-core" },
-    { name = "langfuse", specifier = ">=5.0.2" },
-    { name = "langsmith" },
-    { name = "nltk" },
+    { name = "assayer", extras = ["semantic", "text", "langchain", "langfuse", "langsmith", "yaml"], marker = "extra == 'all'" },
+    { name = "bert-score", marker = "extra == 'semantic'" },
+    { name = "langchain-core", marker = "extra == 'langchain'" },
+    { name = "langfuse", marker = "extra == 'langfuse'", specifier = ">=5.0.2" },
+    { name = "langsmith", marker = "extra == 'langsmith'" },
+    { name = "nltk", marker = "extra == 'text'" },
     { name = "numpy" },
     { name = "pyyaml", marker = "extra == 'yaml'" },
-    { name = "rouge-score" },
+    { name = "rouge-score", marker = "extra == 'text'" },
     { name = "scikit-learn" },
-    { name = "sentence-transformers" },
-    { name = "torch" },
-    { name = "transformers" },
+    { name = "sentence-transformers", marker = "extra == 'semantic'" },
+    { name = "torch", marker = "extra == 'semantic'" },
+    { name = "transformers", marker = "extra == 'semantic'" },
 ]
-provides-extras = ["yaml"]
+provides-extras = ["semantic", "text", "langchain", "langfuse", "langsmith", "yaml", "all"]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "pytest" },
     { name = "pytest-cov" },
-    { name = "pyyaml" },
 ]
 
 [[package]]

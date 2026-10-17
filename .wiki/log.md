@@ -1,6 +1,7 @@
 # Update Log
 
 ## 2026-10-17
+* **Update**: [Package organization](architecture/package-organization.md) records the lean core, the extras and the lazy `LangChainJudge` and backend Adapters (#38).
 * **Update**: [Adapters](architecture/adapters.md) records that the Langfuse live smoke test now passes against Langfuse Cloud, deduplicates observations by id (re-exports can show one twice for a while), reads flattened `final_state.done` metadata, and matches Scores to traces and dataset runs by subject.
 * **Update**: [Adapters](architecture/adapters.md) records what the Langfuse live smoke test reads back (dataset item, observations, dataset runs, scores), its `finally` cleanup, and the `scripts/validate-langfuse.sh` wizard.
 * **Update**: [Adapters](architecture/adapters.md) records that `LangfuseAdapter` fails a Trajectory as `validation` when the Langfuse project id cannot be resolved, and that a Trajectory without a `case_id` carries no dataset id on its spans.

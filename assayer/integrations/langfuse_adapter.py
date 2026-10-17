@@ -14,7 +14,12 @@ from collections.abc import Callable
 from types import TracebackType
 from typing import Self
 
-from langfuse import Langfuse
+from assayer._extras import missing_extra
+
+try:
+    from langfuse import Langfuse
+except ImportError as exc:
+    raise missing_extra("langfuse", "LangfuseAdapter") from exc
 
 from assayer.adapters import AdapterConfigError, ExportReport, export_experiment
 from assayer.integrations.langfuse_export import LangfuseExport
