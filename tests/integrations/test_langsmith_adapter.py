@@ -4,6 +4,7 @@ The client is `create_autospec(langsmith.Client)` backed by a small in-memory `B
 every call is checked against the real signatures. `test_live_smoke` runs only with credentials.
 """
 
+import asyncio
 import datetime as dt
 import os
 import time
@@ -601,6 +602,21 @@ class TestErrorMapping:
         assert len([i for i in report.confirmed if i.target_kind == "case"]) == 1
 
 
+def _query_runs(client, project_id):
+    """The runs of a project; `client.runs.query` is async-only."""
+
+    async def collect():
+        return [
+            run
+            async for run in client.runs.query(
+                project_ids=[str(project_id)],
+                selects=["ID", "IS_ROOT", "TRACE_ID", "DOTTED_ORDER", "REFERENCE_EXAMPLE_ID"],
+            )
+        ]
+
+    return asyncio.run(collect())
+
+
 def _wait_for(read, done, timeout=90.0):
     """Poll `read()` until `done(result)`: runs are ingested in the background."""
     deadline = time.monotonic() + timeout
@@ -637,13 +653,15 @@ def test_live_smoke():
                 report = Runner(adapter=adapter).export(experiment)
             assert report.ok, report.failed
 
-        runs = _wait_for(
-            lambda: list(client.list_runs(project_name=name)), lambda found: len(found) >= 5
-        )
-        assert len(runs) == 5  # the root and four Steps, once each
         project = client.read_project(project_name=name)
-        root = next(run for run in runs if run.parent_run_id is None)
-        assert all(run.trace_id == root.id for run in runs)
+        runs = _wait_for(lambda: _query_runs(client, project.id), lambda found: len(found) >= 5)
+        assert len(runs) == 5  # the root and four Steps, once each
+        (root,) = (run for run in runs if run.is_root)
+        assert root.reference_example_id is not None
+        assert all(str(run.trace_id) == str(root.id) for run in runs)
+        assert all(
+            run.dotted_order.startswith(f"{root.dotted_order}.") for run in runs if run != root
+        )
         assert len(list(client.list_examples(dataset_name=name))) == 1
         feedback = _wait_for(
             lambda: list(client.list_feedback(run_ids=[root.id])), lambda found: len(found) >= 1
