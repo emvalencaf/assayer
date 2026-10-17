@@ -42,8 +42,8 @@ def load_field_map(path: str | Path, registry: Registry | None = None) -> dict[s
         if suffix == ".json":
             data = json.loads(text)
         else:
-            data = _yaml().safe_load(text)
-    except (ValueError, _yaml_error()) as exc:
+            data = _load_yaml(text)
+    except ValueError as exc:
         raise FieldMapError(f"{path}: not valid {suffix.lstrip('.')}: {exc}") from exc
     try:
         return parse_field_map(data, registry)
@@ -51,22 +51,17 @@ def load_field_map(path: str | Path, registry: Registry | None = None) -> dict[s
         raise FieldMapError(f"{path}: {exc}") from exc
 
 
-def _yaml():
+def _load_yaml(text: str) -> Any:
     try:
         import yaml
     except ImportError as exc:
         raise ImportError(
             "Loading a YAML field map needs the yaml extra: pip install 'assayer[yaml]'"
         ) from exc
-    return yaml
-
-
-def _yaml_error() -> type[Exception]:
     try:
-        import yaml
-    except ImportError:
-        return ValueError
-    return yaml.YAMLError
+        return yaml.safe_load(text)
+    except yaml.YAMLError as exc:
+        raise ValueError(str(exc)) from exc
 
 
 def parse_field_map(data: Any, registry: Registry | None = None) -> dict[str, Any]:

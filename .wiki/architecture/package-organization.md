@@ -25,9 +25,9 @@ build on `models`.
 |---|---|
 | `models/` | Dataclasses that carry results (`TokenUsage`, `RunResult`, `ExperimentResult`, `Consistency*`) and the vendor-neutral [domain models](domain-models.md) (`Trajectory`, `Step`, `Score`, `Experiment`, `Dataset`, `Case`, `PricingConfig`). |
 | `evaluators/` | `BaseEvaluator` and its implementations (NER, hallucination, consistency). |
-| `metrics/` | The [`Metric` contract](../metrics/metric-contract.md) (`level`, `requires`, `kind`) and built-in metrics, one module per task (`agent`, `chat`, `classification`, `ner`, `consistency`; `corpus` lifts the chat, classification and NER functions to Experiment level, see [Corpus and consistency metrics](../metrics/corpus-and-consistency.md)); legacy ones are pure `(predictions, references) -> float` functions. |
+| `metrics/` | The [`Metric` contract](../metrics/metric-contract.md) (`level`, `requires`, `kind`) and built-in metrics, one module per task (`agent`, `chat`, `classification`, `ner`, `consistency`, `field` for the Field comparisons; `corpus` lifts the chat, classification and NER functions to Experiment level, see [Corpus and consistency metrics](../metrics/corpus-and-consistency.md)); legacy ones are pure `(predictions, references) -> float` functions. |
 | `registries/` | `Registry` (holds `Metric` objects) and the legacy `MetricRegistry` and `EvaluatorRegistry`, instantiable, no global state. |
-| `runner/` | Evaluation, historical and consistency pipelines, field routing, pricing. |
+| `runner/` | Evaluation, historical and consistency pipelines, field routing, pricing, and the `field_map/` package (Alignment, Field scoring, schema utility, YAML/JSON loading). |
 | `integrations/` | Adapters for external services (LangSmith). |
 
 # Conventions
