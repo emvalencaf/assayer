@@ -32,7 +32,7 @@ Runner(target, field_metrics={
 })
 ```
 
-* A path walks nested dictionaries; a numeric segment indexes a list (`meta.tags.0`).
+* A path walks nested dictionaries; a numeric segment indexes a list (`meta.tags.0`). Only ASCII digits count as an index: a segment such as `²` is not one, so it resolves to a missing Field and fails as an `EvaluationFailure` instead of aborting the run.[^field-map]
 * An entry is a `Metric` or a `(Metric, params)` pair. `params` go to the metric's function as keyword arguments for that Field only.
 * The metric sees the Field's value as the Trajectory's `final_output` and the Case's value as `expected_output`. A Field absent from the prediction reaches the metric as `None`; one absent from the Case fails the metric's `requires` check as an `EvaluationFailure`.[^tests]
 * Each resulting `Score` and `EvaluationFailure` carries the `field` path. A metric in `Runner(metrics=...)` still scores the whole output, with `field` `None`.
@@ -45,7 +45,7 @@ Runner(target, field_metrics={
 call.[^field-map]
 
 * `TypeError`: the map is not a mapping, a value is not a list, an entry is not a `Metric` or `(Metric, params)`, or `params` is not a mapping.
-* `ValueError`: a path is blank or has an empty segment (`a..b`), or a metric is not trajectory-level. Only trajectory-level metrics are accepted for now, because a Field is cut out of a Trajectory's output.
+* `ValueError`: a path is blank or has an empty segment (`a..b`), a metric is listed twice under one path (their Scores could not be told apart), or a metric is not trajectory-level. Only trajectory-level metrics are accepted for now, because a Field is cut out of a Trajectory's output.
 
 [^field-map]: assayer/runner/field_map.py
 [^runner]: assayer/runner/runner.py

@@ -35,8 +35,9 @@ def build_field_map(field_metrics: Mapping[str, Sequence[Any]] | None) -> list[F
     Raises:
         TypeError: If the map is not a mapping, a value is not a list, an entry is
             not a Metric or `(Metric, params)`, or params is not a mapping.
-        ValueError: If a path is blank or has an empty segment, or a metric is not
-            trajectory-level (a Field is cut out of a Trajectory's output).
+        ValueError: If a path is blank or has an empty segment, a metric is listed twice
+            under one path, or a metric is not trajectory-level (a Field is cut out
+            of a Trajectory's output).
     """
     if field_metrics is None:
         return []
@@ -62,6 +63,11 @@ def build_field_map(field_metrics: Mapping[str, Sequence[Any]] | None) -> list[F
                     f"field {path!r}: metric {metric.name!r} must be trajectory-level, "
                     f"not {metric.level!r}"
                 )
+            if any(p.path == path and p.metric.name == metric.name for p in pairs):
+                raise ValueError(
+                    f"field {path!r}: metric {metric.name!r} is listed twice; "
+                    "their Scores could not be told apart"
+                )
             pairs.append(FieldMetric(path, metric, dict(params)))
     return pairs
 
@@ -79,7 +85,12 @@ def resolve(value: Any, path: str) -> Any:
     for segment in path.split("."):
         if isinstance(value, Mapping):
             value = value.get(segment)
-        elif isinstance(value, Sequence) and not isinstance(value, str) and segment.isdigit():
+        elif (
+            isinstance(value, Sequence)
+            and not isinstance(value, str)
+            and segment.isascii()
+            and segment.isdigit()
+        ):
             index = int(segment)
             value = value[index] if index < len(value) else None
         else:

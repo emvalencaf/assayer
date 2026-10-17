@@ -2,7 +2,7 @@
 
 import pytest
 
-from assayer.metrics.metric import Metric
+from assayer.metrics import Metric
 from assayer.models import Case, Dataset
 from assayer.runner import Runner
 
@@ -65,10 +65,7 @@ class TestFieldMap:
     def test_per_pair_parameters_are_honoured(self):
         runner = Runner(
             _target,
-            field_metrics={
-                "meta.score": [(WITHIN, {"tolerance": 5})],
-                "label": [],
-            },
+            field_metrics={"meta.score": [(WITHIN, {"tolerance": 5})]},
         )
         loose = runner.run(Dataset("d", [CASE]))
         strict = Runner(_target, field_metrics={"meta.score": [(WITHIN, {"tolerance": 1})]}).run(
@@ -96,6 +93,13 @@ class TestFieldMap:
         (failure,) = experiment.failures
         assert failure.field == "meta.absent"
         assert "expected_output" in failure.error
+
+    def test_a_non_ascii_digit_segment_does_not_abort_the_run(self):
+        runner = Runner(_target, field_metrics={"meta.tags.\u00b2": [EXACT]})
+
+        experiment = runner.run(Dataset("d", [CASE]))
+
+        assert experiment.failures
 
     def test_a_field_missing_from_the_prediction_reaches_the_metric_as_none(self):
         seen = []
@@ -141,6 +145,10 @@ class TestInvalidFieldMap:
         step_metric = Metric(name="s", level="step", fn=lambda s, c: 1.0)
         with pytest.raises(ValueError, match="trajectory"):
             Runner(_target, field_metrics={"a": [step_metric]})
+
+    def test_the_same_metric_twice_under_one_field_is_rejected(self):
+        with pytest.raises(ValueError, match="twice"):
+            Runner(_target, field_metrics={"a": [EXACT, (EXACT, {})]})
 
     def test_a_bare_list_instead_of_a_map_is_rejected(self):
         with pytest.raises(TypeError, match="mapping"):
