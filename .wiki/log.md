@@ -1,5 +1,9 @@
 # Update Log
 
+## 2026-10-17
+* **Addition**: Documented the vendor-neutral [domain models](architecture/domain-models.md) (`Trajectory`, `Step`, `Score`, `Experiment`, `EvaluationFailure`, `Dataset`, `Case`); `PricingConfig` moved to `assayer.models`.
+* **Update**: Listed the new models in [package organization](architecture/package-organization.md).
+
 ## 2026-10-16
 * **Addition**: Documented the [semantic similarity](metrics/semantic-similarity.md) metric, now clamped to the [0, 1] range (float overshoot above 1 is capped).
 * **Addition**: Documented the [package organization](architecture/package-organization.md) conventions.

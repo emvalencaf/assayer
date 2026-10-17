@@ -5,7 +5,7 @@ description: How the assayer package is split by responsibility, and the convent
 resource: CODE_STANDARDS.md
 tags: [architecture, conventions]
 status: stable
-generated: { by: claude-code/manual, at: 2026-10-16T00:00:00Z }
+generated: { by: claude-code/pre-commit, at: 2026-10-17T00:00:00Z }
 sources:
   - id: standards
     resource: CODE_STANDARDS.md
@@ -23,7 +23,7 @@ build on `models`.
 
 | Subpackage | Role |
 |---|---|
-| `models/` | Dataclasses that carry results (`TokenUsage`, `RunResult`, `ExperimentResult`, `Consistency*`). |
+| `models/` | Dataclasses that carry results (`TokenUsage`, `RunResult`, `ExperimentResult`, `Consistency*`) and the vendor-neutral [domain models](domain-models.md) (`Trajectory`, `Step`, `Score`, `Experiment`, `Dataset`, `Case`, `PricingConfig`). |
 | `evaluators/` | `BaseEvaluator` and its implementations (NER, hallucination, consistency). |
 | `metrics/` | Pure `(predictions, references) -> float` functions, one module per task. |
 | `registries/` | `MetricRegistry` and `EvaluatorRegistry`, instantiable, no global state. |
