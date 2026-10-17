@@ -4,13 +4,11 @@ This module contains the HistoricalPipeline class that orchestrates evaluation
 of already-collected (historical) data without requiring a live target function.
 """
 
-from typing import Union
-
 from assayer.models import ExperimentResult, RunResult, TokenUsage
-from assayer.runner.dataset_loader import load_dataset
-from assayer.runner.field_router import FieldRouter
 from assayer.registries.evaluator_registry import EvaluatorRegistry
 from assayer.registries.metric_registry import MetricRegistry
+from assayer.runner.dataset_loader import load_dataset
+from assayer.runner.field_router import FieldRouter
 
 
 class HistoricalPipeline:
@@ -44,7 +42,7 @@ class HistoricalPipeline:
 
     def __init__(
         self,
-        dataset: Union[list[dict], str],
+        dataset: list[dict] | str,
         field_evaluators: dict[str, list[str]],
         metrics: list[str],
         evaluator_registry: EvaluatorRegistry,
@@ -112,9 +110,7 @@ class HistoricalPipeline:
 
         for i, record in enumerate(records):
             if "prediction" not in record:
-                raise ValueError(
-                    f"Record at index {i} is missing 'prediction'"
-                )
+                raise ValueError(f"Record at index {i} is missing 'prediction'")
 
             prediction = record["prediction"]
             expected_output = record["expected_output"]

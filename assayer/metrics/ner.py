@@ -1,15 +1,13 @@
 """NER metrics for evaluating named entity recognition predictions."""
 
-from typing import List
-
-from assayer.evaluators.ner import EntitySpan, NERMatcher, NEREvaluator
-from assayer.registries.metric_registry import MetricRegistry
+from assayer.evaluators.ner import EntitySpan, NEREvaluator, NERMatcher
 from assayer.registries.evaluator_registry import EvaluatorRegistry
+from assayer.registries.metric_registry import MetricRegistry
 
 
 def ner_macro_f1(
-    predictions: List[List[EntitySpan]],
-    references: List[List[EntitySpan]],
+    predictions: list[list[EntitySpan]],
+    references: list[list[EntitySpan]],
 ) -> float:
     """Compute mean macro F1 across all examples.
 
@@ -41,7 +39,7 @@ def ner_macro_f1(
     matcher = NERMatcher()
     scores = [
         matcher.match(pred, ref).macro_f1
-        for pred, ref in zip(predictions, references)
+        for pred, ref in zip(predictions, references, strict=False)
     ]
 
     # Return mean of all macro F1 scores

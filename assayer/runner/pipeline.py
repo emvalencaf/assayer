@@ -4,15 +4,16 @@ This module contains the EvaluationPipeline class that orchestrates the entire
 evaluation process from dataset loading to metric aggregation.
 """
 
-from typing import Any, Callable, Union
+from collections.abc import Callable
+from typing import Any
 
 from assayer.models import ExperimentResult, RunResult
-from assayer.runner.dataset_loader import load_dataset
-from assayer.runner.field_router import FieldRouter
-from assayer.runner.token_extractor import extract_token_usage
-from assayer.runner.pricing import PricingConfig
 from assayer.registries.evaluator_registry import EvaluatorRegistry
 from assayer.registries.metric_registry import MetricRegistry
+from assayer.runner.dataset_loader import load_dataset
+from assayer.runner.field_router import FieldRouter
+from assayer.runner.pricing import PricingConfig
+from assayer.runner.token_extractor import extract_token_usage
 
 
 class EvaluationPipeline:
@@ -49,7 +50,7 @@ class EvaluationPipeline:
     def __init__(
         self,
         target_fn: Callable[[Any], Any],
-        dataset: Union[list[dict], str],
+        dataset: list[dict] | str,
         field_evaluators: dict[str, list[str]],
         metrics: list[str],
         evaluator_registry: EvaluatorRegistry,
@@ -134,7 +135,7 @@ class EvaluationPipeline:
                     input=example["input"],
                     output=result,
                     token_usage=token_usage,
-                    evaluations=evaluations
+                    evaluations=evaluations,
                 )
                 runs.append(run_result)
 
@@ -144,7 +145,7 @@ class EvaluationPipeline:
 
             except Exception as e:
                 # Propagate exception with example context
-                raise type(e)(f"Error processing example {i}: {str(e)}") from e
+                raise type(e)(f"Error processing example {i}: {e!s}") from e
 
         # Compute aggregate metrics
         computed_metrics: dict[str, float] = {}
@@ -154,7 +155,5 @@ class EvaluationPipeline:
 
         # Return experiment result
         return ExperimentResult(
-            experiment_name=self.experiment_name,
-            runs=runs,
-            metrics=computed_metrics
+            experiment_name=self.experiment_name, runs=runs, metrics=computed_metrics
         )

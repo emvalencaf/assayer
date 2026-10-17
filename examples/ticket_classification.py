@@ -21,8 +21,8 @@ from assayer.registries.evaluator_registry import EvaluatorRegistry
 from assayer.registries.metric_registry import MetricRegistry
 from assayer.runner.pipeline import EvaluationPipeline
 
-
 # Custom evaluator: exact match on the "category" field
+
 
 class CategoryEvaluator(BaseEvaluator):
     """Evaluates whether the predicted category matches the expected category exactly.
@@ -68,7 +68,6 @@ class CategoryEvaluator(BaseEvaluator):
         )
 
 
-
 # Custom metric: accuracy over the "category" field across all examples
 
 
@@ -86,11 +85,9 @@ def category_accuracy(predictions: list[Any], references: list[Any]) -> float:
     if not predictions:
         return 0.0
     correct = sum(
-        p["category"] == r["category"]
-        for p, r in zip(predictions, references)
+        p["category"] == r["category"] for p, r in zip(predictions, references, strict=False)
     )
     return correct / len(predictions)
-
 
 
 # Registry setup
@@ -120,11 +117,13 @@ def classify_ticket(ticket_text: str) -> dict[str, Any]:
     responses: dict[str, dict[str, Any]] = {
         "My invoice shows the wrong amount": {"category": "billing", "confidence": 0.95},
         "The app crashes when I try to log in": {"category": "technical", "confidence": 0.88},
-        "How do I reset my password?": {"category": "general", "confidence": 0.72},  # wrong: should be "technical"
+        "How do I reset my password?": {
+            "category": "general",
+            "confidence": 0.72,
+        },  # wrong: should be "technical"
         "What are your business hours?": {"category": "general", "confidence": 0.91},
     }
     return responses.get(ticket_text, {"category": "general", "confidence": 0.50})
-
 
 
 # Dataset
@@ -175,11 +174,14 @@ for run in result.runs:
     evaluation = run.evaluations[0]
     status = "✓" if evaluation.score == 1.0 else "✗"
     print(
-        f"  {status}  \"{run.input}\"\n"
+        f'  {status}  "{run.input}"\n'
         f"       predicted: {run.output['category']!r}  "
         f"(confidence: {run.output['confidence']:.0%})\n"
         f"       expected:  {evaluation.expected_value!r}\n"
     )
 print(result)
 accuracy = result.metrics["category_accuracy"]
-print(f"Category Accuracy: {accuracy:.0%}  ({int(accuracy * len(result.runs))}/{len(result.runs)} correct)")
+print(
+    f"Category Accuracy: {accuracy:.0%}  "
+    f"({int(accuracy * len(result.runs))}/{len(result.runs)} correct)"
+)

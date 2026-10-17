@@ -1,7 +1,7 @@
 """Named Entity Recognition (NER) evaluator components."""
 
 from dataclasses import dataclass
-from typing import List, Dict, Any
+from typing import Any
 
 from assayer.evaluators.base import BaseEvaluator
 from assayer.models import FieldEvaluation
@@ -17,7 +17,8 @@ class EntitySpan:
 
     Args:
         text: The textual content of the entity span. Must not be empty or whitespace-only.
-        entity_type: The type/category of the entity (e.g., "PERSON", "ORG"). Must not be empty or whitespace-only.
+        entity_type: The type/category of the entity (e.g., "PERSON", "ORG").
+            Must not be empty or whitespace-only.
         start: Character offset where the entity begins (inclusive, 0-indexed). Must be >= 0.
         end: Character offset where the entity ends (exclusive). Must be > start.
 
@@ -32,10 +33,11 @@ class EntitySpan:
         >>> span.entity_type
         'PERSON'
     """
+
     text: str
     entity_type: str
-    start: int   # character offset, inclusive, 0-indexed
-    end: int     # character offset, exclusive
+    start: int  # character offset, inclusive, 0-indexed
+    end: int  # character offset, exclusive
 
     def __post_init__(self) -> None:
         """Validate the EntitySpan fields after initialization.
@@ -77,9 +79,10 @@ class NERMatchResult:
         >>> result.macro_f1
         0.825
     """
-    per_type_precision: Dict[str, float]
-    per_type_recall: Dict[str, float]
-    per_type_f1: Dict[str, float]
+
+    per_type_precision: dict[str, float]
+    per_type_recall: dict[str, float]
+    per_type_f1: dict[str, float]
     macro_f1: float
 
 
@@ -101,8 +104,8 @@ class NERMatcher:
 
     def match(
         self,
-        predicted: List[EntitySpan],
-        reference: List[EntitySpan],
+        predicted: list[EntitySpan],
+        reference: list[EntitySpan],
     ) -> NERMatchResult:
         """Compare predicted spans against reference spans.
 
@@ -134,10 +137,7 @@ class NERMatcher:
         # Handle empty case
         if not types:
             return NERMatchResult(
-                per_type_precision={},
-                per_type_recall={},
-                per_type_f1={},
-                macro_f1=0.0
+                per_type_precision={}, per_type_recall={}, per_type_f1={}, macro_f1=0.0
             )
 
         # For each type, calculate precision, recall, and F1
@@ -156,7 +156,9 @@ class NERMatcher:
             recall = tp / len(ref_set) if ref_set else 0.0
 
             # Calculate F1
-            f1 = (2 * precision * recall / (precision + recall)) if (precision + recall) > 0 else 0.0
+            f1 = (
+                (2 * precision * recall / (precision + recall)) if (precision + recall) > 0 else 0.0
+            )
 
             per_type_precision[entity_type] = precision
             per_type_recall[entity_type] = recall
@@ -169,7 +171,7 @@ class NERMatcher:
             per_type_precision=per_type_precision,
             per_type_recall=per_type_recall,
             per_type_f1=per_type_f1,
-            macro_f1=macro_f1
+            macro_f1=macro_f1,
         )
 
 
@@ -212,8 +214,8 @@ class NEREvaluator(BaseEvaluator):
 
     def evaluate(
         self,
-        prediction: List[EntitySpan],
-        reference: List[EntitySpan],
+        prediction: list[EntitySpan],
+        reference: list[EntitySpan],
         **kwargs: Any,
     ) -> FieldEvaluation:
         """Evaluate predicted entity spans against reference spans.
@@ -224,7 +226,8 @@ class NEREvaluator(BaseEvaluator):
         Args:
             prediction: List of predicted entity spans to evaluate.
             reference: List of reference (ground truth) entity spans.
-            **kwargs: Additional keyword arguments (ignored but accepted for interface compatibility).
+            **kwargs: Additional keyword arguments (ignored but accepted for
+                interface compatibility).
 
         Returns:
             FieldEvaluation containing the evaluation results with the following structure:
@@ -264,5 +267,5 @@ class NEREvaluator(BaseEvaluator):
             obtained_value=prediction,
             score=match_result.macro_f1,
             prompt_hash=None,
-            metadata=metadata
+            metadata=metadata,
         )

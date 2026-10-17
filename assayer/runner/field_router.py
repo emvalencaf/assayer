@@ -7,9 +7,9 @@ pairs to appropriate evaluators.
 
 from typing import Any
 
+from assayer.evaluators.base import BaseEvaluator
 from assayer.models import FieldEvaluation
 from assayer.registries.evaluator_registry import EvaluatorRegistry
-from assayer.evaluators.base import BaseEvaluator
 
 
 class FieldRouter:

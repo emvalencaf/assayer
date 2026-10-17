@@ -8,16 +8,16 @@ The default instances are provided for ergonomic use but are not the only
 access path - users can instantiate their own registries at any time.
 """
 
-from assayer.registries.metric_registry import MetricRegistry
 from assayer.registries.evaluator_registry import EvaluatorRegistry
+from assayer.registries.metric_registry import MetricRegistry
 
 # Default shared instances for convenience
 default_metric_registry = MetricRegistry()
 default_evaluator_registry = EvaluatorRegistry()
 
 __all__ = [
-    "MetricRegistry",
     "EvaluatorRegistry",
+    "MetricRegistry",
+    "default_evaluator_registry",
     "default_metric_registry",
-    "default_evaluator_registry"
 ]

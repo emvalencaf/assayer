@@ -2,14 +2,15 @@
 
 import hashlib
 import re
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
+
+from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_core.messages import HumanMessage, SystemMessage
 
 from assayer.evaluators.base import BaseEvaluator
 from assayer.models import FieldEvaluation
 from assayer.registries.evaluator_registry import EvaluatorRegistry
-import transformers
-from langchain_core.language_models.chat_models import BaseChatModel
-from langchain_core.messages import HumanMessage, SystemMessage
 
 DEFAULT_JUDGE_SYSTEM_PROMPT: str = """\
 You are an expert evaluator assessing the quality and faithfulness of an AI assistant's response.
@@ -68,7 +69,7 @@ class FaithfulnessEvaluator(BaseEvaluator):
         field_name: str,
         threshold: float = 0.5,
         model_name: str = "cross-encoder/nli-deberta-v3-small",
-        classifier: Optional[Callable[[str], Any]] = None,
+        classifier: Callable[[str], Any] | None = None,
     ) -> type(None):
         """Initialize the faithfulness evaluator.
 
@@ -85,7 +86,7 @@ class FaithfulnessEvaluator(BaseEvaluator):
         self.threshold = threshold
         self.model_name = model_name
         self._classifier = classifier
-        
+
     def _get_classifier(self) -> Callable[[str], Any]:
         """Lazily initialize classifier if not injected."""
         if self._classifier is None:
@@ -97,7 +98,7 @@ class FaithfulnessEvaluator(BaseEvaluator):
                 return_all_scores=True,
             )
         return self._classifier
-    
+
     def evaluate(
         self,
         prediction: str,
@@ -141,7 +142,7 @@ class FaithfulnessEvaluator(BaseEvaluator):
                 "is_hallucination": score < self.threshold,
                 "method": "faithfulness",
                 "threshold": self.threshold,
-            }
+            },
         )
 
     def _compute_nli_score(self, prediction: str, reference: str) -> float:
@@ -170,7 +171,8 @@ class FaithfulnessEvaluator(BaseEvaluator):
 
         # Extract entailment probability from scores
         # For tests, scores might be just raw values: [[0.1, 0.7, 0.2]]
-        # For real model: [[{"label": "LABEL_0", "score": 0.1}, {"label": "LABEL_1", "score": 0.7}, {"label": "LABEL_2", "score": 0.2}]]
+        # For real model: [[{"label": "LABEL_0", "score": 0.1},
+        #   {"label": "LABEL_1", "score": 0.7}, {"label": "LABEL_2", "score": 0.2}]]
         if isinstance(scores, list) and len(scores) > 0:
             score_list = scores[0] if isinstance(scores[0], list) else scores
 
@@ -233,7 +235,6 @@ def _parse_score(response_text: str) -> float:
     Raises:
         ValueError: If no valid float in range [0, 1] can be extracted.
     """
-    import re
     # Find potential numeric tokens, but be strict about what constitutes a valid number
     # Use word boundaries to avoid partial matches, but handle edge cases
     tokens = re.findall(r"\S+", response_text.strip())
@@ -317,10 +318,7 @@ class LLMJudgeEvaluator(BaseEvaluator):
             user_message = f"Context/Reference: {reference}\nResponse to evaluate: {prediction}"
 
         # Create messages for the judge model
-        messages = [
-            SystemMessage(content=self._prompt),
-            HumanMessage(content=user_message)
-        ]
+        messages = [SystemMessage(content=self._prompt), HumanMessage(content=user_message)]
 
         # Call the judge model and parse the response
         response = self._judge_model.invoke(messages)
@@ -336,7 +334,7 @@ class LLMJudgeEvaluator(BaseEvaluator):
             metadata={
                 "judge_model": self._judge_model.__class__.__name__,
                 "prompt_hash": self._prompt_hash,
-            }
+            },
         )
 
 

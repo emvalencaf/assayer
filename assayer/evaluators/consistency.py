@@ -3,7 +3,8 @@
 import statistics
 import warnings
 from collections import defaultdict
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from assayer.evaluators import consistency_metrics
 from assayer.evaluators.base import BaseEvaluator
@@ -140,7 +141,8 @@ class ConsistencyEvaluator:
         if excluded_keys:
             warnings.warn(
                 f"Excluded groups with n < {self._min_k}: {excluded_keys}",
-                UserWarning
+                UserWarning,
+                stacklevel=2,
             )
 
         # Handle case where all groups are filtered out
@@ -169,11 +171,15 @@ class ConsistencyEvaluator:
 
                 # If this is likely a test mock with fixed obtained_value,
                 # use the prediction as the obtained_value to make tests work
-                if (hasattr(field_eval, 'obtained_value') and
-                    field_eval.obtained_value == "result" and
-                    isinstance(prediction, str) and prediction.startswith("pred")):
+                if (
+                    hasattr(field_eval, "obtained_value")
+                    and field_eval.obtained_value == "result"
+                    and isinstance(prediction, str)
+                    and prediction.startswith("pred")
+                ):
                     # Create a new FieldEvaluation with correct obtained_value for tests
                     from assayer.models.field_evaluation import FieldEvaluation
+
                     field_eval = FieldEvaluation(
                         field_name=field_eval.field_name,
                         evaluator_method=field_eval.evaluator_method,

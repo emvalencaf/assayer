@@ -3,11 +3,18 @@
 import math
 import statistics
 from collections import Counter
-from typing import Any, Union
+from typing import Any
 
 from assayer.models.field_evaluation import FieldEvaluation
 
-__all__ = ["compute_agreement_rate", "compute_entropy", "compute_score_std", "compute_correct_rate", "compute_pass_at_k", "compute_recall_at_k"]
+__all__ = [
+    "compute_agreement_rate",
+    "compute_correct_rate",
+    "compute_entropy",
+    "compute_pass_at_k",
+    "compute_recall_at_k",
+    "compute_score_std",
+]
 
 
 def _normalize_to_string(value: Any) -> str:
@@ -21,7 +28,7 @@ def _normalize_to_string(value: Any) -> str:
     return str(value)
 
 
-def compute_agreement_rate(results: list[FieldEvaluation]) -> tuple[float, Union[str, None]]:
+def compute_agreement_rate(results: list[FieldEvaluation]) -> tuple[float, str | None]:
     """Compute agreement rate and dominant label from field evaluation results.
 
     Calculates the proportion of results that agree with the most frequent label

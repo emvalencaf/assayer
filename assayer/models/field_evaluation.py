@@ -1,6 +1,5 @@
-
 from dataclasses import dataclass, field
-from typing import Any, Union
+from typing import Any
 
 
 @dataclass
@@ -32,7 +31,7 @@ class FieldEvaluation:
     expected_value: Any
     obtained_value: Any
     score: float
-    prompt_hash: Union[str, None]
+    prompt_hash: str | None
     metadata: dict = field(default_factory=dict)
 
     def __post_init__(self) -> None:
