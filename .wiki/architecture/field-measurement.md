@@ -14,7 +14,7 @@ sources:
     resource: assayer/runner/runner.py
     title: Runner
   - id: alignment
-    resource: assayer/runner/field_map/alignment.py
+    resource: assayer/alignment.py
     title: Alignment strategies
   - id: scoring
     resource: assayer/runner/field_map/scoring.py
@@ -100,6 +100,6 @@ call.[^field-map]
 [^schema]: assayer/runner/field_map/schema.py
 [^loader]: assayer/runner/field_map/loader.py
 [^runner]: assayer/runner/runner.py
-[^alignment]: assayer/runner/field_map/alignment.py
+[^alignment]: assayer/alignment.py
 [^scoring]: assayer/runner/field_map/scoring.py
 [^tests]: tests/runner/test_field_map.py

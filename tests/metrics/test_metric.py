@@ -2,8 +2,8 @@
 
 import pytest
 
-from assayer.metrics import Metric, register_agent_metrics
-from assayer.models import Case, Step, Trajectory
+from assayer.metrics import Detailed, Metric, register_agent_metrics
+from assayer.models import Case, Score, Step, Trajectory
 from assayer.registries import Registry
 
 
@@ -61,7 +61,13 @@ class TestMetricContract:
         assert custom.scores[0].value == 1.0
         assert built_in.scores[0].value == 1.0
         assert custom.scores[0].target == built_in.scores[0].target == "trajectory"
-        assert registry.list_metrics() == ["exact_match", "step_efficiency"]
+        assert registry.list_metrics() == [
+            "end_state_match",
+            "exact_match",
+            "step_efficiency",
+            "tool_argument_match",
+            "tool_correctness",
+        ]
 
     def test_metric_that_raises_becomes_a_failure(self):
         def boom(trajectory, case):
@@ -96,6 +102,21 @@ class TestMetricContract:
 
         assert outcome.scores == []
         assert "final_state" in outcome.failures[0].error
+
+    def test_detailed_result_adds_scores_after_its_own(self):
+        detail = Score(name="m", value=0.0, field="a.b")
+        metric = Metric(name="m", level="trajectory", fn=lambda t, c: Detailed(0.5, [detail]))
+
+        outcome = metric.evaluate(Trajectory(case_id="c1"), Case(input="q"))
+
+        assert [(s.field, s.value) for s in outcome.scores] == [(None, 0.5), ("a.b", 0.0)]
+
+    def test_none_result_means_not_applicable(self):
+        metric = Metric(name="m", level="trajectory", fn=lambda t, c: None)
+
+        outcome = metric.evaluate(Trajectory(case_id="c1"), Case(input="q"))
+
+        assert (outcome.scores, outcome.failures) == ([], [])
 
     def test_judge_based_metric_is_flagged(self):
         metric = Metric(name="j", level="trajectory", kind="judge", fn=lambda t, c: 1.0)

@@ -21,6 +21,20 @@ _REQUIRABLE = {f.name for cls in (Case, Trajectory, Step) for f in fields(cls)}
 
 
 @dataclass
+class Detailed:
+    """A metric's value together with the finer-grained Scores behind it.
+
+    Args:
+        value: The number in [0, 1] (or boolean) that is the metric's own Score.
+        details: Further Scores, such as one per leaf of a state or per tool call;
+            emitted after the metric's own Score, which is the mean of them.
+    """
+
+    value: float | bool
+    details: list[Score] = field(default_factory=list)
+
+
+@dataclass
 class MetricOutcome:
     """What applying a metric once produced.
 
@@ -43,8 +57,10 @@ class Metric:
         fn: Called as `fn(subject, case)`, where subject is a Step, Trajectory or
             Experiment according to `level`, plus the keyword parameters given
             for a Field (see `evaluate`). Returns a number in [0, 1] or a
-            boolean. A missing answer is scored 0 by the metric itself; an
-            input the metric cannot work without is declared in `requires`.
+            boolean; a `Detailed` to add finer-grained Scores to its own; or
+            None when the metric does not apply to this subject, which emits
+            neither a Score nor an evaluation failure. A missing answer is scored 0
+            by the metric itself; an input the metric cannot work without is declared in `requires`.
         requires: Names of the Case fields (such as "expected_output") and of
             the subject fields (such as "final_state") the metric needs. An
             input that is None makes the metric emit no Score and an
@@ -60,7 +76,7 @@ class Metric:
 
     name: str
     level: MetricLevel
-    fn: Callable[[Any, Case | None], float | bool]
+    fn: Callable[[Any, Case | None], float | bool | Detailed | None]
     requires: tuple[str, ...] = ()
     kind: MetricKind = "deterministic"
 
@@ -101,8 +117,9 @@ class Metric:
             params: Keyword parameters passed on to `fn`.
 
         Returns:
-            One Score, or one evaluation failure when a required input is
-            missing or the metric raised. Never raises and never scores a
+            One Score (and the `Detailed` ones, if any), nothing when the metric
+            does not apply (`fn` returned None), or one evaluation failure when a
+            required input is missing or the metric raised. Never raises and never scores a
             missing input as 0.
         """
         target_id = None
@@ -114,10 +131,13 @@ class Metric:
                 return MetricOutcome(
                     failures=[EvaluationFailure(self.name, error, target_id, field)]
                 )
-            value = self.fn(subject, case, **(params or {}))
+            result = self.fn(subject, case, **(params or {}))
+            if result is None:
+                return MetricOutcome()
+            details = result.details if isinstance(result, Detailed) else []
             score = Score(
                 name=self.name,
-                value=value,
+                value=result.value if isinstance(result, Detailed) else result,
                 field=field,
                 target=self.level,
                 target_id=target_id,
@@ -126,7 +146,7 @@ class Metric:
             return MetricOutcome(
                 failures=[EvaluationFailure(self.name, str(exc), target_id, field)]
             )
-        return MetricOutcome(scores=[score])
+        return MetricOutcome(scores=[score, *details])
 
     def _target_id(self, subject: Any) -> str | None:
         if self.level == "step":

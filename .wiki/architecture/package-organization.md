@@ -28,6 +28,7 @@ build on `models`.
 | `metrics/` | The [`Metric` contract](../metrics/metric-contract.md) (`level`, `requires`, `kind`) and built-in metrics, one module per task (`agent`, `chat`, `classification`, `ner`, `consistency`, `field` for the Field comparisons; `corpus` lifts the chat, classification and NER functions to Experiment level, see [Corpus and consistency metrics](../metrics/corpus-and-consistency.md)); legacy ones are pure `(predictions, references) -> float` functions. |
 | `registries/` | `Registry` (holds `Metric` objects) and the legacy `MetricRegistry` and `EvaluatorRegistry`, instantiable, no global state. |
 | `runner/` | Evaluation, historical and consistency pipelines, field routing, pricing, and the `field_map/` package (Alignment, Field scoring, schema utility, YAML/JSON loading). |
+| `alignment.py`, `path.py` | Top-level pure helpers (Alignment of list items, dotted-path `resolve`) shared by `metrics/` and `runner/field_map/`; they import nothing else from `assayer` but each other. Still importable from `assayer.runner.field_map`. |
 | `integrations/` | Adapters for external services (LangSmith). |
 
 # Conventions

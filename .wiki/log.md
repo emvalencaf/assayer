@@ -1,6 +1,8 @@
 # Update Log
 
 ## 2026-10-17
+* **Addition**: Documented the [tool and end-state metrics](metrics/tool-and-state-metrics.md) (#32): `tool_correctness`, `tool_argument_match` and `end_state_match`, listed in the [metrics index](metrics/index.md).
+* **Update**: [Metric contract](metrics/metric-contract.md) records that `fn` may return `Detailed` or `None`; [Package organization](architecture/package-organization.md) lists the top-level `alignment.py` and `path.py` (moved out of `runner/field_map/`), and [Per-Field measurement](architecture/field-measurement.md) points at the new Alignment path.
 * **Update**: [Per-Field measurement](architecture/field-measurement.md) documents the schema utility and YAML/JSON field-map loading (#31), with the new field-level metrics `exact_match`, `normalized_exact_match`, `numeric_tolerance` and `list_f1`.
 * **Update**: [Runner](architecture/runner.md) now records that `run` and `score` reject Cases with repeated ids (a position id counts); [Corpus and consistency metrics](metrics/corpus-and-consistency.md) records that a consistency metric with no Trajectories is an `EvaluationFailure`, not a 0, and that the corpus is pooled rather than averaged per Case (other changes were internal refactors).
 * **Addition**: Documented [Corpus and consistency metrics](metrics/corpus-and-consistency.md) (#30), listed in the [metrics index](metrics/index.md).
