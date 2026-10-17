@@ -5,7 +5,15 @@ import json
 import pytest
 
 from assayer.metrics.metric import Metric
-from assayer.models import Case, Dataset, Experiment, Step, Trajectory
+from assayer.models import (
+    Case,
+    Dataset,
+    Experiment,
+    PricingConfig,
+    Step,
+    TokenUsage,
+    Trajectory,
+)
 from assayer.runner import Runner
 
 
@@ -164,3 +172,75 @@ class TestLoading:
     def test_unknown_keys_are_rejected(self):
         with pytest.raises(ValueError, match="nope"):
             Runner(_echo, []).run([{"input": "a", "nope": 1}])
+
+
+class TestScoreCollectedOutputs:
+    def test_plain_outputs_are_scored_without_a_target(self):
+        dataset = Dataset(
+            "d",
+            [
+                Case(input="a", id="c1", expected_output="a"),
+                Case(input="b", id="c2", expected_output="x"),
+            ],
+        )
+
+        experiment = Runner(metrics=[EXACT]).score(dataset, ["a", "b"])
+
+        assert [(s.name, s.value, s.target_id) for s in experiment.scores] == [
+            ("exact", 1.0, "c1"),
+            ("exact", 0.0, "c2"),
+        ]
+        assert [t.final_output for t in experiment.trajectories] == ["a", "b"]
+        assert experiment.trajectories[0].steps[0].input == "a"
+
+    def test_collected_trajectories_are_kept_and_tagged(self):
+        collected = Trajectory(steps=[Step(kind="tool", name="t")], final_output="a")
+        dataset = Dataset("d", [Case(input="a", id="c1", expected_output="a")])
+
+        experiment = Runner(metrics=[EXACT]).score(dataset, [collected])
+
+        (trajectory,) = experiment.trajectories
+        assert trajectory.case_id == "c1"
+        assert trajectory.steps[0].id == "c1/0/0"
+        assert collected.case_id is None  # the caller's object is untouched
+        assert experiment.scores[0].value == 1.0
+
+    def test_loads_a_list_source_like_run(self):
+        experiment = Runner(metrics=[EXACT]).score([{"input": "a", "expected_output": "a"}], ["a"])
+
+        assert experiment.scores[0].value == 1.0
+
+    def test_one_output_per_case(self):
+        with pytest.raises(ValueError, match="outputs"):
+            Runner(metrics=[EXACT]).score(Dataset("d", [Case(input="a")]), [])
+
+    def test_run_needs_a_target(self):
+        with pytest.raises(ValueError, match="target"):
+            Runner(metrics=[]).run(Dataset("d", []))
+
+
+class TestPricing:
+    def test_pricing_is_kept_on_the_experiment_for_run_and_score(self):
+        pricing = PricingConfig(0.001, 0.002)
+        dataset = Dataset("d", [Case(input="a")])
+
+        assert Runner(_echo, pricing=pricing).run(dataset).pricing == pricing
+        assert Runner(pricing=pricing).score(dataset, ["a"]).pricing == pricing
+
+    def test_total_usage_defaults_to_the_experiment_pricing(self):
+        usage = TokenUsage(1000, 0, None)
+        target = lambda v: Trajectory(steps=[Step(kind="model", usage=usage)])
+
+        experiment = Runner(target, pricing=PricingConfig(0.001, 0)).run(
+            Dataset("d", [Case(input="a")])
+        )
+
+        assert experiment.total_usage().cost_usd == pytest.approx(1.0)
+        assert experiment.total_judge_usage() is None
+
+    def test_the_target_pricing_is_never_applied_to_the_judge(self):
+        experiment = Experiment(
+            "e", pricing=PricingConfig(1, 1), judge_usage=TokenUsage(10, 10, None)
+        )
+
+        assert experiment.total_judge_usage().cost_usd is None

@@ -1,6 +1,11 @@
 # Update Log
 
 ## 2026-10-17
+* **Update**: `compare(a, b)` now computes the token and cost deltas over the Cases both Experiments have only, and `Comparison` gained `only_in_a` and `only_in_b` listing the others. See [Comparison](architecture/comparison.md) and [Domain models](architecture/domain-models.md).
+* **Update**: `Experiment.pricing`, set by `Runner(pricing=...)`, now prices the target; `compare(a, b)` lost its `pricing` argument and returns `None` token and cost deltas when a side has no recorded usage. See [Comparison](architecture/comparison.md), [Runner](architecture/runner.md) and [Domain models](architecture/domain-models.md).
+* **Addition**: Documented [Comparison](architecture/comparison.md) and `compare(a, b)` (#27), listed in the [architecture index](architecture/index.md).
+* **Update**: [Runner](architecture/runner.md) now records `Runner.score(dataset, outputs)` and the optional `target` (`run` raises `ValueError` without one).
+* **Update**: [Domain models](architecture/domain-models.md) now list `Comparison`.
 * **Update**: [Runner](architecture/runner.md) now records a target exception as `ExceptionType: message` in the model Step `error`; `load_cases` no longer reassigns its `source` argument (no behavior change).
 * **Addition**: Documented the [Runner](architecture/runner.md) and `load_cases`.
 * **Update**: [Metric contract](metrics/metric-contract.md) now records that a wrong subject becomes an `EvaluationFailure` rather than raising, and the `Registry` import-cycle note; tests moved to `test_metric.py` and `tests/registries/test_registry.py`.
