@@ -618,10 +618,12 @@ def _wait_for(read, done, timeout=90.0):
 def test_live_smoke():
     """Exports twice from two Adapters and reads back what LangSmith holds.
 
+    Set ASSAYER_SMOKE_KEEP=1 to keep the project and dataset for a look in the LangSmith UI.
     Checks that an example that exists is updated, that run trees are not duplicated, that
     run-level and project-level feedback are accepted, and that the `dotted_order` is.
     """
     name = f"assayer-smoke-{uuid.uuid4().hex[:8]}"
+    print(f"assayer smoke project: {name}")
     started = dt.datetime.now(dt.UTC)
     metric = Metric(name="exact", level="trajectory", fn=lambda t, c: 1.0)
     runner = Runner(_tool_then_model, [metric])
@@ -653,8 +655,12 @@ def test_live_smoke():
         assert "overall.f" in stats.feedback_stats
     finally:
         for cleanup in (
-            lambda: client.delete_project(project_name=name),
-            lambda: client.delete_dataset(dataset_name=name),
+            ()
+            if os.environ.get("ASSAYER_SMOKE_KEEP")
+            else (
+                lambda: client.delete_project(project_name=name),
+                lambda: client.delete_dataset(dataset_name=name),
+            )
         ):
             try:
                 cleanup()
