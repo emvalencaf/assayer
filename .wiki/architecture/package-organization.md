@@ -1,0 +1,67 @@
+---
+type: Reference
+title: Package organization
+description: How the assayer package is split by responsibility, and the conventions each subpackage follows.
+resource: CODE_STANDARDS.md
+tags: [architecture, conventions]
+status: stable
+generated: { by: claude-code/pre-commit, at: 2026-10-18T01:00:00Z }
+sources:
+  - id: standards
+    resource: CODE_STANDARDS.md
+    title: Package organization section
+  - id: metrics-init
+    resource: assayer/metrics/__init__.py
+    title: Public API of the metrics subpackage
+  - id: extras
+    resource: assayer/_extras.py
+    title: Optional-dependency helpers (`require`, `lazy_exports`)
+  - id: core-only-check
+    resource: scripts/check_core_only.py
+    title: CI check of the core-only environment
+  - id: license
+    resource: LICENSE
+    title: MIT license text
+  - id: publish
+    resource: .github/workflows/publish.yml
+    title: Tag-triggered PyPI publishing workflow
+  - id: releasing
+    resource: CONTRIBUTING.md
+    title: Releasing section
+---
+
+# Overview
+
+`assayer/` is a flat package split by responsibility. Dependencies point inward:
+`runner` uses `metrics`, `registries`, `integrations` and `adapters`, which all
+build on `judges` and `models`.
+
+| Subpackage | Role |
+|---|---|
+| `models/` | Plain dataclasses: `TokenUsage`, `PricingConfig` and the vendor-neutral [domain models](domain-models.md) (`Trajectory`, `Step`, `Score`, `Experiment`, `Comparison`, `Dataset`, `Case`). |
+| `judges/` | The Judge Protocol and `JudgeResponse`, `Prompt` (`id@version` plus a hash), tolerant `score` + `reason` parsing and the ledger of Judge calls and tokens. See [Judge metrics](../metrics/judge-metrics.md). |
+| `metrics/` | The [`Metric` contract](../metrics/metric-contract.md) (`level`, `requires`, `kind`) and built-in metrics, one module per task (`agent`, `chat`, `classification`, `ner`, `consistency`, `field` for the Field comparisons, `judge` for the Judge-based ones; `corpus` lifts the chat, classification and NER functions to Experiment level, see [Corpus and consistency metrics](../metrics/corpus-and-consistency.md)); the corpus functions themselves are pure `(predictions, references) -> float`. |
+| `registries/` | `Registry` (holds `Metric` objects), instantiable, no global state and no default instance. |
+| `runner/` | Dataset loading, `Runner` (target to Experiment), `model_step` (reply to model Step), `compare`, and the `field_map/` package (Alignment, Field scoring, schema utility, YAML/JSON loading). |
+| `alignment.py`, `path.py` | Top-level pure helpers (Alignment of list items, dotted-path `resolve`) shared by `metrics/` and `runner/field_map/`; they import nothing else from `assayer` but each other. Still importable from `assayer.runner.field_map`. |
+| `adapters/` | The `Adapter` Protocol, `ExportReport`/`ExportFailure`, the closed failure taxonomy, deterministic export ids, the retry policy, `plan_export`/`run_export` and `InMemoryAdapter`; no backend-specific clients. See [Adapters](adapters.md). |
+| `integrations/` | Adapters for external services: `LangSmithAdapter` and `LangfuseAdapter` (see [Adapters](adapters.md)). |
+
+# Conventions
+
+* The core installs only `numpy` and `scikit-learn`; `semantic`, `text`, `langchain`, `langfuse`, `langsmith`, `yaml` and `all` are extras. The distribution is published as `llm-assayer-eval` (the import name stays `assayer`). A missing extra raises an `ImportError` naming `llm-assayer-eval[<extra>]` (see `assayer/_extras.py`), and `LangChainJudge` and the backend Adapters load lazily from `assayer.judges`, `assayer.adapters` and `assayer.integrations`, each of which assigns the module `__getattr__` and `__dir__` built by `lazy_exports(__name__, {name: module})` in `assayer/_extras.py`.
+* CI checks the lean core with `scripts/check_core_only.py` (`uv run --isolated --no-dev`): no optional dependency may be installed, the public modules must import, and each extra-only feature (`LangChainJudge`, `LangfuseAdapter`, `LangSmithAdapter`, `bleu`) must raise an `ImportError` naming `llm-assayer-eval[<extra>]`.
+
+* The package is MIT licensed: the `LICENSE` file at the repository root (Edson Mota Valença Filho, 2026) is declared in `pyproject.toml` with `license = "MIT"` and `license-files = ["LICENSE"]`.[^license]
+
+* Releases go to PyPI as `llm-assayer-eval` through `.github/workflows/publish.yml`, which runs when a `v*` tag is pushed. A build job refuses a tag that differs from the `pyproject.toml` version, then runs `uv build`; a publish job in the `pypi` environment uploads with trusted publishing (no stored token). `scripts/setup-pypi-publishing.sh` is the wizard for the one-time PyPI pending publisher and GitHub environment. A PyPI release can only be yanked, never overwritten, so the tag is the point of no return.[^publish]
+
+* One concept per module; each subpackage re-exports its public API in `__init__.py` with `__all__`.
+* Registration is explicit through `register_<task>_metrics(registry)`; importing never registers.
+* New metrics are added, not edited into core files.
+* Tests mirror the package under `tests/<subpackage>/`.
+
+The full rules live in the **Package organization** section of `CODE_STANDARDS.md`.
+
+[^license]: The `LICENSE` file at the repository root.
+[^publish]: `.github/workflows/publish.yml` and the "Releasing" section of `CONTRIBUTING.md`.

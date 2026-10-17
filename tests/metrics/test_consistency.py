@@ -1,0 +1,249 @@
+"""Tests for the consistency metrics: an Experiment with repetitions, grouped by Case."""
+
+import math
+import statistics
+
+import pytest
+
+from assayer.metrics import Metric, make_pass_hat_k, make_score_std, register_consistency_metrics
+from assayer.models import Case, Dataset
+from assayer.registries import Registry
+from assayer.runner import Runner
+
+
+def _registry():
+    registry = Registry()
+    register_consistency_metrics(registry)
+    return registry
+
+
+def _target(runs):
+    """A target answering `runs[input]` one repetition at a time."""
+    queues = {key: iter(values) for key, values in runs.items()}
+    return lambda value: next(queues[value])
+
+
+def _exact(trajectory, case):
+    return trajectory.final_output == case.expected_output
+
+
+EXACT = Metric(name="exact", level="trajectory", fn=_exact, requires=("expected_output",))
+
+
+RUNS = {
+    "a": ["x", "x", "y", "x"],
+    "b": ["p", "q", "r", "s"],
+    "c": ["z", "z", "z", "z"],
+}
+REFERENCES = {"a": "x", "b": "q", "c": "w"}
+DATASET = Dataset("d", [Case(input=k, id=k, expected_output=REFERENCES[k]) for k in RUNS])
+
+
+def _run(*metrics, field_metrics=None):
+    return Runner(_target(RUNS), list(metrics), repetitions=4, field_metrics=field_metrics).run(
+        DATASET
+    )
+
+
+def _value(experiment, name, field=None):
+    (score,) = [s for s in experiment.scores if s.name == name and s.field == field]
+    assert (score.target, score.target_id) == ("experiment", None)
+    return score.value
+
+
+class TestGroupedByCase:
+    def test_agreement_rate_is_the_mean_over_cases_of_the_dominant_share(self):
+        experiment = _run(_registry().get("agreement_rate"))
+
+        assert _value(experiment, "agreement_rate") == pytest.approx((0.75 + 0.25 + 1.0) / 3)
+
+    def test_entropy_is_in_bits_scaled_by_the_most_the_repetitions_allow(self):
+        experiment = _run(_registry().get("entropy"))
+
+        # a: 3 x and 1 y; b: four distinct answers (log2(4) bits); c: always the same
+        bits_a = -(0.75 * math.log2(0.75) + 0.25 * math.log2(0.25))
+        expected = statistics.mean([bits_a, math.log2(4), 0.0]) / math.log2(4)
+        assert _value(experiment, "entropy") == pytest.approx(expected)
+
+    @pytest.mark.parametrize(
+        ("name", "expected"),
+        [
+            ("correct_rate", (0.75 + 0.25 + 0.0) / 3),
+            ("pass_at_k", 2 / 3),
+            ("recall_at_k", 2 / 3),
+        ],
+    )
+    def test_reference_metrics_are_the_mean_over_cases(self, name, expected):
+        experiment = _run(_registry().get(name))
+
+        assert _value(experiment, name) == pytest.approx(expected)
+
+    def test_multi_label_outputs_are_compared_as_sets(self):
+        runs = {"a": [["x"], ["y"]], "b": [["x", "y"], ["y", "x"]]}
+        refs = {"a": ["x", "y", "z"], "b": ["y", "x"]}
+        dataset = Dataset("d", [Case(input=k, id=k, expected_output=refs[k]) for k in runs])
+        registry = _registry()
+        expected = {"correct_rate": 0.5, "pass_at_k": 0.5, "recall_at_k": 5 / 6}
+
+        experiment = Runner(_target(runs), [registry.get(n) for n in expected], repetitions=2).run(
+            dataset
+        )
+
+        for name, value in expected.items():
+            assert _value(experiment, name) == pytest.approx(value)
+
+    def test_score_std_is_the_spread_of_the_scores_of_a_metric_over_the_repetitions(self):
+        experiment = _run(EXACT, make_score_std("exact"))
+
+        # sample standard deviation of the 0/1 scores: a and b 0.5, c 0
+        assert _value(experiment, "score_std") == pytest.approx((0.5 + 0.5 + 0.0) / 3)
+
+    def test_score_std_without_scores_to_take_the_spread_of_is_a_failure(self):
+        experiment = _run(make_score_std("exact"))
+
+        assert [s for s in experiment.scores if s.name == "score_std"] == []
+        assert [f.metric for f in experiment.failures] == ["score_std"]
+
+    def test_score_std_names_its_metric_when_there_are_several(self):
+        other = Metric(name="other", level="trajectory", fn=lambda t, c: 1.0)
+
+        experiment = _run(EXACT, other, _registry().get("score_std"))
+
+        assert [f.metric for f in experiment.failures] == ["score_std"]
+        assert "exact" in experiment.failures[0].error
+
+    def test_a_single_repetition_has_no_disagreement(self):
+        names = ["agreement_rate", "entropy"]
+        registry = _registry()
+
+        experiment = Runner(_target({"a": ["x"]}), [registry.get(n) for n in names]).run(
+            Dataset("d", [Case(input="a", id="a")])
+        )
+
+        assert {s.name: s.value for s in experiment.scores} == {
+            "agreement_rate": 1.0,
+            "entropy": 0.0,
+        }
+
+    def test_reference_metrics_need_a_reference_on_every_case(self):
+        experiment = Runner(
+            _target({"a": ["x", "x"]}), [_registry().get("pass_at_k")], repetitions=2
+        ).run(Dataset("d", [Case(input="a", id="a")]))
+
+        assert experiment.scores == []
+        assert [f.metric for f in experiment.failures] == ["pass_at_k"]
+
+
+class TestPerField:
+    def test_consistency_of_one_field_ignores_the_others(self):
+        runs = {
+            "a": [{"label": "x", "note": n} for n in "pqrs"],
+            "b": [{"label": v, "note": "same"} for v in "xxxy"],
+        }
+        dataset = Dataset(
+            "d",
+            [Case(input=k, id=k, expected_output={"label": "x", "note": "same"}) for k in runs],
+        )
+        registry = _registry()
+        agreement = registry.get("agreement_rate")
+
+        experiment = Runner(
+            _target(runs),
+            [agreement],
+            repetitions=4,
+            field_metrics={"label": [agreement], "note": [agreement]},
+        ).run(dataset)
+
+        assert _value(experiment, "agreement_rate", "label") == pytest.approx((1.0 + 0.75) / 2)
+        assert _value(experiment, "agreement_rate", "note") == pytest.approx((0.25 + 1.0) / 2)
+
+    def test_score_std_of_a_field_uses_the_scores_of_that_field(self):
+        runs = {"a": [{"label": v} for v in "xxyx"]}
+        dataset = Dataset("d", [Case(input="a", id="a", expected_output={"label": "x"})])
+
+        experiment = Runner(
+            _target(runs),
+            repetitions=4,
+            field_metrics={"label": [EXACT, make_score_std("exact")]},
+        ).run(dataset)
+
+        assert _value(experiment, "score_std", "label") == pytest.approx(
+            0.5  # sample standard deviation of [1, 1, 0, 1]
+        )
+
+
+class TestEmptyExperiment:
+    @pytest.mark.parametrize(
+        "name", ["agreement_rate", "entropy", "correct_rate", "pass_at_k", "recall_at_k"]
+    )
+    def test_nothing_to_measure_is_a_failure_not_a_zero(self, name):
+        experiment = Runner(str, [_registry().get(name)]).run(Dataset("d", []))
+
+        assert experiment.scores == []
+        assert [f.metric for f in experiment.failures] == [name]
+
+
+class TestPassHatK:
+    """pass^k: a Case counts only when all of its k repetitions succeed."""
+
+    def test_is_zero_when_no_case_is_solved_in_every_repetition(self):
+        experiment = _run(EXACT, make_pass_hat_k("exact"))
+
+        assert _value(experiment, "pass_hat_k") == 0.0
+
+    def test_is_the_share_of_cases_solved_every_time(self):
+        runs = {"a": ["x", "x", "x"], "b": ["x", "y", "x"], "c": ["y", "y", "y"]}
+        dataset = Dataset("d", [Case(input=k, id=k, expected_output="x") for k in runs])
+
+        experiment = Runner(_target(runs), [EXACT, make_pass_hat_k("exact")], repetitions=3).run(
+            dataset
+        )
+
+        assert _value(experiment, "pass_hat_k") == pytest.approx(1 / 3)
+        assert _value(experiment, "pass_hat_k") <= _value(
+            Runner(_target(runs), [EXACT, _registry().get("pass_at_k")], repetitions=3).run(
+                dataset
+            ),
+            "pass_at_k",
+        )
+
+    def test_the_threshold_decides_what_a_success_is(self):
+        graded = Metric(
+            name="graded",
+            level="trajectory",
+            fn=lambda t, c: {"hi": 0.9, "mid": 0.6}[t.final_output],
+        )
+        runs = {"a": ["hi", "hi"], "b": ["hi", "mid"]}
+        dataset = Dataset("d", [Case(input=k, id=k) for k in runs])
+
+        def run(threshold):
+            metric = make_pass_hat_k("graded", threshold=threshold)
+            return Runner(_target(dict(runs)), [graded, metric], repetitions=2).run(dataset)
+
+        assert _value(run(0.5), "pass_hat_k") == 1.0
+        assert _value(run(0.8), "pass_hat_k") == 0.5
+
+    def test_a_repetition_whose_metric_failed_is_a_failure_not_a_miss(self):
+        def flaky(trajectory, case):
+            if trajectory.repetition == 1:
+                raise RuntimeError("judge down")
+            return 1.0
+
+        metric = Metric(name="flaky", level="trajectory", fn=flaky)
+        dataset = Dataset("d", [Case(input="a", id="a")])
+
+        experiment = Runner(
+            _target({"a": ["x", "x"]}), [metric, make_pass_hat_k("flaky")], repetitions=2
+        ).run(dataset)
+
+        assert [s.name for s in experiment.scores] == ["flaky"]
+        assert [f.metric for f in experiment.failures] == ["flaky", "pass_hat_k"]
+
+    def test_the_threshold_must_be_a_unit_value(self):
+        with pytest.raises(ValueError):
+            make_pass_hat_k(threshold=1.5)
+
+    def test_without_scores_to_measure_it_is_a_failure(self):
+        experiment = _run(make_pass_hat_k("exact"))
+
+        assert [f.metric for f in experiment.failures] == ["pass_hat_k"]

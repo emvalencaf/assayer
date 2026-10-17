@@ -3,14 +3,48 @@ requires = ["setuptools>=42"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "assayer"
+name = "llm-assayer-eval"
 version = "0.1.0"
+description = "Evaluate and observe LLM-powered applications with deterministic metrics and LLM-as-Judge."
 requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
 dependencies = [
-    "transformers",
-    "torch",
+    "numpy",
+    "scikit-learn",
 ]
+
+[project.optional-dependencies]
+semantic = ["bert-score", "sentence-transformers", "torch", "transformers"]
+text = ["nltk", "rouge-score"]
+langchain = ["langchain-core"]
+langfuse = ["langfuse>=5.0.2"]
+langsmith = ["langsmith"]
+yaml = ["pyyaml"]
+all = ["llm-assayer-eval[semantic,text,langchain,langfuse,langsmith,yaml]"]
+
+[dependency-groups]
+dev = ["pytest", "pytest-cov"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.setuptools.package-data]
+assayer = ["py.typed"]
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["assayer*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+# vendored third-party skills are not ours to lint
+extend-exclude = [".agents", ".claude"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "N", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+# tests assert on exact messages, compare types and keep fixtures unused on purpose
+"tests/**" = ["E501", "E402", "E731", "E711", "E721", "F841", "B905", "RUF003", "RUF013", "RUF043", "N813"]

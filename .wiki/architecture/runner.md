@@ -1,0 +1,62 @@
+---
+type: Reference
+title: Runner
+description: Runs a target over a Dataset of Cases and returns an Experiment with Scores and evaluation failures.
+resource: assayer/runner/runner.py
+tags: [runner, experiment, dataset]
+status: draft
+generated: { by: claude-code/pre-commit, at: 2026-10-17T22:00:00Z }
+sources:
+  - id: runner
+    resource: assayer/runner/runner.py
+    title: Runner
+  - id: loader
+    resource: assayer/runner/case_loader.py
+    title: load_cases
+  - id: tests
+    resource: tests/runner/test_runner.py
+    title: Runner tests
+---
+
+# Overview
+
+`Runner(target, metrics, repetitions=1, pricing=None, field_metrics=None, adapter=None).run(dataset)` calls the target with each
+`Case.input` and returns an `Experiment` (#26).[^runner] `target` is optional:
+`run` raises `ValueError` without one, and only `score` works without it.
+
+* A target returning a plain value gets it wrapped in one `model` Step; one
+  returning a `Trajectory` is kept as is. An exception becomes the `error` of a
+  model Step, formatted as `ExceptionType: message` (e.g. `RuntimeError: boom`).
+* Every Trajectory gets `case_id` (the Case id, else its position) and
+  `repetition`. Case ids must be unique, a position id counting as `"0"`, `"1"`...: both `run` and `score` raise `ValueError` naming the repeated ids, before any target call; Steps without an id get one so Step Scores can point at them.
+* Metrics run at their own level, on the whole output; Scores and `EvaluationFailure`s go on the Experiment.
+* Both `run` and `score` keep the Cases (with the ids their Trajectories carry) in `Experiment.cases`, the references that [Experiment-level metrics](../metrics/corpus-and-consistency.md) compare the Trajectories to.
+* `field_metrics` scores individual output Fields by dotted path and is validated on construction; see [Per-Field measurement](field-measurement.md).
+* `pricing` (a `PricingConfig` for the target's model) is stored on `Experiment.pricing`,
+  by both `run` and `score`, so `Experiment.total_usage()` and
+  [compare](comparison.md) can price the target. It is never applied to the Judge.
+
+# Scoring collected outputs
+
+`Runner(metrics=...).score(dataset, outputs)` scores outputs gathered beforehand
+without calling the target (#27).[^runner]
+
+* `outputs` has one entry per Case, in order; a different length raises `ValueError`.
+* Each entry is a `Trajectory` or a plain value wrapped in one `model` Step, and
+  becomes the Case's only repetition (`repetition` 0). It is tagged like a run
+  result (`case_id`, Step ids) on a copy; the caller's object is untouched.
+* Metrics, Scores and `EvaluationFailure`s behave as in `run`. Two Experiments can
+  then be diffed with [Comparison](comparison.md). Scoring batches of logged traffic this way is the recipe for live evaluation, which has no built-in mode: see [Examples and live evaluation](examples-and-live-evaluation.md).
+
+# Exporting
+
+`Runner(adapter=...)` takes an [Adapter](adapters.md), and `Runner.export(experiment, include_content=True)` sends an Experiment (from `run` or `score`) through it and returns its `ExportReport`. Failures to export items are in the report, not raised; without an adapter `export` raises `ValueError`. Only `export` needs the adapter.
+
+# Loading
+
+`dataset` may be a `Dataset`, a list of dicts or a JSON path. `load_cases`
+requires `input` plus only the Case fields that the chosen metrics (including
+those in `field_metrics`) list in `requires`, and rejects unknown keys.[^loader]
+
+[^runner]: assayer/runner/runner.py
+[^loader]: assayer/runner/case_loader.py

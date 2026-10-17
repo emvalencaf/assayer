@@ -1,15 +1,11 @@
 """NER metrics for evaluating named entity recognition predictions."""
 
-from typing import List
-
-from assayer.evaluators.ner import EntitySpan, NERMatcher, NEREvaluator
-from assayer.registries.metric_registry import MetricRegistry
-from assayer.registries.evaluator_registry import EvaluatorRegistry
+from assayer.metrics.ner_matching import EntitySpan, NERMatcher
 
 
 def ner_macro_f1(
-    predictions: List[List[EntitySpan]],
-    references: List[List[EntitySpan]],
+    predictions: list[list[EntitySpan]],
+    references: list[list[EntitySpan]],
 ) -> float:
     """Compute mean macro F1 across all examples.
 
@@ -41,50 +37,8 @@ def ner_macro_f1(
     matcher = NERMatcher()
     scores = [
         matcher.match(pred, ref).macro_f1
-        for pred, ref in zip(predictions, references)
+        for pred, ref in zip(predictions, references, strict=False)
     ]
 
     # Return mean of all macro F1 scores
     return sum(scores) / len(scores) if scores else 0.0
-
-
-def register_ner_metrics(registry: MetricRegistry) -> None:
-    """Register NER metrics in the provided MetricRegistry.
-
-    Registers the ner_macro_f1 metric function in the provided registry
-    under the name "ner_macro_f1".
-
-    Args:
-        registry: The MetricRegistry instance to register metrics in.
-
-    Raises:
-        KeyError: If the metric name "ner_macro_f1" is already registered.
-
-    Example:
-        >>> from assayer.registries.metric_registry import MetricRegistry
-        >>> registry = MetricRegistry()
-        >>> register_ner_metrics(registry)
-        >>> metric_fn = registry.get("ner_macro_f1")
-    """
-    registry.register("ner_macro_f1", ner_macro_f1)
-
-
-def register_ner_evaluators(registry: EvaluatorRegistry) -> None:
-    """Register NER evaluators in the provided EvaluatorRegistry.
-
-    Registers the NEREvaluator class in the provided registry under the
-    name "ner".
-
-    Args:
-        registry: The EvaluatorRegistry instance to register evaluators in.
-
-    Raises:
-        KeyError: If the evaluator name "ner" is already registered.
-
-    Example:
-        >>> from assayer.registries.evaluator_registry import EvaluatorRegistry
-        >>> registry = EvaluatorRegistry()
-        >>> register_ner_evaluators(registry)
-        >>> evaluator_cls = registry.get("ner")
-    """
-    registry.register("ner", NEREvaluator)

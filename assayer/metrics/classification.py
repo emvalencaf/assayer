@@ -1,16 +1,15 @@
 """Classification metrics for evaluating model predictions."""
 
-from typing import Any, List, Callable
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from collections.abc import Callable
+from typing import Any
 
-# Import the MetricRegistry for type hints
-from assayer.registries.metric_registry import MetricRegistry
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 
 # Type alias for metric functions
-MetricFn = Callable[[List[Any], List[Any]], float]
+MetricFn = Callable[[list[Any], list[Any]], float]
 
 
-def accuracy(predictions: List[Any], references: List[Any]) -> float:
+def accuracy(predictions: list[Any], references: list[Any]) -> float:
     """Calculate accuracy score for classification predictions.
 
     Computes the fraction of predictions that match the reference labels.
@@ -67,7 +66,8 @@ def make_precision(average: str = "macro") -> MetricFn:
         >>> precision_fn([1, 0, 1], [1, 1, 0])
         0.3333333333333333
     """
-    def precision_metric(predictions: List[Any], references: List[Any]) -> float:
+
+    def precision_metric(predictions: list[Any], references: list[Any]) -> float:
         """Calculate precision score for classification predictions.
 
         Args:
@@ -115,7 +115,8 @@ def make_recall(average: str = "macro") -> MetricFn:
         >>> recall_fn([1, 0, 1], [1, 1, 0])
         0.3333333333333333
     """
-    def recall_metric(predictions: List[Any], references: List[Any]) -> float:
+
+    def recall_metric(predictions: list[Any], references: list[Any]) -> float:
         """Calculate recall score for classification predictions.
 
         Args:
@@ -163,7 +164,8 @@ def make_f1(average: str = "macro") -> MetricFn:
         >>> f1_fn([1, 0, 1], [1, 1, 0])
         0.3333333333333333
     """
-    def f1_metric(predictions: List[Any], references: List[Any]) -> float:
+
+    def f1_metric(predictions: list[Any], references: list[Any]) -> float:
         """Calculate F1 score for classification predictions.
 
         Args:
@@ -186,25 +188,3 @@ def make_f1(average: str = "macro") -> MetricFn:
         return f1_score(references, predictions, average=average, zero_division=0)
 
     return f1_metric
-
-
-def register_classification_metrics(registry: MetricRegistry) -> None:
-    """Register classification metrics in the provided MetricRegistry.
-
-    Registers four standard classification metrics: accuracy, precision (macro),
-    recall (macro), and F1 (macro) in the provided registry. The precision, recall,
-    and F1 metrics use macro averaging by default.
-
-    Args:
-        registry: The MetricRegistry instance to register metrics in.
-
-    Raises:
-        KeyError: If any metric name is already registered in the registry.
-    """
-    # Register accuracy metric directly
-    registry.register("accuracy", accuracy)
-
-    # Register precision, recall, and F1 metrics with macro averaging
-    registry.register("precision", make_precision("macro"))
-    registry.register("recall", make_recall("macro"))
-    registry.register("f1", make_f1("macro"))

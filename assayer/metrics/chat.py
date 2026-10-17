@@ -4,11 +4,11 @@ This module provides reference-quality implementations of BLEU, ROUGE-L, BERTSco
 and semantic similarity metrics for measuring generation quality against ground-truth responses.
 """
 
-from typing import List, Callable
-import nltk.translate.bleu_score
-from nltk.translate.bleu_score import SmoothingFunction
-from rouge_score import rouge_scorer
+from collections.abc import Callable
+
 import numpy as np
+
+from assayer._extras import require
 
 # Type alias for metric functions
 MetricFn = Callable[[list[str], list[str]], float]
@@ -34,8 +34,12 @@ def bleu(predictions: list[str], references: list[str]) -> float:
         Corpus-level BLEU score as a float in [0, 1]. Returns 0.0 for empty inputs.
 
     Raises:
-        None. Returns 0.0 for any error conditions.
+        ImportError: If the extra this metric needs is not installed. Any other error
+            returns 0.0.
     """
+    # A missing extra is an error, not a score
+    nltk_bleu = require("nltk.translate.bleu_score", "text", "bleu")
+
     # Handle empty inputs
     if not predictions or not references or len(predictions) == 0 or len(references) == 0:
         return 0.0
@@ -52,12 +56,12 @@ def bleu(predictions: list[str], references: list[str]) -> float:
 
     try:
         # Use smoothing to handle cases where there aren't enough n-grams
-        sf = SmoothingFunction()
-        score = nltk.translate.bleu_score.corpus_bleu(
+        sf = nltk_bleu.SmoothingFunction()
+        score = nltk_bleu.corpus_bleu(
             list_of_references,
             predictions_tokenized,
             weights=weights,
-            smoothing_function=sf.method2  # method2 performs better for short texts
+            smoothing_function=sf.method2,  # method2 performs better for short texts
         )
 
         # Ensure we have a numeric score
@@ -67,10 +71,15 @@ def bleu(predictions: list[str], references: list[str]) -> float:
             # If score is not numeric (shouldn't happen with real NLTK), handle gracefully
             score_float = 0.0
 
-        # Handle the case where BLEU returns suboptimal scores for perfect matches due to lack of n-grams
+        # Handle the case where BLEU returns suboptimal scores for perfect matches
+        # due to lack of n-grams
         # Check for perfect matches after calling NLTK to allow test verification
-        if all(pred_tokens == ref_tokens[0]
-               for pred_tokens, ref_tokens in zip(predictions_tokenized, list_of_references)):
+        if all(
+            pred_tokens == ref_tokens[0]
+            for pred_tokens, ref_tokens in zip(
+                predictions_tokenized, list_of_references, strict=False
+            )
+        ):
             return 1.0
 
         return score_float
@@ -92,8 +101,11 @@ def rouge_l(predictions: list[str], references: list[str]) -> float:
         Mean ROUGE-L F1 score as a float in [0, 1]. Returns 0.0 for empty inputs.
 
     Raises:
-        None. Returns 0.0 for any error conditions.
+        ImportError: If the extra this metric needs is not installed. Any other error
+            returns 0.0.
     """
+    rouge_scorer = require("rouge_score.rouge_scorer", "text", "rouge_l")
+
     # Handle empty inputs
     if not predictions or not references or len(predictions) == 0 or len(references) == 0:
         return 0.0
@@ -104,9 +116,9 @@ def rouge_l(predictions: list[str], references: list[str]) -> float:
 
         # Compute scores for each prediction-reference pair
         scores = []
-        for pred, ref in zip(predictions, references):
+        for pred, ref in zip(predictions, references, strict=False):
             # Check if this is a mock by looking at the scorer type
-            if hasattr(scorer, '_mock_name'):
+            if hasattr(scorer, "_mock_name"):
                 # This is a mock, use the calling pattern the test expects
                 result = scorer.score((ref, pred))
             else:
@@ -140,26 +152,28 @@ def bert_score(predictions: list[str], references: list[str]) -> float:
         Mean BERTScore F1 score as a float in [0, 1]. Returns 0.0 for empty inputs.
 
     Raises:
-        None. Returns 0.0 for any error conditions.
+        ImportError: If the extra this metric needs is not installed. Any other error
+            returns 0.0.
     """
+    # Dynamic import to allow tests to mock
+    bert_score_lib = require("bert_score", "semantic", "bert_score")
+
     # Handle empty inputs
     if not predictions or not references or len(predictions) == 0 or len(references) == 0:
         return 0.0
 
     try:
-        # Dynamic import to allow tests to mock
-        import bert_score
-
         # Call bert_score.score with required parameters
         # Returns (precision, recall, f1) tensors
-        _, _, f1_scores = bert_score.score(
+        _, _, f1_scores = bert_score_lib.score(
             predictions, references, lang="en", rescale_with_baseline=True
         )
 
         # Convert F1 tensor to list and compute mean
         f1_list = f1_scores.tolist()
         if f1_list:
-            return float(sum(f1_list) / len(f1_list))
+            # Baseline rescaling can overshoot [0, 1] by floating-point error
+            return min(1.0, max(0.0, float(sum(f1_list) / len(f1_list))))
         else:
             return 0.0
 
@@ -169,7 +183,7 @@ def bert_score(predictions: list[str], references: list[str]) -> float:
 
 
 def make_semantic_similarity(
-    model_name: str = "sentence-transformers/all-MiniLM-L6-v2"
+    model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
 ) -> MetricFn:
     """Create a semantic similarity metric function using sentence transformers.
 
@@ -185,8 +199,10 @@ def make_semantic_similarity(
         the mean cosine similarity as a float in [0, 1].
 
     Raises:
-        None. The returned metric function handles all errors gracefully by returning 0.0.
+        None. The returned metric function raises ImportError without the `semantic` extra
+        and returns 0.0 on any other error.
     """
+
     def semantic_similarity_metric(predictions: list[str], references: list[str]) -> float:
         """Compute mean cosine similarity between predictions and references.
 
@@ -202,19 +218,22 @@ def make_semantic_similarity(
             or any error conditions.
 
         Raises:
-            None. Returns 0.0 for any error conditions.
+            ImportError: If the `semantic` extra is not installed. Any other error
+                returns 0.0.
         """
+        # Use module-level import for testing compatibility, import dynamically if needed
+        transformer = SentenceTransformer
+        if transformer is None:
+            transformer = require(
+                "sentence_transformers", "semantic", "make_semantic_similarity"
+            ).SentenceTransformer
+
         # Handle empty inputs
         if not predictions or not references or len(predictions) == 0 or len(references) == 0:
             return 0.0
 
         try:
-            # Use module-level import for testing compatibility, import dynamically if needed
-            if SentenceTransformer is None:
-                from sentence_transformers import SentenceTransformer as ST
-                encoder = ST(model_name)
-            else:
-                encoder = SentenceTransformer(model_name)
+            encoder = transformer(model_name)
 
             # Encode predictions and references
             pred_embeddings = encoder.encode(predictions)
@@ -244,8 +263,8 @@ def make_semantic_similarity(
                 else:
                     similarity = dot_product / (pred_norm * ref_norm)
 
-                # Ensure similarity is in [0, 1] by clamping negative values to 0
-                similarity = max(0.0, similarity)
+                # Ensure similarity is in [0, 1]: negatives clamp to 0, float overshoot to 1
+                similarity = min(1.0, max(0.0, similarity))
                 similarities.append(similarity)
 
             # Return mean similarity
