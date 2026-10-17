@@ -1,6 +1,12 @@
 # Update Log
 
 ## 2026-10-17
+* **Update**: [Metric contract](metrics/metric-contract.md) now records that a wrong subject becomes an `EvaluationFailure` rather than raising, and the `Registry` import-cycle note; tests moved to `test_metric.py` and `tests/registries/test_registry.py`.
+* **Update**: [Step efficiency](metrics/step-efficiency.md) tolerates unset `expected_steps`; tests moved to `tests/metrics/test_agent.py`.
+* **Update**: [Package organization](architecture/package-organization.md) now describes the `Metric` contract and `Registry`.
+* **Addition**: Documented the public [metric contract and Registry](metrics/metric-contract.md) (`Metric`, `MetricOutcome`, `Registry`); a missing `requires` input emits an `EvaluationFailure` and no Score.
+* **Addition**: Documented the [step efficiency](metrics/step-efficiency.md) agent metric.
+* **Update**: Listed both in the [metrics index](metrics/index.md).
 * **Update**: [Domain models](architecture/domain-models.md) now record `Experiment.total_judge_usage(pricing)` for pricing the Judge bucket, and `PricingConfig.cost`, which `Trajectory.total_usage` now uses.
 * **Update**: [Domain models](architecture/domain-models.md) now record `TokenUsage` addition, `Score` rejecting non-numeric values and requiring `target_id` for step targets, and the `StepKind` and `ScoreTarget` types.
 * **Addition**: Documented the vendor-neutral [domain models](architecture/domain-models.md) (`Trajectory`, `Step`, `Score`, `Experiment`, `EvaluationFailure`, `Dataset`, `Case`); `PricingConfig` moved to `assayer.models`.

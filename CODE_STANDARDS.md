@@ -30,8 +30,8 @@ concern, and dependencies point from the outer layers inward:
 |---|---|---|
 | `models/` | Plain data structures (`@dataclass`) that carry results: `TokenUsage`, `PricingConfig`, `FieldEvaluation`, `RunResult`, `ExperimentResult`, the `Consistency*` family and the vendor-neutral `Trajectory`, `Step`, `Score`, `Experiment`, `EvaluationFailure`, `Dataset` and `Case` | Logic that calls evaluators, I/O or external services |
 | `evaluators/` | `BaseEvaluator` (ABC) and its implementations (`ner`, `hallucination`, `consistency`) | Aggregation across a dataset |
-| `metrics/` | Pure functions `(predictions, references) -> float`, grouped by task (`chat`, `classification`, `ner`) | State, network calls |
-| `registries/` | `MetricRegistry` and `EvaluatorRegistry` | Built-in metric or evaluator definitions |
+| `metrics/` | The `Metric` contract (`level`, `requires`, `kind`) and built-in metrics, grouped by task (`agent`, `chat`, `classification`, `ner`); legacy ones are pure functions `(predictions, references) -> float` | State, network calls |
+| `registries/` | `Registry` (holds `Metric` objects) and the legacy `MetricRegistry` and `EvaluatorRegistry` | Built-in metric or evaluator definitions |
 | `runner/` | Pipelines (`EvaluationPipeline`, `HistoricalPipeline`, `ConsistencyPipeline`), `FieldRouter`, dataset loading, token extraction, pricing, comparison | Metric math |
 | `integrations/` | Adapters for external services (`langsmith`) | Domain rules |
 
