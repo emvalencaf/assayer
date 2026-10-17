@@ -5,7 +5,7 @@ description: The Runner's field map, which scores each output Field on its own b
 resource: assayer/runner/field_map/
 tags: [runner, metrics, field]
 status: draft
-generated: { by: claude-code/pre-commit, at: 2026-10-17T23:59:00Z }
+generated: { by: claude-code/pre-commit, at: 2026-10-18T00:30:00Z }
 sources:
   - id: field-map
     resource: assayer/runner/field_map/
@@ -28,7 +28,7 @@ sources:
 
 `Runner(field_metrics={...})` scores each field of a structured output on its own
 (#28).[^field-map] The map goes from the dotted path of a Field to a list of
-trajectory-level metrics:
+trajectory- or experiment-level metrics:
 
 ```python
 Runner(
@@ -46,6 +46,7 @@ Runner(
 * The metric sees the Field's value as the Trajectory's `final_output` and the Case's value as `expected_output`. A Field absent from the prediction reaches the metric as `None`; one absent from the Case fails the metric's `requires` check as an `EvaluationFailure`.[^tests]
 * Each resulting `Score` and `EvaluationFailure` carries the `field` path. A metric in `Runner(metrics=...)` still scores the whole output, with `field` `None`.
 * `Experiment.scores_by_field()` groups the Scores by `field`, in computed order; the whole-output Scores are under `None`. See [Domain models](domain-models.md).
+* An entry may also be an `experiment`-level metric, such as a [corpus or consistency metric](../metrics/corpus-and-consistency.md) (#30). It sees that Field of every Trajectory (`final_output`) and Case (`expected_output`) and only the Scores already computed for that Field, and yields one Experiment-level Score with the `field`. These entries run after the whole-output metrics and the entries listed before them, so `score_std` must follow the metric it measures. A Case lacking the Field fails the metric on that Field.[^scoring]
 * Works in both `run` and `score`. `load_cases` also validates the Case fields that the field metrics `require`.[^runner]
 
 # List Fields
@@ -76,7 +77,7 @@ Runner(
 call.[^field-map]
 
 * `TypeError`: the map is not a mapping, a value is not a list, an entry is not a `Metric` or `(Metric, params)`, or `params` is not a mapping.
-* `ValueError`: a path is blank or has an empty segment (`a..b`), a metric is listed twice under one path (their Scores could not be told apart), or a metric is not trajectory-level. Only trajectory-level metrics are accepted for now, because a Field is cut out of a Trajectory's output.
+* `ValueError`: a path is blank or has an empty segment (`a..b`), a metric is listed twice under one path (their Scores could not be told apart), or a metric is neither trajectory- nor experiment-level (a Field is cut out of a Trajectory's output, or of all of an Experiment's). The properties of a `ListField` accept trajectory-level metrics only, as an item has no corpus to be scored over.
 
 [^field-map]: assayer/runner/field_map/
 [^runner]: assayer/runner/runner.py

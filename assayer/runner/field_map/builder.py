@@ -10,6 +10,7 @@ from assayer.runner.field_map.list_field import ALIGNMENTS, ListField, ListSpec
 
 def build_field_map(
     field_metrics: Mapping[str, Sequence[Any] | ListField] | None,
+    levels: tuple[str, ...] = ("trajectory", "experiment"),
 ) -> list[FieldMetric | ListSpec]:
     """Validate a field map and flatten it into (Field, metric, parameters) pairs.
 
@@ -17,6 +18,8 @@ def build_field_map(
         field_metrics: Maps a dotted path to a list whose entries are a Metric, or
             a `(Metric, params)` pair with the parameters for that Field only; or
             to a `ListField` for a list of objects.
+        levels: The levels a metric may have. The properties of a list item admit
+            trajectory-level metrics only, as an item has no corpus to be scored over.
 
     Returns:
         The pairs, in map order; a `ListSpec` for each list Field.
@@ -25,9 +28,9 @@ def build_field_map(
         TypeError: If the map is not a mapping, a value is not a list, an entry is
             not a Metric or `(Metric, params)`, or params is not a mapping.
         ValueError: If a path is blank or has an empty segment, a metric is listed twice
-            under one path, or a metric is not trajectory-level (a Field is cut out
-            of a Trajectory's output); or a `ListField` has an unknown `align`, a
-            "key" alignment without `key`, a `threshold` outside [0, 1], or a
+            under one path, or a metric's level is not allowed (a Field is cut out of
+            a Trajectory's output, or of all of an Experiment's); or a `ListField` has an
+            unknown `align`, a "key" alignment without `key`, a `threshold` outside [0, 1], or a
             "best_match" alignment without properties.
     """
     if field_metrics is None:
@@ -52,10 +55,10 @@ def build_field_map(
                 )
             if not isinstance(params, Mapping):
                 raise TypeError(f"field {path!r}: parameters of {metric.name!r} must be a mapping")
-            if metric.level != "trajectory":
+            if metric.level not in levels:
                 raise ValueError(
-                    f"field {path!r}: metric {metric.name!r} must be trajectory-level, "
-                    f"not {metric.level!r}"
+                    f"field {path!r}: metric {metric.name!r} must be "
+                    f"{' or '.join(levels)}-level, not {metric.level!r}"
                 )
             if any(
                 isinstance(p, FieldMetric) and p.path == path and p.metric.name == metric.name
@@ -78,7 +81,7 @@ def _build_list(path: str, spec: ListField) -> ListSpec:
         isinstance(spec.threshold, (int, float)) and 0 <= spec.threshold <= 1
     ):
         raise ValueError(f"field {path!r}: threshold must be a number between 0 and 1")
-    properties = build_field_map(spec.properties)
+    properties = build_field_map(spec.properties, levels=("trajectory",))
     if spec.align == "best_match" and not properties:
         raise ValueError(f"field {path!r}: best_match needs properties to compare items by")
     return ListSpec(path, spec.align, spec.key, float(spec.threshold), properties)

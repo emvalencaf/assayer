@@ -1,13 +1,20 @@
 """Runs a target over a Dataset and returns an Experiment."""
 
 import copy
+import dataclasses
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from typing import Any
 
 from assayer.metrics import Metric
 from assayer.models import Case, Dataset, Experiment, PricingConfig, Step, Trajectory
 from assayer.runner.case_loader import load_cases
-from assayer.runner.field_map import build_field_map, metrics_of, score_field
+from assayer.runner.field_map import (
+    FieldMetric,
+    build_field_map,
+    metrics_of,
+    score_experiment_field,
+    score_field,
+)
 
 
 class Runner:
@@ -19,10 +26,12 @@ class Runner:
             the `error` of a model Step instead of aborting the Experiment. Only
             `run` needs it; `score` works on outputs collected beforehand.
         metrics: The metrics to apply, at their own level, to the whole output.
-        field_metrics: Maps the dotted path of an output Field to the trajectory-level
-            metrics that score it on its own, each a Metric or a `(Metric, params)`
-            pair whose params are passed to the metric's function for that Field
-            only; or a `ListField` that aligns a list of objects and scores the pairs
+        field_metrics: Maps the dotted path of an output Field to the trajectory- or
+            Experiment-level metrics that score it on its own (an Experiment-level one,
+            such as a corpus metric, sees that Field of every Trajectory and Case, and runs
+            after the whole-output metrics and the entries listed before it), each a Metric
+            or a `(Metric, params)` pair whose params are passed to the metric's function
+            for that Field only; or a `ListField` that aligns a list of objects and scores the pairs
             property by property. The metric sees the Field's value as `final_output` and the
             Case's as `expected_output`; its Scores carry the `field`.
         repetitions: How many times each Case is run; each repetition is kept as
@@ -76,6 +85,7 @@ class Runner:
         pairs: list[tuple[Trajectory, Case]] = []
         for position, case in enumerate(dataset.cases):
             case_id = case.id if case.id is not None else str(position)
+            experiment.cases.append(dataclasses.replace(case, id=case_id))
             for repetition in range(self.repetitions):
                 trajectory = self._execute(case, case_id, repetition)
                 experiment.trajectories.append(trajectory)
@@ -111,6 +121,7 @@ class Runner:
         pairs: list[tuple[Trajectory, Case]] = []
         for position, (case, output) in enumerate(zip(dataset.cases, outputs, strict=True)):
             case_id = case.id if case.id is not None else str(position)
+            experiment.cases.append(dataclasses.replace(case, id=case_id))
             trajectory = self._tag(output, case, case_id, 0)
             experiment.trajectories.append(trajectory)
             pairs.append((trajectory, case))
@@ -125,8 +136,11 @@ class Runner:
         for metric in self.metrics:
             self._apply(metric, experiment, pairs)
         for entry in self._field_pairs:
-            for trajectory, case in pairs:
-                outcome = score_field(entry, trajectory, case)
+            if isinstance(entry, FieldMetric) and entry.metric.level == "experiment":
+                outcomes = [score_experiment_field(entry, experiment)]
+            else:
+                outcomes = [score_field(entry, t, c) for t, c in pairs]
+            for outcome in outcomes:
                 experiment.scores.extend(outcome.scores)
                 experiment.failures.extend(outcome.failures)
 

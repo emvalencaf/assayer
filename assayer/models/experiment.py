@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 
+from assayer.models.case import Case
 from assayer.models.evaluation_failure import EvaluationFailure
 from assayer.models.pricing_config import PricingConfig
 from assayer.models.score import Score
@@ -17,6 +18,8 @@ class Experiment:
         scores: Scores of Steps, Trajectories and the Experiment as a whole.
         failures: Metrics that could not be computed.
         judge_usage: Token usage of the Judge, kept apart from the target's totals.
+        cases: The Cases the target ran over, each with the id its Trajectories carry as
+            `case_id`; the references that Experiment-level metrics compare them to.
         pricing: Prices of the target's model, kept so the cost can be recomputed
             and compared. They never apply to `judge_usage`, whose model is
             another one: price that with `total_judge_usage(pricing)`.
@@ -31,6 +34,7 @@ class Experiment:
     failures: list[EvaluationFailure] = field(default_factory=list)
     judge_usage: TokenUsage | None = None
     pricing: PricingConfig | None = None
+    cases: list[Case] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         """Validate name.
