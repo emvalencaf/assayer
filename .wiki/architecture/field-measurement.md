@@ -64,7 +64,7 @@ Runner(target, field_metrics={
 * The Alignment pairs each predicted item with an expected one. `best_match` (default) is greedy by descending similarity (the mean of the pair's property Scores; a nested list counts as its `list_f1`, through each entry's `similarity_name`), threshold 0.5, ties by position (expected index, then predicted index). `key` pairs equal `key` values; `positional` pairs equal indexes.[^alignment]
 * Property Scores are the mean over the aligned pairs, at `items.name`; a nested `ListField` aligns inside each pair, recursively.
 * `list_precision`, `list_recall` and `list_f1` are Scores of the list Field. Both empty: 1.0 on all three; expected empty with predictions: precision 0, recall 1.0; expected non-empty and none predicted (or no list): recall 0, precision 1.0.
-* `metadata["alignment"]` holds `pairs` (`(expected, predicted)` index tuples), `unmatched_expected` and `unmatched_predicted`. For a nested list the metadata is `alignments`, one entry per outer pair, tagged with `within`.[^scoring]
+* `metadata["alignment"]` holds `pairs` (`[expected, predicted]` index pairs), `unmatched_expected` and `unmatched_predicted`. For a nested list the metadata is `alignments`, one entry per outer pair, tagged with `within`.[^scoring]
 * An expected value that is absent or not a list is an `EvaluationFailure` of `list_alignment`.
 
 # Validation
