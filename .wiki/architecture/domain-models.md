@@ -36,7 +36,7 @@ terms in `GLOSSARY.md` (#24).[^glossary]
 | `EvaluationFailure` | A metric that could not be computed, kept as data (`metric`, `error`, `target_id`) instead of raised. |
 | `Dataset` | A named list of Cases. |
 | `Case` | One input with optional references (`expected_output`, `expected_tool_calls`, `expected_steps`, `expected_outcome`, `expected_state`, `reference_contexts`, `reference_context_ids`). |
-| `Comparison` | The difference between two Experiments (second minus first): `metric_deltas`, `input_tokens_delta`, `output_tokens_delta`, `cost_usd_delta`. Returned by `compare`; see [Comparison](comparison.md). |
+| `Comparison` | The difference between two Experiments (second minus first): `metric_deltas`, `input_tokens_delta`, `output_tokens_delta`, `cost_usd_delta`, plus `only_in_a` and `only_in_b` (the Cases only one side has). Returned by `compare`; see [Comparison](comparison.md). |
 | `PricingConfig` | Per-token input and output prices, with `cost(input_tokens, output_tokens)` to price a token count. Moved here from `assayer.runner.pricing`, which re-exports it. |
 
 # Validation rules

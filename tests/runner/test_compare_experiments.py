@@ -115,3 +115,22 @@ class TestUsageDeltas:
 
         assert result.input_tokens_delta is None
         assert result.cost_usd_delta is None
+
+    def test_usage_covers_only_the_cases_both_sides_have(self):
+        a = Experiment("a", trajectories=[_trajectory("c1", (100, 0)), _trajectory("c2", (900, 0))])
+        b = Experiment("b", trajectories=[_trajectory("c1", (150, 0)), _trajectory("c3", (5, 0))])
+
+        result = compare(a, b)
+
+        assert result.input_tokens_delta == pytest.approx(50)
+        assert result.only_in_a == ["c2"]
+        assert result.only_in_b == ["c3"]
+
+    def test_same_cases_leave_nothing_unmatched(self):
+        a = Experiment("a", trajectories=[_trajectory("c1", (1, 0))])
+        b = Experiment("b", trajectories=[_trajectory("c1", (1, 0))])
+
+        result = compare(a, b)
+
+        assert result.only_in_a == []
+        assert result.only_in_b == []
