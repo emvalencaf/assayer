@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-17
+
+### Fixed
+- The PyPI page of `llm-assayer-eval` had no description: 0.1.0 shipped without a `readme`. `pyproject.toml` now sets `readme`, authors, keywords, classifiers and project URLs, and the README links to files by absolute URL so they work on PyPI. 0.1.0 cannot be edited on PyPI, so this is a new release.
+
 ## [0.1.0] - 2026-10-17
 
 ### Changed

@@ -10,7 +10,7 @@
     A Python library for evaluating and observing LLM-powered applications, with
     deterministic metrics and LLM-as-Judge.
     <br />
-    <a href="CONTRIBUTING.md"><strong>Explore the docs »</strong></a>
+    <a href="https://github.com/emvalencaf/assayer/blob/master/CONTRIBUTING.md"><strong>Explore the docs »</strong></a>
     <br />
     <br />
     <a href="https://github.com/emvalencaf/assayer/issues/new">Report Bug</a>
@@ -128,6 +128,14 @@ Experiment can be exported to LangSmith with `LangSmithAdapter` and to Langfuse 
 
 ### Installation
 
+To use the library, install it from PyPI (the import name is `assayer`):
+
+```bash
+pip install llm-assayer-eval            # or 'llm-assayer-eval[all]' for every extra
+```
+
+To work on it, clone the repository:
+
 1. Clone the repository
    ```bash
    git clone https://github.com/emvalencaf/assayer.git
@@ -217,10 +225,6 @@ project on PyPI), but the import name stays `assayer`:
 import assayer
 ```
 
-```bash
-# until a release is on PyPI, install straight from git
-pip install 'llm-assayer-eval[all] @ git+https://github.com/emvalencaf/assayer'
-```
 
 **A custom metric.** A `Metric` is a function `fn(subject, case)` that returns a number in
 [0, 1] (or a boolean), at the level it scores: `"step"`, `"trajectory"` or `"experiment"`.
@@ -361,13 +365,13 @@ Runnable scripts in [`examples/`](examples), all offline:
 
 | Script | Shows |
 |---|---|
-| [`ticket_classification.py`](examples/ticket_classification.py) | a custom `Metric` plus a built-in metric on one Field of a structured output |
-| [`ner_extraction.py`](examples/ner_extraction.py) | pure NER: `EntitySpan`s scored with entity-level macro F1 |
-| [`support_pipeline.py`](examples/support_pipeline.py) | one structured output scored per Field: classification (accuracy, F1), NER and text generation (ROUGE-L) |
-| [`schema_structured_output.py`](examples/schema_structured_output.py) | a field map drafted from a JSON Schema with `schema_to_field_map`: enums (classification), free text (generation) and extracted values, nested objects, a list of objects and a list of strings, each scored by its type |
-| [`agent_tool_use.py`](examples/agent_tool_use.py) | an agent `Trajectory` scored on tool calls, arguments, end state and steps, then two agents compared on quality and cost |
-| [`faithfulness_check.py`](examples/faithfulness_check.py) | `make_faithfulness` with a scripted Judge over a retrieval Trajectory |
-| [`logged_traffic_scoring.py`](examples/logged_traffic_scoring.py) | scoring live traffic by logging it and scoring batches (see below) |
+| [`ticket_classification.py`](https://github.com/emvalencaf/assayer/blob/master/examples/ticket_classification.py) | a custom `Metric` plus a built-in metric on one Field of a structured output |
+| [`ner_extraction.py`](https://github.com/emvalencaf/assayer/blob/master/examples/ner_extraction.py) | pure NER: `EntitySpan`s scored with entity-level macro F1 |
+| [`support_pipeline.py`](https://github.com/emvalencaf/assayer/blob/master/examples/support_pipeline.py) | one structured output scored per Field: classification (accuracy, F1), NER and text generation (ROUGE-L) |
+| [`schema_structured_output.py`](https://github.com/emvalencaf/assayer/blob/master/examples/schema_structured_output.py) | a field map drafted from a JSON Schema with `schema_to_field_map`: enums (classification), free text (generation) and extracted values, nested objects, a list of objects and a list of strings, each scored by its type |
+| [`agent_tool_use.py`](https://github.com/emvalencaf/assayer/blob/master/examples/agent_tool_use.py) | an agent `Trajectory` scored on tool calls, arguments, end state and steps, then two agents compared on quality and cost |
+| [`faithfulness_check.py`](https://github.com/emvalencaf/assayer/blob/master/examples/faithfulness_check.py) | `make_faithfulness` with a scripted Judge over a retrieval Trajectory |
+| [`logged_traffic_scoring.py`](https://github.com/emvalencaf/assayer/blob/master/examples/logged_traffic_scoring.py) | scoring live traffic by logging it and scoring batches (see below) |
 
 ```bash
 uv run --extra all python examples/ner_extraction.py
@@ -386,13 +390,13 @@ uv run --extra all python examples/ner_extraction.py
   `Runner(metrics=...).score(Dataset(...), trajectories)` on the batch, or on a sample of
   it. Production traffic rarely has a reference answer, so use reference-free metrics
   (custom rules, judge-based criteria and faithfulness, cost and latency checks).
-  [`examples/logged_traffic_scoring.py`](examples/logged_traffic_scoring.py) is a
+  [`examples/logged_traffic_scoring.py`](https://github.com/emvalencaf/assayer/blob/master/examples/logged_traffic_scoring.py) is a
   minimal version of that loop.
 
 ### Migrating from the legacy API
 
 The legacy pipelines and their models were removed in one clean break; there are no
-aliases. See "Breaking" in [CHANGELOG.md](CHANGELOG.md) for the full list.
+aliases. See "Breaking" in [CHANGELOG.md](https://github.com/emvalencaf/assayer/blob/master/CHANGELOG.md) for the full list.
 
 | Legacy | Now |
 |---|---|
@@ -434,7 +438,7 @@ Claude Code, not your invoice.
 
 - [x] Add a `LICENSE` file
 - [x] Pick the PyPI name: `llm-assayer-eval` (import name stays `assayer`)
-- [ ] Tag and publish `v0.1.0`
+- [x] Tag and publish `v0.1.0`
 - [ ] A first-class live mode (scoring requests as they are served)
 
 See the [open issues](https://github.com/emvalencaf/assayer/issues) for proposed features and known issues.
@@ -444,9 +448,9 @@ See the [open issues](https://github.com/emvalencaf/assayer/issues) for proposed
 ## Contributing
 
 Contributions follow the branch strategy and commit convention in
-[CONTRIBUTING.md](CONTRIBUTING.md): cut a branch from `development`, commit as
+[CONTRIBUTING.md](https://github.com/emvalencaf/assayer/blob/master/CONTRIBUTING.md): cut a branch from `development`, commit as
 `tag(subject/subsubject): summary`, and open a pull request into `development`.
-Coding and documentation rules are in [CODE_STANDARDS.md](CODE_STANDARDS.md).
+Coding and documentation rules are in [CODE_STANDARDS.md](https://github.com/emvalencaf/assayer/blob/master/CODE_STANDARDS.md).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
