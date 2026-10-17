@@ -6,6 +6,7 @@
 - README no longer claims that results are pushed to LangSmith automatically: the `Runner` never calls `LangSmithPublisher`.
 
 ### Added
+- New `Runner` (`assayer.runner`) that runs a target over a Dataset and returns an Experiment (#26): a plain return value is wrapped in one model Step, `repetitions=k` keeps each repetition as its own Trajectory, and Scores and evaluation failures land on the Experiment. `load_cases` loads a Dataset from a list or JSON and validates only the fields the chosen metrics `require`. The legacy pipelines are untouched.
 - Public metric contract `Metric` (`level`, `requires`, deterministic or Judge-based), the `Registry` that holds built-in and custom metrics alike, and `step_efficiency` as the first metric on it (#25). A missing `requires` input emits no Score and an `EvaluationFailure`; the legacy registries stay until the clean break.
 - Vendor-neutral models `Trajectory`, `Step`, `Score`, `Experiment`, `EvaluationFailure`, `Dataset` and `Case` beside the legacy ones (#24); `PricingConfig` moved to `assayer.models` and still importable from `assayer.runner.pricing`.
 - `Experiment.total_judge_usage(pricing)` prices the Judge bucket. `TokenUsage` supports addition; `Score` requires `target_id` for step targets and rejects non-numeric values.
