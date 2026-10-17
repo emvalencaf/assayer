@@ -71,10 +71,16 @@ dependencies = [
     { name = "transformers" },
 ]
 
+[package.optional-dependencies]
+yaml = [
+    { name = "pyyaml" },
+]
+
 [package.dev-dependencies]
 dev = [
     { name = "pytest" },
     { name = "pytest-cov" },
+    { name = "pyyaml" },
 ]
 
 [package.metadata]
@@ -84,17 +90,20 @@ requires-dist = [
     { name = "langsmith" },
     { name = "nltk" },
     { name = "numpy" },
+    { name = "pyyaml", marker = "extra == 'yaml'" },
     { name = "rouge-score" },
     { name = "scikit-learn" },
     { name = "sentence-transformers" },
     { name = "torch" },
     { name = "transformers" },
 ]
+provides-extras = ["yaml"]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "pytest" },
     { name = "pytest-cov" },
+    { name = "pyyaml" },
 ]
 
 [[package]]
